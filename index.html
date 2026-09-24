@@ -296,6 +296,11 @@
     white-space:nowrap;
   }
   #addPlayerBtn:hover{ background:#eef1f5; }
+  /* [hidden] alone loses to the class rule below on specificity — pairing the
+     attribute selector with the class keeps this actually hidden until the
+     "+ Add Player" button clears it, instead of showing an empty form on
+     every load. */
+  .add-player-form[hidden]{ display:none; }
   .add-player-form{
     display:flex; flex-wrap:wrap; align-items:center; gap:8px;
     background:white; border:1px solid #dfe3e8; border-radius:10px;
@@ -604,6 +609,80 @@
 
   .tile.label-lock{ border-left-color:var(--lock); background:var(--lockbg); }
   .tile.label-bubble{ border-left-color:var(--bubble); background:var(--bubblebg); }
+
+  /* ---- Mobile ---- everything above this block is the desktop experience,
+     left exactly as it was. Below is a dedicated pass for small/touch
+     screens: fewer words on screen, bigger tap targets, one column at a
+     time instead of squeezed side-by-side grids, and Split View's
+     side-by-side layout switched off (it only makes sense once there's
+     enough width for two panes to breathe). */
+  .btn-short{ display:none; }
+
+  @media (max-width:768px){
+    body{ padding-bottom:40px; }
+
+    header.topbar{
+      flex-direction:column; align-items:flex-start; gap:8px;
+      padding:14px 16px;
+    }
+    .brand .interlock{ width:38px; height:38px; font-size:22px; }
+    .brand h1{ font-size:15px; }
+    .brand .sub{ font-size:9.5px; }
+    #headerBlurb{ display:none; }
+
+    /* The long explanatory paragraphs are useful once, not every visit —
+       hiding them on a small screen buys back a lot of vertical space
+       before you ever reach the roster itself. */
+    #legendRow, #hintText, #lineupHint, #addPlayerHint{ display:none; }
+
+    .toolbar{ flex-direction:column; align-items:stretch; padding:10px 16px; gap:10px; }
+    /* The wrapping div still carries its own inline flex styles (harmless
+       on desktop), so this overrides them directly rather than fighting
+       them with a competing display mode. */
+    .toolbar-actions{ flex-direction:column !important; align-items:stretch !important; gap:8px !important; }
+    .toolbar-actions .team-picker{ font-size:13px; }
+    #teamSelect{ width:100%; max-width:none; flex:1; }
+    #saveNote{ font-size:10.5px; }
+    #syncNote{ font-size:10.5px; }
+    .toolbar-actions button{ width:100%; padding:12px 10px; font-size:13px; }
+    .btn-full{ display:none; }
+    .btn-short{ display:inline; }
+
+    .stats-bar{ flex-direction:column; align-items:stretch; gap:12px; padding:14px 16px; margin:12px 16px 0 16px; }
+    .stats-bar-divider{ display:none; }
+    .stats-bar-block{ flex-direction:row; align-items:baseline; justify-content:space-between; }
+    .stats-bar .stat-big{ font-size:28px; }
+    .breakdown{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px 6px; }
+    .breakdown-row{ min-width:0; }
+
+    .roster-section, .pool-section, .lineup-section{ padding-left:16px; padding-right:16px; }
+    .roster-grid, .roster-grid-pitch{ grid-template-columns:1fr; }
+    .tile{ padding:10px 12px; font-size:13px; }
+    .tile .meta{ font-size:10.5px; }
+    .mini-toggle{ width:22px; height:22px; font-size:11px; }
+    .toggle-col{ gap:6px; }
+
+    .pool-header-row{ flex-direction:column; align-items:flex-start; gap:8px; }
+    #addPlayerBtn{ width:100%; }
+    .add-player-form{ flex-direction:column; align-items:stretch; }
+    .add-player-form input, .add-player-form select{ width:100%; }
+    .add-player-form input#apName{ min-width:0; }
+    #apSubmit, #apCancel{ width:100%; }
+
+    .lineup-card{ min-width:0; flex:1 1 100%; }
+    .lineup-row-controls button{ width:24px; height:20px; font-size:11px; }
+
+    /* Split View is a desktop convenience for a wide window — on a phone
+       there isn't room for two panes side by side, so its layout is
+       switched off here regardless of the saved preference, and the roster
+       + pool just stack normally like the rest of this mobile pass. */
+    body.split .board-split{ display:block; }
+    body.split .board-main{ min-height:0; }
+    body.split .pool-section{
+      position:static; max-height:none; overflow:visible; border-left:none;
+    }
+    body.split .pool-col h3{ position:static; }
+  }
 </style>
 </head>
 <body>
@@ -628,14 +707,14 @@
     <span><i style="background:var(--il)"></i>Injured (+)</span>
     <span><i style="background:var(--neutral); border:1px solid #ccc"></i>No label</span>
   </div>
-  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+  <div class="toolbar-actions" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
     <span class="team-picker">Team
       <select id="teamSelect"></select>
     </span>
     <span id="saveNote">Autosaves in this browser</span>
     <span id="syncNote" style="color:var(--grey); opacity:0.85;">Syncing…</span>
     <button id="syncBtn" title="Pull the latest 40-man roster now">Sync Now</button>
-    <button id="resetBtn">Reset to Current Roster</button>
+    <button id="resetBtn"><span class="btn-full">Reset to Current Roster</span><span class="btn-short">Reset</span></button>
     <button id="broadcastBtn" title="Switch between working view and a clean look for recording/streaming">📺 Broadcast Mode</button>
     <button id="splitBtn" title="Show the Final Roster and the Pool side by side so both stay in view while dragging">🪟 Split View</button>
   </div>
@@ -1841,7 +1920,15 @@ document.getElementById('previewOverlay').addEventListener('click', e=>{
   }catch(e){}
   try{
     const sres = await storageGet(SPLIT_KEY);
-    if(sres && sres.value === '1') setSplitMode(true);
+    if(sres && sres.value != null){
+      // Respect whatever this browser last chose, including an explicit "off".
+      if(sres.value === '1') setSplitMode(true);
+    } else if(window.matchMedia('(min-width: 900px)').matches){
+      // No saved preference yet (first visit on this device) — default to
+      // Split View on a desktop-sized window. Mobile's own layout ignores
+      // Split View regardless, so there's no need to gate this further.
+      setSplitMode(true);
+    }
   }catch(e){}
   await loadState();
   render();
