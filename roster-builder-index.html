@@ -1,0 +1,1941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MLB 26-Man Roster Builder</title>
+<style>
+  :root{
+    --navy:#0C2340;
+    --navy2:#132A4D;
+    --white:#ffffff;
+    --grey:#63666A;
+    --lock:#1F7A45;
+    --lockbg:#E7F4EC;
+    --bubble:#B9791F;
+    --bubblebg:#FDF3E2;
+    --il:#A3241C;
+    --ilbg:#FBEAE8;
+    --neutralbg:#FFFFFF;
+    --neutral:#B9BEC4;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background:
+      repeating-linear-gradient(90deg, color-mix(in srgb, var(--navy) 6%, transparent) 0px, color-mix(in srgb, var(--navy) 6%, transparent) 1px, transparent 1px, transparent 14px),
+      #f7f8fa;
+    color:var(--navy);
+    padding-bottom:60px;
+    transition:background 0.25s ease;
+  }
+  #appFrame{ max-width:1500px; margin:0 auto; transition:box-shadow 0.25s ease, border-radius 0.25s ease; }
+
+  /* ---- Broadcast Mode: clean, high-contrast look for streaming/recording ---- */
+  body.broadcast{
+    background: linear-gradient(135deg, var(--navy), var(--navy2)) fixed;
+    padding:28px 22px 40px 22px;
+  }
+  body.broadcast #appFrame{
+    background:#f7f8fa;
+    border-radius:18px;
+    /* visible (not hidden) so the pinned toolbar + stats bar can stick against the
+       real viewport as you scroll the roster/pool/lineups beneath them */
+    overflow:visible;
+    box-shadow:0 24px 70px rgba(0,0,0,0.45);
+    border:1px solid rgba(255,255,255,0.15);
+  }
+  body.broadcast #headerBlurb,
+  body.broadcast #legendRow,
+  body.broadcast #saveNote,
+  body.broadcast #hintText,
+  body.broadcast #lineupHint{ display:none !important; }
+  body.broadcast header.topbar{
+    padding:22px 30px; border-bottom-width:6px;
+    border-top-left-radius:18px; border-top-right-radius:18px;
+  }
+  /* Toolbar is already sticky at top:0. In Broadcast Mode the stats bar (roster
+     count / pitcher-hitter split / position breakdown) pins right beneath it, so
+     the key numbers stay on screen the whole time you're dragging players around
+     lower on the page. */
+  body.broadcast .stats-bar{
+    position:sticky; top:var(--toolbar-h, 54px); z-index:40;
+  }
+  body.broadcast .brand .interlock{ width:60px; height:60px; font-size:38px; }
+  body.broadcast .brand h1{ font-size:25px; letter-spacing:0.8px; }
+  body.broadcast .brand .sub{ font-size:13px; margin-top:2px; }
+  body.broadcast .toolbar{ padding:8px 30px; }
+  body.broadcast .stats-bar{ margin:16px 30px 0 30px; padding:18px 26px; border-radius:14px; }
+  body.broadcast .stats-bar .stat-big{ font-size:40px; }
+  body.broadcast .stats-bar .type-split{ font-size:14px; }
+  body.broadcast .stats-bar .breakdown-row .gcount{ font-size:20px; }
+  body.broadcast .stats-bar .breakdown-row .glabel{ font-size:11px; }
+  body.broadcast .roster-section, body.broadcast .pool-section, body.broadcast .lineup-section{ padding-left:30px; padding-right:30px; }
+  body.broadcast .roster-section h2.section-title,
+  body.broadcast .pool-section h2.section-title,
+  body.broadcast .lineup-section h2.section-title{ font-size:16px; letter-spacing:1.4px; }
+  body.broadcast .roster-col{ border-radius:12px; box-shadow:0 3px 10px rgba(12,35,64,0.12); }
+  body.broadcast .roster-col h3{ font-size:13px; padding:10px 12px; }
+  body.broadcast .tile{ padding:8px 11px; font-size:12.5px; border-radius:9px; }
+  body.broadcast .tile .meta{ font-size:10px; }
+  /* Extra room between tiles in Broadcast Mode specifically — the whole point
+     is dropping a guy in precisely on camera, so the gap you're aiming at
+     needs to be generous, not just visually tidy. */
+  body.broadcast .lane{ gap:14px; padding:12px; }
+  body.broadcast .mini-toggle{ width:17px; height:17px; }
+  body.broadcast .lineup-card{ border-radius:12px; box-shadow:0 3px 10px rgba(12,35,64,0.12); padding:20px; }
+  body.broadcast .lineup-card-title{ font-size:15px; }
+  body.broadcast .lineup-row{ padding:8px 0; }
+  body.broadcast .lineup-order{ width:26px; height:26px; font-size:13.5px; }
+  body.broadcast .lineup-row select{ font-size:13.5px; }
+  body.broadcast .lineup-name, body.broadcast .lineup-player-select{ font-size:13.5px; }
+  body.broadcast #downloadLineupBtn{ font-size:13.5px; padding:11px 16px; }
+  #broadcastBtn{
+    background:white; color:var(--navy); border:1px solid var(--navy);
+    padding:6px 11px; border-radius:6px; cursor:pointer; font-weight:600; font-size:12px;
+  }
+  #broadcastBtn:hover{ background:#eef1f5; }
+  #broadcastBtn.on{ background:var(--navy); color:white; }
+  #splitBtn{
+    background:white; color:var(--navy); border:1px solid var(--navy);
+    padding:6px 11px; border-radius:6px; cursor:pointer; font-weight:600; font-size:12px;
+  }
+  #splitBtn:hover{ background:#eef1f5; }
+  #splitBtn.on{ background:var(--navy); color:white; }
+  header.topbar{
+    background:var(--navy);
+    color:white;
+    padding:16px 22px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    border-bottom:4px solid var(--bubble);
+  }
+  .brand{display:flex; align-items:center; gap:12px;}
+  .brand .interlock{
+    font-family:Georgia, serif;
+    font-weight:700;
+    font-style:italic;
+    font-size:30px;
+    background:white;
+    color:var(--navy);
+    border-radius:50%;
+    width:46px;height:46px;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+    position:relative;
+    overflow:hidden;
+  }
+  .brand .interlock img{ width:74%; height:74%; object-fit:contain; display:block; }
+  .brand h1{
+    margin:0;
+    font-size:19px;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    font-weight:800;
+  }
+  .brand .sub{
+    display:block;
+    font-size:11px;
+    font-weight:400;
+    text-transform:none;
+    opacity:0.75;
+    letter-spacing:0.2px;
+  }
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:12px;
+    padding:10px 22px;
+    background:white;
+    border-bottom:1px solid #dfe3e8;
+    position:sticky;
+    top:0;
+    z-index:50;
+  }
+  .legend{display:flex; gap:12px; flex-wrap:wrap; font-size:11px;}
+  .legend span{display:flex; align-items:center; gap:5px;}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block;}
+  #resetBtn{
+    background:var(--navy);
+    color:white;
+    border:none;
+    padding:7px 12px;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:600;
+    font-size:12px;
+  }
+  #resetBtn:hover{background:var(--navy2);}
+  #saveNote{font-size:11px; color:var(--grey); opacity:0.85;}
+  #syncNote{font-size:11px;}
+  #syncBtn{
+    background:white;
+    color:var(--navy);
+    border:1px solid var(--navy);
+    padding:6px 11px;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:600;
+    font-size:12px;
+  }
+  #syncBtn:hover{background:#eef1f5;}
+  .team-picker{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--grey); font-weight:600; }
+  #teamSelect{
+    border:1px solid #d7dbe0; border-radius:6px; padding:6px 8px; font-size:12px; color:var(--navy);
+    background:white; font-family:inherit; font-weight:600; max-width:190px;
+  }
+
+  .hint{
+    max-width:900px;
+    margin:10px auto 4px auto;
+    padding:0 22px;
+    font-size:12px;
+    color:var(--grey);
+  }
+
+  .stats-bar{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:20px;
+    background:var(--navy);
+    color:white;
+    padding:14px 22px;
+    margin:14px 22px 0 22px;
+    border-radius:10px;
+    box-shadow:0 1px 3px rgba(12,35,64,0.15);
+  }
+  .stats-bar-block{ display:flex; flex-direction:column; }
+  .stats-bar .stat-big{ font-family:Georgia,serif; font-weight:700; font-size:32px; line-height:1; white-space:nowrap; }
+  .stats-bar .stat-big.over{ color:#FF8A80; }
+  .stats-bar .stat-big.exact{ color:#8CE0A6; }
+  .stats-bar .stat-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.8px; opacity:0.75; margin-top:2px; }
+  .stats-bar .type-split{ font-size:12px; opacity:0.9; white-space:nowrap; }
+  .stats-bar .lock-summary{ font-size:11px; opacity:0.75; margin-top:3px; white-space:nowrap; }
+  .stats-bar-divider{ width:1px; align-self:stretch; background:rgba(255,255,255,0.18); }
+  .stats-bar .breakdown{ display:flex; flex-wrap:wrap; gap:14px 20px; flex:1; }
+  .stats-bar .breakdown-row{ display:flex; flex-direction:column; min-width:56px; }
+  .stats-bar .breakdown-row .gcount{ font-family:Georgia,serif; font-weight:700; font-size:17px; }
+  .stats-bar .breakdown-row .glabel{ font-size:10px; text-transform:uppercase; letter-spacing:0.5px; opacity:0.7; font-weight:700; }
+  .stats-bar .breakdown-row .glock{ font-size:9px; opacity:0.6; margin-top:1px; }
+
+  /* ---- Final Roster (top) ---- */
+  .roster-section{ padding:14px 22px 6px 22px; }
+  .roster-section h2.section-title{
+    font-size:14px; text-transform:uppercase; letter-spacing:1px; font-weight:800;
+    color:var(--navy); margin:0 0 8px 0;
+  }
+  .roster-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(135px, 1fr));
+    gap:10px;
+    /* Position columns only ever differ by a player or two, so letting the
+       grid's default stretch behavior even out each row looks tidy (no
+       jagged bottoms) and gives the shorter column in a row genuinely more
+       room to drop a guy into — rather than a cramped sliver right under
+       its one or two tiles. */
+    align-items:stretch;
+  }
+  @media (max-width:640px){ .roster-grid{ grid-template-columns:repeat(2,1fr); } }
+  .roster-subsection + .roster-subsection{ margin-top:14px; }
+  .roster-subtitle{
+    font-size:10.5px; text-transform:uppercase; letter-spacing:0.8px; font-weight:800;
+    color:var(--grey); margin:0 0 6px 0;
+  }
+  /* Pitching staff (Starters/Relievers) gets its own row, sized only against
+     itself, and wider columns since there are just two of them — instead of
+     being crammed in alongside nine much-shallower position columns.
+     Relievers routinely runs 8-10 deep while Starters holds far fewer, so
+     unlike Position Players this pair needs align-items:start — stretching
+     Starters to match Relievers' height would recreate the mostly-empty-box
+     problem this whole split was meant to fix. */
+  .roster-grid-pitch{
+    grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+    align-items:start;
+  }
+  .roster-col{
+    background:white;
+    border:1px solid #dfe3e8;
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 1px 3px rgba(12,35,64,0.06);
+    min-height:110px;
+    display:flex;
+    flex-direction:column;
+  }
+  .roster-col h3{
+    margin:0; background:var(--navy); color:white; font-size:11.5px; text-transform:uppercase;
+    letter-spacing:0.8px; padding:8px 10px; font-weight:700; display:flex; justify-content:space-between;
+  }
+  .roster-col h3 .n{ opacity:0.7; font-weight:400; }
+  .lane{
+    padding:10px;
+    display:flex;
+    flex-direction:column;
+    gap:11px;
+    flex:1;
+    transition:background 0.12s;
+  }
+  .lane.hover{ background:#eef3fb; outline:2px dashed var(--navy); outline-offset:-2px; }
+  .lane:empty::after{ content:"Drop a player here"; color:#c3c8ce; font-size:11px; font-style:italic; padding:4px 2px; }
+
+  /* ---- Pool (freely floating, underneath) ---- */
+  .pool-section{ padding:16px 22px 6px 22px; }
+  .pool-header-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+  .pool-header-row .section-title{ margin:0; }
+  #addPlayerBtn{
+    background:white; color:var(--navy); border:1px solid var(--navy);
+    padding:6px 11px; border-radius:6px; cursor:pointer; font-weight:600; font-size:12px;
+    white-space:nowrap;
+  }
+  #addPlayerBtn:hover{ background:#eef1f5; }
+  /* [hidden] alone loses to the class rule below on specificity — pairing the
+     attribute selector with the class keeps this actually hidden until the
+     "+ Add Player" button clears it, instead of showing an empty form on
+     every load. */
+  .add-player-form[hidden]{ display:none; }
+  .add-player-form{
+    display:flex; flex-wrap:wrap; align-items:center; gap:8px;
+    background:white; border:1px solid #dfe3e8; border-radius:10px;
+    padding:12px; margin-bottom:12px;
+  }
+  .add-player-form input, .add-player-form select{
+    border:1px solid #d7dbe0; border-radius:6px; padding:7px 9px; font-size:12.5px;
+    color:var(--navy); background:white; font-family:inherit;
+  }
+  .add-player-form input#apName{ flex:1; min-width:160px; }
+  .add-player-form input#apNum{ width:52px; }
+  #apSubmit{
+    background:var(--navy); color:white; border:none; padding:7px 13px;
+    border-radius:6px; cursor:pointer; font-weight:600; font-size:12.5px;
+  }
+  #apSubmit:hover{ background:var(--navy2); }
+  #apCancel{
+    background:white; color:var(--grey); border:1px solid #d7dbe0; padding:7px 12px;
+    border-radius:6px; cursor:pointer; font-weight:600; font-size:12.5px;
+  }
+  #apCancel:hover{ background:#eef1f5; }
+  /* Tag on any manually-added, not-actually-on-the-40-man player, wherever
+     their tile ends up (pool or the final roster board). */
+  .org-badge{
+    font-size:8px; font-weight:800; letter-spacing:0.3px; padding:1px 5px;
+    border-radius:20px; text-transform:uppercase; background:#EDEBFB; color:#5B3DF0;
+    flex-shrink:0;
+  }
+  .mini-toggle.remove{ color:#A3241C; font-size:12px; }
+  .mini-toggle.remove:hover{ background:var(--il); border-color:var(--il); color:white; }
+  .pool-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:760px){ .pool-grid{ grid-template-columns:1fr; } }
+
+  /* ---- Split View: Final Roster (+ Lineups) on the left, Pool pinned on the
+     right so it's always reachable while dragging. Best for a tall-ish,
+     roughly-square capture window (e.g. an OBS scene).
+     Lineups are grouped into the LEFT column specifically so that column is
+     reliably taller than the Pool panel — a sticky element can't hold still
+     if it's the one defining its container's height, so the left side needs
+     real slack above the Pool's own (viewport-capped) height for the pin to
+     actually work instead of just scrolling away with the page. ---- */
+  .board-split{ display:block; }
+  body.split .board-split{ display:flex; align-items:flex-start; gap:0; }
+  body.split .board-main{
+    flex:1.4; min-width:0;
+    /* Guarantees the left column can never be shorter than the Pool's own
+       capped height, so the sticky Pool always has room to actually stick,
+       even right after loading with an empty/near-empty roster. */
+    min-height:calc(100vh - var(--pinned-h, 54px) - 10px + 260px);
+  }
+  body.split .pool-section{
+    flex:1; min-width:0; border-left:1px solid #dfe3e8;
+    position:sticky; top:var(--pinned-h, 54px);
+    max-height:calc(100vh - var(--pinned-h, 54px) - 10px);
+    overflow-y:auto;
+  }
+  body.split .roster-grid{ grid-template-columns:repeat(auto-fit, minmax(148px, 1fr)); }
+  body.split .roster-grid-pitch{ grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); }
+  body.split .pool-grid{ grid-template-columns:1fr; gap:10px; }
+  body.split .pool-col h3{ position:sticky; top:0; background:#f7f8fa; padding-bottom:4px; }
+  .pool-col h3{
+    font-size:12px; text-transform:uppercase; letter-spacing:0.8px; font-weight:800; color:var(--grey);
+    margin:0 0 8px 0;
+  }
+  .pool-lane{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-content:flex-start;
+    min-height:90px;
+    padding:12px;
+    background:white;
+    border:1px dashed #cfd4da;
+    border-radius:10px;
+    transition:background 0.12s;
+  }
+  .pool-lane.hover{ background:#eef3fb; border-color:var(--navy); }
+
+  /* ---- Precise drop position marker ---- */
+  .drop-indicator{
+    background:var(--bubble);
+    border-radius:3px;
+    pointer-events:none;
+    box-shadow:0 0 0 3px rgba(185,121,31,0.18);
+  }
+  .drop-indicator.horizontal{ height:3px; width:100%; }
+  .drop-indicator.vertical{ width:3px; align-self:stretch; }
+  .pool-lane:empty::after{ content:"Nobody here"; color:#c3c8ce; font-size:11px; font-style:italic; }
+
+  /* ---- Lineups ---- */
+  .lineup-section{ padding:16px 22px 30px 22px; }
+  .lineup-grid{ display:flex; gap:16px; flex-wrap:wrap; }
+  .lineup-card{
+    background:white; border:1px solid #dfe3e8; border-radius:10px;
+    box-shadow:0 1px 3px rgba(12,35,64,0.06); padding:16px; flex:1; min-width:320px; max-width:480px;
+  }
+  .lineup-card-title{
+    margin:0 0 10px 0; font-size:13px; text-transform:uppercase; letter-spacing:1px;
+    font-weight:800; color:var(--navy);
+  }
+  .lineup-row{ display:flex; align-items:center; gap:6px; padding:6px 0; border-bottom:1px dashed #ecedf0; }
+  .lineup-row:last-child{ border-bottom:none; }
+  .lineup-order{
+    font-weight:700; color:white; background:var(--navy);
+    width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:12px; line-height:1; flex-shrink:0; font-variant-numeric:lining-nums;
+    cursor:grab; touch-action:none; user-select:none;
+  }
+  .lineup-order.dragging{ opacity:0.4; }
+  .lineup-row.dragging{ opacity:0.5; }
+  .lineup-row select{
+    border:1px solid #d7dbe0; border-radius:6px; padding:6px 8px; font-size:12.5px; color:var(--navy);
+    background:white; font-family:inherit;
+  }
+  .lineup-player-select{ flex:1; min-width:0; font-weight:600; }
+  .lineup-position-select{ width:58px; flex-shrink:0; }
+  .bat-hand-badge{
+    width:18px; height:18px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:800; color:white; line-height:1;
+  }
+  .bat-hand-badge.hand-L{ background:#2C7A7B; }
+  .bat-hand-badge.hand-R{ background:var(--navy); }
+  .bat-hand-badge.hand-S{ background:#7C3AED; }
+  .bat-hand-badge.hand-none{ background:#c3c8ce; }
+  .lineup-row-controls{ display:flex; flex-direction:column; gap:1px; flex-shrink:0; }
+  .lineup-row-controls button{
+    width:18px; height:14px; font-size:9px; line-height:1; border:1px solid #d7dbe0; background:white;
+    color:var(--grey); cursor:pointer; border-radius:3px; padding:0;
+  }
+  .lineup-row-controls button:hover{ background:#eef1f5; }
+  #downloadLineupBtn{
+    margin-top:14px; background:var(--navy); color:white; border:none; padding:9px 14px;
+    border-radius:6px; cursor:pointer; font-weight:600; font-size:12.5px;
+  }
+  #downloadLineupBtn:hover{ background:var(--navy2); }
+  .lineup-warning{
+    margin-top:10px; padding:8px 10px; background:var(--ilbg); border:1px solid #f0c4c0; color:var(--il);
+    font-size:11.5px; border-radius:6px; font-weight:600; line-height:1.5;
+  }
+
+  /* ---- Image preview modal ---- */
+  .preview-overlay{
+    display:none;
+    position:fixed; inset:0; background:rgba(12,35,64,0.55);
+    align-items:center; justify-content:center; z-index:200; padding:24px;
+  }
+  .preview-overlay.open{ display:flex; }
+  .preview-modal{
+    background:white; border-radius:12px; overflow:hidden; max-width:min(880px, 92vw);
+    max-height:90vh; display:flex; flex-direction:column; box-shadow:0 12px 40px rgba(0,0,0,0.35);
+  }
+  .preview-modal-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 16px; background:var(--navy); color:white; font-weight:700; font-size:13px;
+    text-transform:uppercase; letter-spacing:0.5px;
+  }
+  .preview-close{
+    background:transparent; border:none; color:white; font-size:15px; cursor:pointer; line-height:1; padding:4px;
+  }
+  .preview-modal-body{ overflow:auto; padding:16px; background:#f0f2f5; display:flex; justify-content:center; }
+  .preview-modal-body img{
+    display:block; width:auto; height:auto;
+    max-width:100%; max-height:75vh;
+    box-shadow:0 2px 10px rgba(0,0,0,0.15); border-radius:6px;
+  }
+  .preview-modal-footer{ padding:12px 16px; border-top:1px solid #dfe3e8; display:flex; justify-content:flex-end; }
+  #previewDownloadBtn{
+    background:var(--navy); color:white; border:none; padding:9px 16px; border-radius:6px;
+    cursor:pointer; font-weight:600; font-size:12.5px;
+  }
+  #previewDownloadBtn:hover{ background:var(--navy2); }
+
+  /* Off-screen — captured for the shareable PNG, never shown on screen */
+  .full-export{
+    position:fixed; top:-9999px; left:-9999px;
+    width:820px; background:white; font-family:-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    border-radius:14px; overflow:hidden;
+  }
+  .fx-header{
+    background:var(--navy); color:white; padding:18px 24px;
+    background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px, transparent 1px, transparent 12px);
+  }
+  .fx-header-row{ display:flex; align-items:center; gap:14px; }
+  .fx-team-logo{
+    width:48px; height:48px; border-radius:50%; background:white; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  .fx-team-logo img{ width:74%; height:74%; object-fit:contain; display:block; }
+  .fx-header .team{ font-size:12px; text-transform:uppercase; opacity:0.75; }
+  .fx-header .title{ font-family:Georgia,serif; font-weight:700; font-size:26px; margin-top:2px; }
+  .fx-section-title{
+    font-size:13px; text-transform:uppercase; font-weight:800; color:var(--navy);
+    padding:18px 24px 8px 24px;
+  }
+  .fx-roster-diamond-wrap{ display:flex; gap:20px; padding:6px 24px 10px 24px; align-items:flex-start; justify-content:center; }
+  .fx-field{ position:relative; width:460px; height:440px; flex-shrink:0; }
+  .fx-diamond{
+    position:absolute; top:250px; left:230px; width:230px; height:230px;
+    background:#ced3d8; transform:translate(-50%,-50%) rotate(45deg); border-radius:8px; z-index:0;
+  }
+  /* Only the field boxes are absolutely placed at roughly their real spot on the diamond. */
+  .fx-pos-box{
+    width:118px;
+    background:white; border:1px solid #dfe3e8; border-radius:5px; overflow:hidden; box-shadow:0 1px 2px rgba(12,35,64,0.08);
+  }
+  .fx-field-box{ position:absolute; z-index:1; }
+  .fx-pos-LF{ top:10px;  left:15px; }
+  .fx-pos-CF{ top:0px;   left:171px; }
+  .fx-pos-RF{ top:10px;  left:327px; }
+  .fx-pos-SS{ top:175px; left:70px; }
+  .fx-pos-2B{ top:175px; left:272px; }
+  .fx-pos-3B{ top:300px; left:15px; }
+  .fx-pos-1B{ top:300px; left:327px; }
+  .fx-pos-C{  top:370px; left:171px; }
+  .fx-pos-DH{ top:370px; left:327px; }
+  .fx-side-stack{ display:flex; flex-direction:column; gap:14px; width:150px; flex-shrink:0; }
+  .fx-pos-box-title{
+    font-size:9.5px; text-transform:uppercase; font-weight:800; color:white;
+    background:var(--navy); padding:3px 8px;
+  }
+  .fx-pos-box-body{ padding:5px 8px; min-height:20px; }
+  .fx-roster-player{ font-size:10.5px; color:var(--navy); line-height:1.55; font-weight:600; }
+  .fx-roster-empty{ font-size:10px; color:#c3c8ce; font-style:italic; }
+  .fx-lineups{ display:flex; gap:18px; padding:8px 24px 22px 24px; }
+  .fx-lineup{ flex:1; }
+  .fx-lineup-title{ font-family:Georgia,serif; font-weight:700; font-size:16px; color:var(--navy); margin-bottom:6px; }
+  .fx-lineup-row{ display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid #eef0f2; }
+  .fx-lineup-row:last-child{ border-bottom:none; }
+  .fx-lineup-order{
+    font-weight:700; color:white; background:var(--navy);
+    width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:11px; line-height:1; flex-shrink:0; font-variant-numeric:lining-nums;
+  }
+  .fx-hand-badge{
+    width:16px; height:16px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    font-size:9px; font-weight:800; color:white; line-height:1;
+  }
+  .fx-hand-badge.hand-L{ background:#2C7A7B; }
+  .fx-hand-badge.hand-R{ background:var(--navy); }
+  .fx-hand-badge.hand-S{ background:#7C3AED; }
+  .fx-lineup-name{ flex:1; font-weight:700; color:var(--navy); font-size:13px; }
+  .fx-lineup-pos{ font-size:10px; font-weight:700; color:var(--grey); background:#f0f2f5; padding:2px 8px; border-radius:20px; }
+  .fx-lineup-empty{ color:#c3c8ce; font-style:italic; font-size:12px; }
+
+
+  /* ---- Per-player toggles: Lock, Bubble, Injured — each its own click target ---- */
+  .hurt-badge{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:13px; height:13px; border-radius:3px;
+    background:var(--il); color:white; font-size:9px; font-weight:800; line-height:1;
+    flex-shrink:0;
+  }
+  .toggle-col{
+    display:flex; flex-direction:column; gap:3px;
+    margin-left:auto; flex-shrink:0;
+  }
+  .mini-toggle{
+    width:15px; height:15px; border-radius:50%;
+    border:1.5px solid #d7dbe0;
+    color:#c3c8ce;
+    display:flex; align-items:center; justify-content:center;
+    font-size:9px; font-weight:800;
+    flex-shrink:0;
+    cursor:pointer;
+    background:white;
+  }
+  .mini-toggle.status-dot:hover{ border-color:var(--grey); }
+  .mini-toggle.status-dot.lock{ background:var(--lock); border-color:var(--lock); }
+  .mini-toggle.status-dot.bubble{ background:var(--bubble); border-color:var(--bubble); }
+  .mini-toggle.hurt:hover{ border-color:var(--il); color:var(--il); }
+  .mini-toggle.hurt.active{ background:var(--il); border-color:var(--il); color:white; }
+
+  /* ---- Tiles ---- */
+  .tile{
+    background:var(--neutralbg);
+    border:1px solid #d7dbe0;
+    border-left:5px solid var(--neutral);
+    border-radius:7px;
+    padding:6px 9px;
+    cursor:grab;
+    user-select:none;
+    touch-action:none;
+    box-shadow:0 1px 2px rgba(12,35,64,0.08);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+  }
+  .tile:active{cursor:grabbing;}
+  .tile.dragging{ box-shadow:0 8px 20px rgba(12,35,64,0.35); opacity:0.95; transform:scale(1.03);}
+
+
+  .tile .info{display:flex; flex-direction:column; line-height:1.25; min-width:0; flex:1;}
+  .tile .name{font-weight:700; display:flex; align-items:flex-start; gap:5px; min-width:0;}
+  /* Names are shown in full (no truncation) — in a narrow column a long one
+     needs to wrap onto a second line instead of overflowing past its own
+     width, which used to visually run underneath the Lock/Bubble/Injured
+     icons since they're painted after it in the tile's markup. */
+  .tile .name-text{ min-width:0; overflow-wrap:break-word; word-break:break-word; }
+  .tile .meta{font-size:10px; color:var(--grey); text-transform:uppercase; letter-spacing:0.3px;}
+  .badge{ font-size:8.5px; font-weight:800; letter-spacing:0.4px; padding:1px 5px; border-radius:20px; text-transform:uppercase; }
+  .badge.lock{ background:var(--lock); color:white; }
+  .badge.bubble{ background:var(--bubble); color:white; }
+  .tile img{ -webkit-user-drag:none; user-drag:none; }
+
+  .tile.label-lock{ border-left-color:var(--lock); background:var(--lockbg); }
+  .tile.label-bubble{ border-left-color:var(--bubble); background:var(--bubblebg); }
+
+  /* ---- Mobile ---- everything above this block is the desktop experience,
+     left exactly as it was. Below is a dedicated pass for small/touch
+     screens: fewer words on screen, bigger tap targets, one column at a
+     time instead of squeezed side-by-side grids, and Split View's
+     side-by-side layout switched off (it only makes sense once there's
+     enough width for two panes to breathe). */
+  .btn-short{ display:none; }
+
+  @media (max-width:768px){
+    body{ padding-bottom:40px; }
+
+    header.topbar{
+      flex-direction:column; align-items:flex-start; gap:8px;
+      padding:14px 16px;
+    }
+    .brand .interlock{ width:38px; height:38px; font-size:22px; }
+    .brand h1{ font-size:15px; }
+    .brand .sub{ font-size:9.5px; }
+    #headerBlurb{ display:none; }
+
+    /* The long explanatory paragraphs are useful once, not every visit —
+       hiding them on a small screen buys back a lot of vertical space
+       before you ever reach the roster itself. */
+    #legendRow, #hintText, #lineupHint, #addPlayerHint{ display:none; }
+
+    .toolbar{ flex-direction:column; align-items:stretch; padding:10px 16px; gap:10px; }
+    /* The wrapping div still carries its own inline flex styles (harmless
+       on desktop), so this overrides them directly rather than fighting
+       them with a competing display mode. */
+    .toolbar-actions{ flex-direction:column !important; align-items:stretch !important; gap:8px !important; }
+    .toolbar-actions .team-picker{ font-size:13px; }
+    #teamSelect{ width:100%; max-width:none; flex:1; }
+    #saveNote{ font-size:10.5px; }
+    #syncNote{ font-size:10.5px; }
+    .toolbar-actions button{ width:100%; padding:12px 10px; font-size:13px; }
+    .btn-full{ display:none; }
+    .btn-short{ display:inline; }
+
+    .stats-bar{ flex-direction:column; align-items:stretch; gap:12px; padding:14px 16px; margin:12px 16px 0 16px; }
+    .stats-bar-divider{ display:none; }
+    .stats-bar-block{ flex-direction:row; align-items:baseline; justify-content:space-between; }
+    .stats-bar .stat-big{ font-size:28px; }
+    .breakdown{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px 6px; }
+    .breakdown-row{ min-width:0; }
+
+    .roster-section, .pool-section, .lineup-section{ padding-left:16px; padding-right:16px; }
+    .roster-grid, .roster-grid-pitch{ grid-template-columns:1fr; }
+    .tile{ padding:10px 12px; font-size:13px; }
+    .tile .meta{ font-size:10.5px; }
+    .mini-toggle{ width:22px; height:22px; font-size:11px; }
+    .toggle-col{ gap:6px; }
+
+    .pool-header-row{ flex-direction:column; align-items:flex-start; gap:8px; }
+    #addPlayerBtn{ width:100%; }
+    .add-player-form{ flex-direction:column; align-items:stretch; }
+    .add-player-form input, .add-player-form select{ width:100%; }
+    .add-player-form input#apName{ min-width:0; }
+    #apSubmit, #apCancel{ width:100%; }
+
+    .lineup-card{ min-width:0; flex:1 1 100%; }
+    .lineup-row-controls button{ width:24px; height:20px; font-size:11px; }
+
+    /* Split View is a desktop convenience for a wide window — on a phone
+       there isn't room for two panes side by side, so its layout is
+       switched off here regardless of the saved preference, and the roster
+       + pool just stack normally like the rest of this mobile pass. */
+    body.split .board-split{ display:block; }
+    body.split .board-main{ min-height:0; }
+    body.split .pool-section{
+      position:static; max-height:none; overflow:visible; border-left:none;
+    }
+    body.split .pool-col h3{ position:static; }
+  }
+</style>
+</head>
+<body>
+<div id="appFrame">
+
+<header class="topbar">
+  <div class="brand">
+    <div class="interlock" id="brandLogo"><span class="interlock-fallback">NY</span>
+      <img src="" alt="" onload="this.previousElementSibling.style.display='none';" onerror="this.remove();">
+    </div>
+    <div>
+      <h1 id="brandTitle">26-Man Roster Builder<span class="sub" id="brandSub">New York Yankees — 40-man pool</span></h1>
+    </div>
+  </div>
+  <div id="headerBlurb" style="font-size:12px; opacity:0.75; text-align:right; max-width:220px;">Drag players onto the roster above. Click any tile to label it Lock or Bubble.</div>
+</header>
+
+<div class="toolbar">
+  <div class="legend" id="legendRow">
+    <span><i style="background:var(--lock)"></i>Lock label</span>
+    <span><i style="background:var(--bubble)"></i>Bubble label</span>
+    <span><i style="background:var(--il)"></i>Injured (+)</span>
+    <span><i style="background:var(--neutral); border:1px solid #ccc"></i>No label</span>
+  </div>
+  <div class="toolbar-actions" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+    <span class="team-picker">Team
+      <select id="teamSelect"></select>
+    </span>
+    <span id="saveNote">Autosaves in this browser</span>
+    <span id="syncNote" style="color:var(--grey); opacity:0.85;">Syncing…</span>
+    <button id="syncBtn" title="Pull the latest 40-man roster now">Sync Now</button>
+    <button id="resetBtn"><span class="btn-full">Reset to Current Roster</span><span class="btn-short">Reset</span></button>
+    <button id="broadcastBtn" title="Switch between working view and a clean look for recording/streaming">📺 Broadcast Mode</button>
+    <button id="splitBtn" title="Show the Final Roster and the Pool side by side so both stay in view while dragging">🪟 Split View</button>
+  </div>
+</div>
+
+<p class="hint" id="hintText">The roster pool syncs with MLB's live 40-man roster automatically on load and every hour after — new call-ups or trades show up in the pool, and injury status stays current. It only ever adds players or refreshes their name/number/injury flag; it never touches where you've placed someone or any Lock/Bubble you've set. Drag a player tile between the roster columns and the pool below to change where they sit — a thin orange line shows exactly where they'll land as you drag, so you can drop them at any precise spot rather than just the end. Each tile has two small buttons on its right edge: the top dot cycles blank → <span style="color:var(--lock);font-weight:700;">green (Lock)</span> → <span style="color:var(--bubble);font-weight:700;">yellow (Bubble)</span> → blank again with each click; the <strong>+</strong> below it is a separate on/off toggle for currently injured. Neither moves the player anywhere.</p>
+
+<section class="stats-bar">
+  <div class="stats-bar-block">
+    <div class="stat-big" id="rosterTotal">0/26</div>
+    <div class="stat-label">On Final Roster</div>
+  </div>
+  <div class="stats-bar-divider"></div>
+  <div class="stats-bar-block">
+    <div class="type-split" id="typeSplit">0 Pitchers · 0 Position Players</div>
+    <div class="lock-summary" id="lockSummary">0 locked · 26 up for grabs</div>
+  </div>
+  <div class="stats-bar-divider"></div>
+  <div class="breakdown" id="breakdown"></div>
+</section>
+
+<div class="board-split" id="boardSplit">
+<div class="board-main" id="boardMain">
+<section class="roster-section">
+  <h2 class="section-title">Final 26-Man Roster</h2>
+  <div class="roster-subsection">
+    <h3 class="roster-subtitle">Pitching Staff</h3>
+    <div class="roster-grid roster-grid-pitch" id="rosterGridPitch"></div>
+  </div>
+  <div class="roster-subsection">
+    <h3 class="roster-subtitle">Position Players</h3>
+    <div class="roster-grid" id="rosterGridHit"></div>
+  </div>
+</section>
+
+<section class="lineup-section">
+  <h2 class="section-title">Lineups</h2>
+  <p class="hint" id="lineupHint" style="margin:0 0 12px 0; padding:0;">Pick from your Final 26-Man Roster hitters — any player can bat in any spot and play any position for the day, independent of how they're slotted above. The letter badge next to each name shows how they bat (L / R / S for switch).</p>
+  <div class="lineup-grid">
+    <div class="lineup-card">
+      <h3 class="lineup-card-title">vs RHP</h3>
+      <div class="lineup-rows" id="lineupRows_RHP"></div>
+      <div class="lineup-warnings" id="lineupWarnings_RHP"></div>
+    </div>
+    <div class="lineup-card">
+      <h3 class="lineup-card-title">vs LHP</h3>
+      <div class="lineup-rows" id="lineupRows_LHP"></div>
+      <div class="lineup-warnings" id="lineupWarnings_LHP"></div>
+    </div>
+  </div>
+  <button id="downloadLineupBtn">Download Roster &amp; Lineups Image</button>
+</section>
+</div><!-- /#boardMain -->
+
+<section class="pool-section">
+  <div class="pool-header-row">
+    <h2 class="section-title">Not Yet On The Roster</h2>
+    <button id="addPlayerBtn" type="button">+ Add Player</button>
+  </div>
+  <p class="hint" id="addPlayerHint" style="margin:0 0 10px 0; padding:0;">For anyone in the organization who isn't currently on the 40-man — a rehab arm being kept stretched out, a prospect held as an emergency option, a non-roster invite — so you can still place and discuss them here.</p>
+  <div class="add-player-form" id="addPlayerForm" hidden>
+    <input type="text" id="apName" placeholder="Player name" maxlength="60">
+    <input type="text" id="apNum" placeholder="#" maxlength="3">
+    <select id="apType">
+      <option value="H">Position player</option>
+      <option value="P">Pitcher</option>
+    </select>
+    <select id="apBats">
+      <option value="R">Bats R</option>
+      <option value="L">Bats L</option>
+      <option value="S">Switch</option>
+    </select>
+    <select id="apThrows">
+      <option value="R">Throws R</option>
+      <option value="L">Throws L</option>
+    </select>
+    <button id="apSubmit" type="button">Add to Pool</button>
+    <button id="apCancel" type="button">Cancel</button>
+  </div>
+  <div class="pool-grid" id="poolGrid">
+    <div class="pool-col">
+      <h3>Pitchers</h3>
+      <div class="pool-lane" data-place="pool" data-type="P"></div>
+    </div>
+    <div class="pool-col">
+      <h3>Position Players</h3>
+      <div class="pool-lane" data-place="pool" data-type="H"></div>
+    </div>
+  </div>
+</section>
+</div><!-- /#boardSplit -->
+
+</div><!-- /#appFrame -->
+<!-- Off-screen clean render target used only for the shareable image export -->
+<div id="fullExport" class="full-export"></div>
+
+<!-- Preview modal shown after the image is generated -->
+<div id="previewOverlay" class="preview-overlay">
+  <div class="preview-modal">
+    <div class="preview-modal-header">
+      <span>Preview</span>
+      <button id="previewCloseBtn" class="preview-close" title="Close">✕</button>
+    </div>
+    <div class="preview-modal-body">
+      <img id="previewImg" alt="Roster and lineups preview">
+    </div>
+    <div class="preview-modal-footer">
+      <button id="previewDownloadBtn">Download PNG</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+const ROSTER_COLUMNS = [
+  {key:'SP', label:'Starters'},
+  {key:'RP', label:'Relievers'},
+  {key:'C',  label:'Catcher'},
+  {key:'1B', label:'1B'},
+  {key:'2B', label:'2B'},
+  {key:'SS', label:'SS'},
+  {key:'3B', label:'3B'},
+  {key:'LF', label:'LF'},
+  {key:'CF', label:'CF'},
+  {key:'RF', label:'RF'},
+  {key:'DH', label:'DH'},
+];
+
+// Same MLB Stats API image conventions as the series-snapshot tool.
+const API = 'https://statsapi.mlb.com/api/v1';
+const logoURL = id => `https://www.mlbstatic.com/team-logos/${id}.svg`;
+const headshotURL = pid =>
+  `https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png,q_auto:best,f_auto/v1/people/${pid}/headshot/67/current`;
+
+// All 30 MLB clubs — id matches the Stats API teamId, colors drive the --navy/--navy2 theme vars.
+const TEAMS = [
+  {id:108, abbr:'LAA', name:'Los Angeles Angels',        primary:'#BA0021', secondary:'#862633'},
+  {id:109, abbr:'AZ',  name:'Arizona Diamondbacks',       primary:'#A71930', secondary:'#6E121F'},
+  {id:110, abbr:'BAL', name:'Baltimore Orioles',          primary:'#DF4601', secondary:'#000000'},
+  {id:111, abbr:'BOS', name:'Boston Red Sox',             primary:'#BD3039', secondary:'#0C2340'},
+  {id:112, abbr:'CHC', name:'Chicago Cubs',               primary:'#0E3386', secondary:'#0A2761'},
+  {id:113, abbr:'CIN', name:'Cincinnati Reds',            primary:'#C6011F', secondary:'#000000'},
+  {id:114, abbr:'CLE', name:'Cleveland Guardians',        primary:'#00385D', secondary:'#001F3B'},
+  {id:115, abbr:'COL', name:'Colorado Rockies',           primary:'#33006F', secondary:'#200047'},
+  {id:116, abbr:'DET', name:'Detroit Tigers',             primary:'#0C2340', secondary:'#132A4D'},
+  {id:117, abbr:'HOU', name:'Houston Astros',             primary:'#002D62', secondary:'#001C3E'},
+  {id:118, abbr:'KC',  name:'Kansas City Royals',         primary:'#004687', secondary:'#00305B'},
+  {id:119, abbr:'LAD', name:'Los Angeles Dodgers',        primary:'#005A9C', secondary:'#003A66'},
+  {id:120, abbr:'WSH', name:'Washington Nationals',       primary:'#14225A', secondary:'#0C1737'},
+  {id:121, abbr:'NYM', name:'New York Mets',              primary:'#002D72', secondary:'#001D4B'},
+  {id:133, abbr:'ATH', name:'Athletics',                  primary:'#003831', secondary:'#00251F'},
+  {id:134, abbr:'PIT', name:'Pittsburgh Pirates',         primary:'#27251F', secondary:'#000000'},
+  {id:135, abbr:'SD',  name:'San Diego Padres',           primary:'#2F241D', secondary:'#1A1310'},
+  {id:136, abbr:'SEA', name:'Seattle Mariners',           primary:'#0C2C56', secondary:'#071A34'},
+  {id:137, abbr:'SF',  name:'San Francisco Giants',       primary:'#27251F', secondary:'#000000'},
+  {id:138, abbr:'STL', name:'St. Louis Cardinals',        primary:'#C41E3A', secondary:'#0C2340'},
+  {id:139, abbr:'TB',  name:'Tampa Bay Rays',             primary:'#092C5C', secondary:'#051A38'},
+  {id:140, abbr:'TEX', name:'Texas Rangers',              primary:'#003278', secondary:'#001F4D'},
+  {id:141, abbr:'TOR', name:'Toronto Blue Jays',          primary:'#134A8E', secondary:'#0C315E'},
+  {id:142, abbr:'MIN', name:'Minnesota Twins',            primary:'#002B5C', secondary:'#001B3A'},
+  {id:143, abbr:'PHI', name:'Philadelphia Phillies',      primary:'#E81828', secondary:'#002D72'},
+  {id:144, abbr:'ATL', name:'Atlanta Braves',             primary:'#13274F', secondary:'#0B1830'},
+  {id:145, abbr:'CWS', name:'Chicago White Sox',          primary:'#27251F', secondary:'#000000'},
+  {id:146, abbr:'MIA', name:'Miami Marlins',              primary:'#00A3E0', secondary:'#005B7F'},
+  {id:147, abbr:'NYY', name:'New York Yankees',           primary:'#0C2340', secondary:'#132A4D'},
+  {id:158, abbr:'MIL', name:'Milwaukee Brewers',          primary:'#12284B', secondary:'#0A192F'},
+];
+const DEFAULT_TEAM_ID = 147;
+let currentTeamId = DEFAULT_TEAM_ID;
+const teamById = id => TEAMS.find(t=>t.id===id) || TEAMS.find(t=>t.id===DEFAULT_TEAM_ID);
+
+// Maps the API's position.abbreviation onto our roster column keys.
+const POSITION_MAP = {
+  'C':'C', '1B':'1B', '2B':'2B', '3B':'3B', 'SS':'SS',
+  'LF':'LF', 'CF':'CF', 'RF':'RF', 'OF':'CF', 'IF':'2B', 'DH':'DH',
+};
+
+// Lineups are independent of a player's roster-assigned position — any hitter
+// on the Final 26-Man Roster can bat anywhere and play any spot for the day.
+const LINEUP_POSITIONS = ['C','1B','2B','3B','SS','LF','CF','RF','DH'];
+let lineups = {
+  RHP: Array.from({length:9}, ()=>({playerId:null, position:null})),
+  LHP: Array.from({length:9}, ()=>({playerId:null, position:null})),
+};
+
+// type: 'P' pitcher / 'H' hitter.  group: fixed position for hitters (C/IF/OF); null for
+// pitchers until dropped into Starters or Relievers.  placed: 'roster' | 'pool' | 'il'.
+// label: null | 'lock' | 'bubble' — independent of placement.
+const DEFAULTS = [
+  {id:'beck', pid:694341, name:'Brendan Beck', num:89, bt:'R/R', type:'P', group:null, placed:'pool', status:null},
+  {id:'bednar', pid:670280, name:'David Bednar', num:53, bt:'L/R', type:'P', group:null, placed:'pool', status:null},
+  {id:'blackburn', pid:621112, name:'Paul Blackburn', num:58, bt:'R/R', type:'P', group:null, placed:'pool', status:null},
+  {id:'castro', pid:665645, name:'Kervin Castro', num:74, bt:'R/R', type:'P', group:null, placed:'pool', status:null, hurt:true},
+  {id:'chivilli', pid:683409, name:'Angel Chivilli', num:57, bt:'R/R', type:'P', group:null, placed:'pool', status:null},
+  {id:'cole', pid:543037, name:'Gerrit Cole', num:45, bt:'R/R', type:'P', group:null, placed:'pool', status:null},
+  {id:'cruz', pid:518585, name:'Fernando Cruz', num:63, bt:'R/R', type:'P', group:null, placed:'pool', status:null},
+  {id:'delossantos', pid:660787, name:'Yerry De los Santos', num:73, bt:'R/R', type:'P', group:null, placed:'pool', status:null},
+  {id:'fried', pid:608331, name:'Max Fried', num:54, bt:'L/L', type:'P', group:null, placed:'pool', status:null},
+  {id:'gil', pid:661563, name:'Luis Gil', num:81, bt:'R/R', type:'P', group:null, placed:'pool', status:null},
+  {id:'hampton', pid:694633, name:'Chase Hampton', num:86, bt:'R/R', type:'P', group:null, placed:'pool', status:null},
+  {id:'hanner', pid:690440, name:'Bradley Hanner', num:93, bt:'R/R', type:'P', group:null, placed:'pool', status:null},
+  {id:'headrick', pid:687396, name:'Brent Headrick', num:47, bt:'L/L', type:'P', group:null, placed:'pool', status:null},
+  {id:'hill', pid:657612, name:'Tim Hill', num:41, bt:'R/L', type:'P', group:null, placed:'pool', status:null},
+  {id:'rodon', pid:607074, name:'Carlos Rodón', num:55, bt:'L/L', type:'P', group:null, placed:'pool', status:null, hurt:true},
+  {id:'erodriguez', pid:695684, name:'Elmer Rodríguez', num:71, bt:'L/R', type:'P', group:null, placed:'pool', status:null},
+  {id:'schlittler', pid:693645, name:'Cam Schlittler', num:31, bt:'R/R', type:'P', group:null, placed:'pool', status:null},
+  {id:'schmidt', pid:657376, name:'Clarke Schmidt', num:36, bt:'R/R', type:'P', group:null, placed:'pool', status:null, hurt:true},
+  {id:'warren', pid:701542, name:'Will Warren', num:29, bt:'R/R', type:'P', group:null, placed:'pool', status:null},
+  {id:'weathers', pid:677960, name:'Ryan Weathers', num:40, bt:'R/L', type:'P', group:null, placed:'pool', status:null},
+  {id:'yarbrough', pid:642232, name:'Ryan Yarbrough', num:33, bt:'R/L', type:'P', group:null, placed:'pool', status:null},
+
+  {id:'escarra', pid:641555, name:'J.C. Escarra', num:25, bt:'L/R', type:'H', group:'C', placed:'pool', status:null},
+  {id:'asanchez', pid:645305, name:'Ali Sánchez', num:39, bt:'R/R', type:'H', group:'C', placed:'pool', status:null},
+  {id:'wells', pid:669224, name:'Austin Wells', num:28, bt:'L/R', type:'H', group:'C', placed:'pool', status:null},
+
+  {id:'caballero', pid:676609, name:'José Caballero', num:72, bt:'R/R', type:'H', group:'SS', placed:'pool', status:null},
+  {id:'ocabrera', pid:665828, name:'Oswaldo Cabrera', num:95, bt:'S/R', type:'H', group:'3B', placed:'pool', status:null},
+  {id:'chisholm', pid:665862, name:'Jazz Chisholm Jr.', num:13, bt:'L/R', type:'H', group:'2B', placed:'pool', status:null},
+  {id:'garcia', pid:671277, name:'Luis García Jr.', num:26, bt:'L/R', type:'H', group:'2B', placed:'pool', status:null},
+  {id:'goldschmidt', pid:502671, name:'Paul Goldschmidt', num:48, bt:'R/R', type:'H', group:'1B', placed:'pool', status:null},
+  {id:'lombard', pid:806146, name:'George Lombard Jr.', num:96, bt:'R/R', type:'H', group:'SS', placed:'pool', status:null},
+  {id:'mcmahon', pid:641857, name:'Ryan McMahon', num:19, bt:'L/R', type:'H', group:'3B', placed:'pool', status:null},
+  {id:'rice', pid:700250, name:'Ben Rice', num:22, bt:'L/R', type:'H', group:'1B', placed:'pool', status:null},
+  {id:'rosario', pid:642708, name:'Amed Rosario', num:14, bt:'R/R', type:'H', group:'2B', placed:'pool', status:null},
+  {id:'volpe', pid:683011, name:'Anthony Volpe', num:11, bt:'R/R', type:'H', group:'SS', placed:'pool', status:null},
+
+  {id:'bellinger', pid:641355, name:'Cody Bellinger', num:35, bt:'L/L', type:'H', group:'CF', placed:'pool', status:null, hurt:true},
+  {id:'dominguez', pid:691176, name:'Jasson Domínguez', num:24, bt:'S/R', type:'H', group:'LF', placed:'pool', status:null},
+  {id:'grisham', pid:663757, name:'Trent Grisham', num:12, bt:'L/L', type:'H', group:'CF', placed:'pool', status:null},
+  {id:'sjones', pid:682987, name:'Spencer Jones', num:78, bt:'L/L', type:'H', group:'LF', placed:'pool', status:null},
+  {id:'judge', pid:592450, name:'Aaron Judge', num:99, bt:'R/R', type:'H', group:'RF', placed:'pool', status:null, hurt:true},
+  {id:'ramos', pid:671218, name:'Heliot Ramos', num:34, bt:'R/R', type:'H', group:'RF', placed:'pool', status:null},
+  {id:'schuemann', pid:680474, name:'Max Schuemann', num:30, bt:'R/R', type:'H', group:'LF', placed:'pool', status:null},
+
+  {id:'stanton', pid:519317, name:'Giancarlo Stanton', num:27, bt:'R/R', type:'H', group:'DH', placed:'pool', status:null, hurt:true},
+];
+
+let players = DEFAULTS.map((p,i)=>({...p, order:i*10}));
+let dragState = null;
+let lineupDragState = null;
+let lastSyncAt = null;
+const dropIndicator = document.createElement('div');
+dropIndicator.className = 'drop-indicator';
+const storageKey = teamId => `mlb_roster_state_v8_${teamId}`;
+
+// window.storage (Claude's own runtime key-value store) only exists inside
+// Claude's Artifact/Cowork surfaces. Opened as a plain downloaded file in a
+// regular browser tab (file:///...), it doesn't exist at all — every call
+// used to throw, land in a catch block, and silently do nothing, so nothing
+// ever actually saved between reloads or team switches in that context.
+// localStorage is the real, universal fallback: it's native to every
+// browser and persists a local file's state across reloads and tab closes,
+// so switching teams and coming back keeps each team's board intact.
+const hasNativeStorage = typeof window !== 'undefined' && window.storage
+  && typeof window.storage.get === 'function'
+  && typeof window.storage.set === 'function';
+
+async function storageGet(key){
+  if(hasNativeStorage){
+    try{ return await window.storage.get(key, false); }catch(e){ /* fall through */ }
+  }
+  try{
+    const raw = localStorage.getItem(key);
+    return raw == null ? null : { value: raw };
+  }catch(e){ return null; }
+}
+async function storageSet(key, value){
+  if(hasNativeStorage){
+    try{ await window.storage.set(key, value, false); return; }catch(e){ /* fall through */ }
+  }
+  try{ localStorage.setItem(key, value); }catch(e){ /* storage unavailable/full — nothing more we can do */ }
+}
+async function storageDelete(key){
+  if(hasNativeStorage){
+    try{ await window.storage.delete(key, false); return; }catch(e){ /* fall through */ }
+  }
+  try{ localStorage.removeItem(key); }catch(e){}
+}
+
+function applyTeamBranding(teamId){
+  const team = teamById(teamId);
+  document.documentElement.style.setProperty('--navy', team.primary);
+  document.documentElement.style.setProperty('--navy2', team.secondary);
+  const brandLogo = document.getElementById('brandLogo');
+  if(brandLogo){
+    brandLogo.innerHTML = `<span class="interlock-fallback">${team.abbr}</span>` +
+      `<img src="${logoURL(team.id)}" alt="${team.name}" onload="this.previousElementSibling.style.display='none';" onerror="this.remove();">`;
+  }
+  const sub = document.getElementById('brandSub');
+  if(sub) sub.textContent = `${team.name} — 40-man pool`;
+  const teamSelect = document.getElementById('teamSelect');
+  if(teamSelect) teamSelect.value = String(teamId);
+}
+
+const LAST_TEAM_KEY = 'mlb_roster_last_team';
+
+async function switchTeam(teamId){
+  currentTeamId = teamId;
+  storageSet(LAST_TEAM_KEY, String(teamId)); // so reloading the page returns to this team
+  lastSyncAt = null;
+  const syncNote = document.getElementById('syncNote');
+  if(syncNote) syncNote.textContent = 'Syncing…';
+  applyTeamBranding(teamId);
+  players = teamId === DEFAULT_TEAM_ID ? DEFAULTS.map((p,i)=>({...p, order:i*10})) : [];
+  lineups = {
+    RHP: Array.from({length:9}, ()=>({playerId:null, position:null})),
+    LHP: Array.from({length:9}, ()=>({playerId:null, position:null})),
+  };
+  await loadState();
+  render();
+  syncRosterFromAPI();
+}
+
+// Snapshot of whatever was saved for the CURRENTLY SELECTED team, set by
+// loadState(). Kept around (not just applied once) because for any team
+// other than the default seed team, `players` starts empty on switch and
+// only gets repopulated afterward by syncRosterFromAPI() — so a freshly
+// created player entry needs to check this snapshot for a previously-saved
+// placement instead of always defaulting to "pool", or every non-default
+// team's arrangement would silently reset each time you switched back to it.
+let savedPlayerState = null;
+
+function applySavedPlayerStateToExisting(){
+  if(!savedPlayerState) return;
+  if(savedPlayerState.players){
+    players.forEach(p=>{
+      const s = savedPlayerState.players[p.id];
+      if(s){
+        p.group = s.group;
+        p.placed = s.placed;
+        p.status = s.status || null;
+        p.hurt = !!s.hurt;
+        if(typeof s.order === 'number') p.order = s.order;
+      }
+    });
+  }
+  if(savedPlayerState.lineups){
+    ['RHP','LHP'].forEach(k=>{
+      if(Array.isArray(savedPlayerState.lineups[k]) && savedPlayerState.lineups[k].length === 9){
+        lineups[k] = savedPlayerState.lineups[k];
+      }
+    });
+  }
+}
+
+async function loadState(){
+  savedPlayerState = null;
+  try{
+    const res = await storageGet(storageKey(currentTeamId));
+    if(res && res.value){
+      savedPlayerState = JSON.parse(res.value);
+    }
+  }catch(e){
+    // no saved state yet, use defaults
+  }
+  // Manually-added players (not on the 40-man) have no DEFAULTS entry and
+  // never come back from the API sync, so — unlike everyone else — they
+  // have to be fully recreated from what we saved, not just patched.
+  if(savedPlayerState && Array.isArray(savedPlayerState.customPlayers)){
+    savedPlayerState.customPlayers.forEach(cp=>{
+      if(!players.find(p=>p.id===cp.id)){
+        players.push({...cp, pid:null, custom:true});
+      }
+    });
+  }
+  // Patches whichever players are already in memory right now (the default
+  // seed roster on first load, plus the custom players just recreated above).
+  // Anyone else who only exists in the saved snapshot — every player on a
+  // non-default team — gets picked up later, in syncRosterFromAPI(), at the
+  // moment their player object is created.
+  applySavedPlayerStateToExisting();
+}
+
+async function saveState(){
+  const map = {};
+  players.forEach(p=>{ map[p.id] = {group:p.group, placed:p.placed, status:p.status||null, hurt:!!p.hurt, order:p.order}; });
+  // Custom (not-on-the-40-man) players carry no DEFAULTS/API record to be
+  // recreated from later, so their full identity has to be saved too, not
+  // just their placement.
+  const customPlayers = players.filter(p=>p.custom).map(p=>({
+    id:p.id, name:p.name, num:p.num, bt:p.bt, type:p.type,
+    group:p.group, placed:p.placed, status:p.status||null, hurt:!!p.hurt, order:p.order
+  }));
+  const payload = JSON.stringify({players:map, lineups, customPlayers});
+  try{
+    await storageSet(storageKey(currentTeamId), payload);
+  }catch(e){
+    console.error('Could not save roster state', e);
+  }
+}
+
+function cycleStatus(id){
+  const p = players.find(pl=>pl.id===id);
+  if(!p) return;
+  const order = [null,'lock','bubble'];
+  const i = order.indexOf(p.status || null);
+  p.status = order[(i+1) % order.length];
+  saveState();
+  render();
+}
+
+function placePlayer(id, place, group, order){
+  const p = players.find(pl=>pl.id===id);
+  if(!p) return;
+  p.placed = place;
+  if(place === 'roster' && group){ p.group = group; }
+  if(typeof order === 'number') p.order = order;
+  saveState();
+  render();
+}
+
+function tileHTML(p){
+  const visual = p.status ? `label-${p.status}` : '';
+  const statusTitle = p.status === 'lock' ? 'Lock — click to set Bubble'
+                     : p.status === 'bubble' ? 'Bubble — click to clear'
+                     : 'No label — click to set Lock';
+  const nameBadges = p.hurt ? `<span class="hurt-badge" title="Currently injured">+</span>` : '';
+  const numPart = p.num ? `#${p.num} · ` : '';
+  const orgBadge = p.custom ? `<span class="org-badge" title="Not currently on the 40-man roster">Not 40-man</span>` : '';
+  const removeToggle = p.custom
+    ? `<div class="mini-toggle remove" data-toggle="remove" data-id="${p.id}" title="Remove this player">×</div>`
+    : '';
+  return `<div class="tile ${visual}" data-id="${p.id}">
+    <div class="info">
+      <div class="name"><span class="name-text" title="${p.name}">${p.name}</span>${nameBadges}${orgBadge}</div>
+      <div class="meta">${numPart}${p.bt}</div>
+    </div>
+    <div class="toggle-col">
+      <div class="mini-toggle status-dot ${p.status ? p.status : ''}" data-toggle="status" data-id="${p.id}" title="${statusTitle}"></div>
+      <div class="mini-toggle hurt ${p.hurt ? 'active' : ''}" data-toggle="hurt" data-id="${p.id}" title="${p.hurt ? 'Mark healthy' : 'Mark injured'}">+</div>
+      ${removeToggle}
+    </div>
+  </div>`;
+}
+
+async function syncRosterFromAPI(){
+  const syncNote = document.getElementById('syncNote');
+  if(syncNote) syncNote.textContent = 'Syncing…';
+  try{
+    const rosterRes = await fetch(`${API}/teams/${currentTeamId}/roster?rosterType=40Man`);
+    if(!rosterRes.ok) throw new Error('roster fetch failed: ' + rosterRes.status);
+    const rosterData = await rosterRes.json();
+    const rosterList = rosterData.roster || [];
+    if(rosterList.length === 0) throw new Error('empty roster response');
+
+    // One extra call to pick up bat/throw hands for anyone new.
+    let peopleById = {};
+    try{
+      const ids = rosterList.map(r=>r.person.id).join(',');
+      const peopleRes = await fetch(`${API}/people?personIds=${ids}`);
+      if(peopleRes.ok){
+        const peopleData = await peopleRes.json();
+        (peopleData.people || []).forEach(person=>{ peopleById[person.id] = person; });
+      }
+    }catch(e){ /* non-fatal — proceed without fresh bat/throw data */ }
+
+    let maxOrder = players.reduce((m,p)=>Math.max(m, p.order || 0), 0);
+
+    rosterList.forEach(entry=>{
+      const pid = entry.person && entry.person.id;
+      if(!pid) return;
+      const posAbbr = entry.position && entry.position.abbreviation;
+      const posType = entry.position && entry.position.type;
+      const statusCode = (entry.status && entry.status.code) || '';
+      const hurt = statusCode.startsWith('D'); // D7/D10/D15/D60 disabled-list codes
+      const detail = peopleById[pid];
+      const bt = detail
+        ? `${(detail.batSide && detail.batSide.code) || '?'}/${(detail.pitchHand && detail.pitchHand.code) || '?'}`
+        : null;
+      const type = posType === 'Pitcher' ? 'P' : 'H';
+      const defaultGroup = type === 'P' ? null : (POSITION_MAP[posAbbr] || null);
+
+      const existing = players.find(p=>p.pid === pid);
+      if(existing){
+        // Only refresh facts the API owns. Placement, order, and Lock/Bubble/Injured
+        // are the user's calls and are never overwritten by a sync.
+        if(entry.person.fullName) existing.name = entry.person.fullName;
+        if(entry.jerseyNumber) existing.num = entry.jerseyNumber;
+        if(bt) existing.bt = bt;
+        existing.hurt = hurt;
+      } else {
+        maxOrder += 10;
+        const newId = 'api_' + pid;
+        // If this player was previously placed/labeled by the user (most
+        // commonly: every player on a team you've switched away from and
+        // back to), restore that instead of dropping them back in the pool.
+        const saved = savedPlayerState && savedPlayerState.players && savedPlayerState.players[newId];
+        players.push({
+          id: newId, pid,
+          name: entry.person.fullName, num: entry.jerseyNumber || '', bt: bt || '',
+          type,
+          group: saved ? saved.group : defaultGroup,
+          placed: saved ? saved.placed : 'pool',
+          status: saved ? (saved.status || null) : null,
+          hurt, // injury status always reflects the live API, saved or not
+          order: saved && typeof saved.order === 'number' ? saved.order : maxOrder
+        });
+      }
+    });
+
+    // Anyone with a pid who is no longer in the live 40-man response has been
+    // traded, DFA'd, released, or outrighted off it — drop them from the board
+    // entirely rather than leaving a stale tile around. Manually-added players
+    // without a pid (there shouldn't be any) are left alone.
+    const currentPids = new Set(rosterList.map(entry=>entry.person && entry.person.id).filter(Boolean));
+    players = players.filter(p=>!p.pid || currentPids.has(p.pid));
+
+    saveState();
+    render();
+    lastSyncAt = new Date();
+  }catch(e){
+    console.error('Roster sync failed', e);
+  }finally{
+    if(syncNote){
+      syncNote.textContent = lastSyncAt
+        ? `Synced ${lastSyncAt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`
+        : 'Sync failed — using saved roster';
+    }
+  }
+}
+
+function render(){
+  // Final roster grid — split into Pitching Staff and Position Players so
+  // Relievers (routinely 8-10 deep) doesn't force every position column
+  // (usually 1-4 deep) into its own row and get stretched to match it.
+  const colHTML = col=>{
+    const inCol = players.filter(p=>p.placed==='roster' && p.group===col.key)
+                          .sort((a,b)=>(a.order??0)-(b.order??0));
+    return `<div class="roster-col">
+      <h3>${col.label} <span class="n">${inCol.length}</span></h3>
+      <div class="lane" data-place="roster" data-group="${col.key}">${inCol.map(tileHTML).join('')}</div>
+    </div>`;
+  };
+  const pitchGrid = document.getElementById('rosterGridPitch');
+  pitchGrid.innerHTML = ROSTER_COLUMNS.filter(c=>c.key==='SP'||c.key==='RP').map(colHTML).join('');
+  const hitGrid = document.getElementById('rosterGridHit');
+  hitGrid.innerHTML = ROSTER_COLUMNS.filter(c=>c.key!=='SP'&&c.key!=='RP').map(colHTML).join('');
+
+  // Pool (pitchers left, position players right)
+  document.querySelectorAll('.pool-lane').forEach(lane=>{
+    const type = lane.dataset.type;
+    const inLane = players.filter(p=>p.placed==='pool' && p.type===type)
+                           .sort((a,b)=>(a.order??0)-(b.order??0));
+    lane.innerHTML = inLane.map(tileHTML).join('');
+  });
+
+  // Injured status is now just a toggle on each tile — no separate section to render.
+
+  // Sidebar stats
+  const rosterCount = players.filter(p=>p.placed==='roster').length;
+  const pitcherCount = players.filter(p=>p.placed==='roster' && p.type==='P').length;
+  const hitterCount = players.filter(p=>p.placed==='roster' && p.type==='H').length;
+  const lockCount = players.filter(p=>p.status==='lock').length;
+  const spotsOpen = 26 - lockCount;
+
+  const totalEl = document.getElementById('rosterTotal');
+  totalEl.textContent = `${rosterCount}/26`;
+  totalEl.classList.remove('over','exact');
+  if(rosterCount === 26) totalEl.classList.add('exact');
+  if(rosterCount > 26) totalEl.classList.add('over');
+
+  document.getElementById('typeSplit').textContent =
+    `${pitcherCount} Pitcher${pitcherCount===1?'':'s'} · ${hitterCount} Position Player${hitterCount===1?'':'s'}`;
+
+  document.getElementById('lockSummary').textContent =
+    `${lockCount} locked · ${Math.max(spotsOpen,0)} spot${spotsOpen===1?'':'s'} up for grabs`;
+
+  document.getElementById('breakdown').innerHTML = ROSTER_COLUMNS.map(col=>{
+    const onRoster = players.filter(p=>p.placed==='roster' && p.group===col.key).length;
+    const locked = players.filter(p=>p.group===col.key && p.status==='lock').length;
+    return `<div class="breakdown-row">
+      <span class="gcount">${onRoster}</span>
+      <span class="glabel">${col.label}</span>
+      <span class="glock">${locked} locked</span>
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('.tile').forEach(attachTileEvents);
+  renderLineups();
+  if(typeof updateStickyOffsets === 'function') requestAnimationFrame(updateStickyOffsets);
+}
+
+function eligibleLineupPlayers(){
+  return players.filter(p=>p.type==='H' && p.placed==='roster');
+}
+
+// Bats side is the first letter of our "bats/throws" string, e.g. "L/R" -> "L".
+// MLB's switch-hitter code is "S".
+function battingHand(p){
+  if(!p || !p.bt) return null;
+  const h = p.bt.split('/')[0];
+  return ['L','R','S'].includes(h) ? h : null;
+}
+
+function validateLineup(key){
+  const arr = lineups[key];
+  const filledSlots = arr.filter(s=>s.playerId);
+  const positioned = filledSlots.filter(s=>s.position);
+  const posCounts = {};
+  positioned.forEach(s=>{ posCounts[s.position] = (posCounts[s.position]||0) + 1; });
+  const duplicatePositions = Object.keys(posCounts).filter(pos=>posCounts[pos] > 1);
+  const missingPosition = filledSlots.length - positioned.length; // player picked but no position set
+  const covered = new Set(positioned.map(s=>s.position));
+  const uncoveredPositions = LINEUP_POSITIONS.filter(pos=>!covered.has(pos));
+  const isFull = filledSlots.length === 9;
+  return { duplicatePositions, missingPosition, uncoveredPositions, isFull };
+}
+
+function renderLineupWarnings(key){
+  const el = document.getElementById('lineupWarnings_' + key);
+  if(!el) return;
+  const { duplicatePositions, missingPosition, uncoveredPositions, isFull } = validateLineup(key);
+  const msgs = [];
+  if(duplicatePositions.length){
+    msgs.push(`Two players are both listed at ${duplicatePositions.join(', ')} — only one can play there.`);
+  }
+  if(missingPosition){
+    msgs.push(`${missingPosition} player${missingPosition===1?'':'s'} in the lineup ${missingPosition===1?"doesn't":"don't"} have a position picked.`);
+  }
+  if(isFull && uncoveredPositions.length){
+    msgs.push(`Nobody's listed at ${uncoveredPositions.join(', ')}.`);
+  }
+  el.innerHTML = msgs.length
+    ? `<div class="lineup-warning">⚠ ${msgs.join(' ')}</div>`
+    : '';
+}
+
+function renderLineupCard(key){
+  const eligible = eligibleLineupPlayers();
+  const active = lineups[key];
+  const usedIds = active.map(s=>s.playerId);
+  const rowsEl = document.getElementById('lineupRows_' + key);
+  if(!rowsEl) return;
+
+  rowsEl.innerHTML = active.map((slot, i)=>{
+    const p = players.find(pl=>pl.id===slot.playerId);
+    const hand = battingHand(p);
+    const playerOptions = eligible
+      .filter(pl=>pl.id===slot.playerId || !usedIds.includes(pl.id))
+      .map(pl=>`<option value="${pl.id}" ${pl.id===slot.playerId?'selected':''}>${pl.name}</option>`)
+      .join('');
+    const posOptions = LINEUP_POSITIONS
+      .map(pos=>`<option value="${pos}" ${pos===slot.position?'selected':''}>${pos}</option>`)
+      .join('');
+    return `<div class="lineup-row">
+      <span class="lineup-order">${i+1}</span>
+      <select class="lineup-player-select" data-slot="${i}" data-lineup="${key}">
+        <option value="">— empty —</option>
+        ${playerOptions}
+      </select>
+      <span class="bat-hand-badge hand-${hand || 'none'}" title="${hand ? 'Bats ' + hand : 'Bats unknown'}">${hand || '–'}</span>
+      <select class="lineup-position-select" data-slot="${i}" data-lineup="${key}">
+        <option value="">Pos</option>
+        ${posOptions}
+      </select>
+      <div class="lineup-row-controls">
+        <button class="lineup-up" data-slot="${i}" data-lineup="${key}" ${i===0?'disabled':''} title="Move up">▲</button>
+        <button class="lineup-down" data-slot="${i}" data-lineup="${key}" ${i===8?'disabled':''} title="Move down">▼</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  rowsEl.querySelectorAll('.lineup-player-select').forEach(sel=>{
+    sel.addEventListener('change', e=>{
+      const i = +e.target.dataset.slot;
+      lineups[key][i].playerId = e.target.value || null;
+      const p = players.find(pl=>pl.id===e.target.value);
+      if(p && LINEUP_POSITIONS.includes(p.group)) lineups[key][i].position = p.group;
+      saveState();
+      renderLineups();
+    });
+  });
+  rowsEl.querySelectorAll('.lineup-position-select').forEach(sel=>{
+    sel.addEventListener('change', e=>{
+      const i = +e.target.dataset.slot;
+      lineups[key][i].position = e.target.value || null;
+      saveState();
+      renderLineups();
+    });
+  });
+  rowsEl.querySelectorAll('.lineup-up').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const i = +e.currentTarget.dataset.slot;
+      const arr = lineups[key];
+      [arr[i-1], arr[i]] = [arr[i], arr[i-1]];
+      saveState();
+      renderLineups();
+    });
+  });
+  rowsEl.querySelectorAll('.lineup-down').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const i = +e.currentTarget.dataset.slot;
+      const arr = lineups[key];
+      [arr[i+1], arr[i]] = [arr[i], arr[i+1]];
+      saveState();
+      renderLineups();
+    });
+  });
+  rowsEl.querySelectorAll('.lineup-order').forEach(handle=>{
+    handle.addEventListener('pointerdown', onLineupOrderPointerDown);
+  });
+  renderLineupWarnings(key);
+}
+
+function computeLineupInsertIndex(rowsEl, y, excludeRow){
+  const rows = [...rowsEl.querySelectorAll(':scope > .lineup-row')].filter(r=>r!==excludeRow);
+  for(let i=0;i<rows.length;i++){
+    const r = rows[i].getBoundingClientRect();
+    if(y < r.top + r.height/2) return i;
+  }
+  return rows.length;
+}
+
+function onLineupOrderPointerDown(e){
+  const handle = e.currentTarget;
+  const row = handle.closest('.lineup-row');
+  const rowsEl = handle.closest('.lineup-rows');
+  lineupDragState = {
+    key: handle.dataset.lineup,
+    slot: +handle.dataset.slot,
+    handle, row, rowsEl,
+    startX: e.clientX, startY: e.clientY,
+    isDragging: false
+  };
+  document.addEventListener('pointermove', onLineupOrderPointerMove);
+  document.addEventListener('pointerup', onLineupOrderPointerUp);
+}
+
+function onLineupOrderPointerMove(e){
+  if(!lineupDragState) return;
+  const dx = e.clientX - lineupDragState.startX;
+  const dy = e.clientY - lineupDragState.startY;
+  if(!lineupDragState.isDragging && Math.hypot(dx,dy) > 6){
+    lineupDragState.isDragging = true;
+    lineupDragState.row.classList.add('dragging');
+    lineupDragState.handle.classList.add('dragging');
+  }
+  if(lineupDragState.isDragging){
+    e.preventDefault();
+    const insertIndex = computeLineupInsertIndex(lineupDragState.rowsEl, e.clientY, lineupDragState.row);
+    dropIndicator.className = 'drop-indicator horizontal';
+    const rows = [...lineupDragState.rowsEl.querySelectorAll(':scope > .lineup-row')].filter(r=>r!==lineupDragState.row);
+    if(insertIndex >= rows.length){
+      lineupDragState.rowsEl.appendChild(dropIndicator);
+    } else {
+      lineupDragState.rowsEl.insertBefore(dropIndicator, rows[insertIndex]);
+    }
+  }
+}
+
+function onLineupOrderPointerUp(e){
+  if(!lineupDragState) return;
+  const {key, slot, row, handle, rowsEl, isDragging} = lineupDragState;
+  document.removeEventListener('pointermove', onLineupOrderPointerMove);
+  document.removeEventListener('pointerup', onLineupOrderPointerUp);
+  hideDropIndicator();
+  row.classList.remove('dragging');
+  handle.classList.remove('dragging');
+
+  if(isDragging){
+    const targetIndex = computeLineupInsertIndex(rowsEl, e.clientY, row);
+    const arr = lineups[key];
+    const [moved] = arr.splice(slot, 1);
+    arr.splice(targetIndex, 0, moved);
+    saveState();
+    renderLineups();
+  }
+  lineupDragState = null;
+}
+
+function renderLineups(){
+  const eligible = eligibleLineupPlayers();
+  const eligibleIds = new Set(eligible.map(p=>p.id));
+
+  // If a rostered hitter got benched/traded away, clear them out of any lineup slot.
+  ['RHP','LHP'].forEach(k=>{
+    lineups[k].forEach(slot=>{
+      if(slot.playerId && !eligibleIds.has(slot.playerId)) slot.playerId = null;
+    });
+  });
+
+  renderLineupCard('RHP');
+  renderLineupCard('LHP');
+  buildFullExport();
+}
+
+function buildFullExport(){
+  const exportEl = document.getElementById('fullExport');
+  if(!exportEl) return;
+
+  const groupPlayers = key => players.filter(p=>p.placed==='roster' && p.group===key)
+                                      .sort((a,b)=>(a.order??0)-(b.order??0));
+  const throwsLeft = p => (p.bt || '').split('/')[1] === 'L';
+
+  const boxBody = (key, list) => {
+    if(!list.length) return `<div class="fx-roster-empty">—</div>`;
+    const isPitcherBox = key === 'SP' || key === 'RP';
+    return list.map(p=>{
+      const tag = (isPitcherBox && throwsLeft(p)) ? ' (L)' : '';
+      return `<div class="fx-roster-player">${p.name}${tag}</div>`;
+    }).join('');
+  };
+
+  const fieldBox = (key, label) => {
+    const list = groupPlayers(key);
+    return `<div class="fx-pos-box fx-field-box fx-pos-${key}">
+      <div class="fx-pos-box-title">${label}</div>
+      <div class="fx-pos-box-body">${boxBody(key, list)}</div>
+    </div>`;
+  };
+
+  const sideBox = (key, label) => {
+    const list = groupPlayers(key);
+    return `<div class="fx-pos-box fx-pos-${key}">
+      <div class="fx-pos-box-title">${label}</div>
+      <div class="fx-pos-box-body">${boxBody(key, list)}</div>
+    </div>`;
+  };
+
+  const diamondHtml = `
+    <div class="fx-roster-diamond-wrap">
+      <div class="fx-field">
+        <div class="fx-diamond"></div>
+        ${fieldBox('LF','LF')}
+        ${fieldBox('CF','CF')}
+        ${fieldBox('RF','RF')}
+        ${fieldBox('SS','SS')}
+        ${fieldBox('2B','2B')}
+        ${fieldBox('3B','3B')}
+        ${fieldBox('1B','1B')}
+        ${fieldBox('C','C')}
+        ${fieldBox('DH','DH')}
+      </div>
+      <div class="fx-side-stack">
+        ${sideBox('SP','Starters')}
+        ${sideBox('RP','Relievers')}
+      </div>
+    </div>
+  `;
+
+  const lineupHtml = key => {
+    const rows = lineups[key].map((slot,i)=>{
+      const p = players.find(pl=>pl.id===slot.playerId);
+      if(!p){
+        return `<div class="fx-lineup-row">
+          <span class="fx-lineup-order">${i+1}</span>
+          <span class="fx-lineup-name fx-lineup-empty">—</span>
+        </div>`;
+      }
+      const hand = battingHand(p);
+      return `<div class="fx-lineup-row">
+        <span class="fx-lineup-order">${i+1}</span>
+        <span class="fx-hand-badge hand-${hand || 'none'}">${hand || '–'}</span>
+        <span class="fx-lineup-name">${p.name}</span>
+        <span class="fx-lineup-pos">${slot.position || '—'}</span>
+      </div>`;
+    }).join('');
+    return `<div class="fx-lineup">
+      <div class="fx-lineup-title">vs ${key}</div>
+      ${rows}
+    </div>`;
+  };
+
+  const team = teamById(currentTeamId);
+  exportEl.innerHTML = `
+    <div class="fx-header">
+      <div class="fx-header-row">
+        <div class="fx-team-logo"><img src="${logoURL(team.id)}" alt="${team.name}" onerror="this.remove();"></div>
+        <div>
+          <div class="team">${team.name}</div>
+          <div class="title">Final 26-Man Roster &amp; Lineups</div>
+        </div>
+      </div>
+    </div>
+    <div class="fx-section-title">Final 26-Man Roster</div>
+    ${diamondHtml}
+    <div class="fx-section-title">Lineups</div>
+    <div class="fx-lineups">
+      ${lineupHtml('RHP')}
+      ${lineupHtml('LHP')}
+    </div>
+  `;
+}
+
+function toggleHurt(id){
+  const p = players.find(pl=>pl.id===id);
+  if(!p) return;
+  p.hurt = !p.hurt;
+  saveState();
+  render();
+}
+
+// Only ever called on manually-added, not-on-the-40-man players — there's no
+// "×" control on anyone who came from DEFAULTS or the live API sync, since
+// removing them would just have them reappear on the next sync anyway.
+function removePlayer(id){
+  const idx = players.findIndex(pl=>pl.id===id);
+  if(idx === -1) return;
+  if(!confirm(`Remove ${players[idx].name} from the board? This can't be undone — you'd need to add them again.`)) return;
+  players.splice(idx, 1);
+  saveState();
+  render();
+}
+
+function attachTileEvents(tile){
+  tile.setAttribute('draggable', 'false');
+  tile.addEventListener('pointerdown', onPointerDown);
+  tile.querySelectorAll('.mini-toggle').forEach(btn=>{
+    btn.addEventListener('pointerdown', e=>{ e.stopPropagation(); });
+    btn.addEventListener('click', e=>{
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      if(btn.dataset.toggle === 'status') cycleStatus(id);
+      else if(btn.dataset.toggle === 'hurt') toggleHurt(id);
+      else if(btn.dataset.toggle === 'remove') removePlayer(id);
+    });
+  });
+}
+
+function onPointerDown(e){
+  if(e.button !== undefined && e.button !== 0) return; // left-click / primary touch only
+  const tile = e.currentTarget;
+  const id = tile.dataset.id;
+  const rect = tile.getBoundingClientRect();
+  dragState = {
+    id, tile,
+    startX: e.clientX, startY: e.clientY,
+    offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top,
+    width: rect.width,
+    isDragging: false
+  };
+  document.addEventListener('pointermove', onPointerMove);
+  document.addEventListener('pointerup', onPointerUp);
+  document.addEventListener('pointercancel', onPointerUp);
+}
+
+function onPointerMove(e){
+  if(!dragState) return;
+  const dx = e.clientX - dragState.startX;
+  const dy = e.clientY - dragState.startY;
+  if(!dragState.isDragging && Math.hypot(dx,dy) > 6){
+    dragState.isDragging = true;
+    const t = dragState.tile;
+    t.classList.add('dragging');
+    t.style.position = 'fixed';
+    t.style.width = dragState.width + 'px';
+    t.style.zIndex = '1000';
+    t.style.pointerEvents = 'none';
+    document.body.appendChild(t);
+  }
+  if(dragState.isDragging){
+    e.preventDefault();
+    dragState.tile.style.left = (e.clientX - dragState.offsetX) + 'px';
+    dragState.tile.style.top = (e.clientY - dragState.offsetY) + 'px';
+    document.querySelectorAll('.hover').forEach(l=>l.classList.remove('hover'));
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const lane = el && el.closest && el.closest('[data-place]');
+    if(lane){
+      lane.classList.add('hover');
+      const insertIndex = computeInsertIndex(lane, e.clientX, e.clientY);
+      showDropIndicator(lane, insertIndex);
+    } else {
+      hideDropIndicator();
+    }
+  }
+}
+
+function showDropIndicator(lane, insertIndex){
+  const isPool = lane.classList.contains('pool-lane');
+  dropIndicator.className = 'drop-indicator ' + (isPool ? 'vertical' : 'horizontal');
+  const tiles = [...lane.querySelectorAll(':scope > .tile')];
+  if(insertIndex >= tiles.length){
+    lane.appendChild(dropIndicator);
+  } else {
+    lane.insertBefore(dropIndicator, tiles[insertIndex]);
+  }
+}
+
+function hideDropIndicator(){
+  if(dropIndicator.parentNode) dropIndicator.parentNode.removeChild(dropIndicator);
+}
+
+function computeInsertIndex(lane, x, y){
+  const tiles = [...lane.querySelectorAll(':scope > .tile')];
+  for(let i=0;i<tiles.length;i++){
+    const r = tiles[i].getBoundingClientRect();
+    const midX = r.left + r.width/2;
+    const midY = r.top + r.height/2;
+    if(y < midY || (y < r.bottom && x < midX)){
+      return i;
+    }
+  }
+  return tiles.length;
+}
+
+function computeOrderForInsert(lane, insertIndex){
+  const list = [...lane.querySelectorAll(':scope > .tile')]
+    .map(t=>players.find(p=>p.id===t.dataset.id))
+    .filter(Boolean);
+  if(list.length===0) return 0;
+  if(insertIndex<=0) return list[0].order - 1;
+  if(insertIndex>=list.length) return list[list.length-1].order + 1;
+  return (list[insertIndex-1].order + list[insertIndex].order)/2;
+}
+
+function onPointerUp(e){
+  if(!dragState) return;
+  const {id, tile, isDragging} = dragState;
+  document.removeEventListener('pointermove', onPointerMove);
+  document.removeEventListener('pointerup', onPointerUp);
+  document.removeEventListener('pointercancel', onPointerUp);
+
+  if(isDragging){
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const lane = el && el.closest && el.closest('[data-place]');
+    let insertIndex = null, newOrder;
+    if(lane) insertIndex = computeInsertIndex(lane, e.clientX, e.clientY);
+    hideDropIndicator();
+    // the dragged tile was moved to document.body while floating — remove that
+    // orphaned node now; render() below rebuilds a fresh tile in the right spot.
+    if(tile.parentNode) tile.parentNode.removeChild(tile);
+    if(lane){
+      newOrder = computeOrderForInsert(lane, insertIndex);
+      placePlayer(id, lane.dataset.place, lane.dataset.group, newOrder);
+    } else {
+      render();
+    }
+  }
+  dragState = null;
+}
+
+document.getElementById('resetBtn').addEventListener('click', async ()=>{
+  if(!confirm('Reset the board back to the default roster? This clears your saved placements, labels, and any manually-added players.')) return;
+  players = currentTeamId === DEFAULT_TEAM_ID ? DEFAULTS.map((p,i)=>({...p, order:i*10})) : [];
+  savedPlayerState = null; // otherwise the next sync would restore what we just cleared
+  try{ await storageDelete(storageKey(currentTeamId)); }catch(e){}
+  render();
+  syncRosterFromAPI();
+});
+
+document.getElementById('syncBtn').addEventListener('click', ()=>{ syncRosterFromAPI(); });
+
+function clearAddPlayerForm(){
+  document.getElementById('apName').value = '';
+  document.getElementById('apNum').value = '';
+  document.getElementById('apType').value = 'H';
+  document.getElementById('apBats').value = 'R';
+  document.getElementById('apThrows').value = 'R';
+}
+
+document.getElementById('addPlayerBtn').addEventListener('click', ()=>{
+  const form = document.getElementById('addPlayerForm');
+  form.hidden = !form.hidden;
+  if(!form.hidden) document.getElementById('apName').focus();
+});
+
+document.getElementById('apCancel').addEventListener('click', ()=>{
+  document.getElementById('addPlayerForm').hidden = true;
+  clearAddPlayerForm();
+});
+
+document.getElementById('apSubmit').addEventListener('click', ()=>{
+  const name = document.getElementById('apName').value.trim();
+  if(!name){ alert('Enter a player name first.'); return; }
+  const num = document.getElementById('apNum').value.trim();
+  const type = document.getElementById('apType').value; // 'H' or 'P'
+  const bats = document.getElementById('apBats').value;
+  const throwsHand = document.getElementById('apThrows').value;
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'player';
+  const maxOrder = players.reduce((m,p)=>Math.max(m, p.order || 0), 0);
+  players.push({
+    id: `custom_${slug}_${Date.now()}`, pid: null,
+    name, num, bt: `${bats}/${throwsHand}`,
+    type, group: null, placed: 'pool', status: null, hurt: false,
+    order: maxOrder + 10, custom: true
+  });
+  saveState();
+  render();
+  document.getElementById('addPlayerForm').hidden = true;
+  clearAddPlayerForm();
+});
+
+document.getElementById('apName').addEventListener('keydown', e=>{
+  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('apSubmit').click(); }
+});
+
+const BROADCAST_KEY = 'mlb_roster_broadcast_mode';
+const SPLIT_KEY = 'mlb_roster_split_mode';
+
+// --toolbar-h: height of the sticky toolbar alone.
+// --pinned-h: everything currently pinned to the top (toolbar, plus the stats
+// bar too once Broadcast Mode makes it sticky) — Split View's pool column
+// starts sticking right below whichever of those is actually stuck in place.
+function updateStickyOffsets(){
+  const tb = document.querySelector('.toolbar');
+  const toolbarH = tb ? tb.offsetHeight : 54;
+  document.documentElement.style.setProperty('--toolbar-h', toolbarH + 'px');
+  let pinnedH = toolbarH;
+  if(document.body.classList.contains('broadcast')){
+    const statsBar = document.querySelector('.stats-bar');
+    if(statsBar) pinnedH += statsBar.offsetHeight;
+  }
+  document.documentElement.style.setProperty('--pinned-h', pinnedH + 'px');
+}
+
+function setBroadcastMode(on){
+  document.body.classList.toggle('broadcast', on);
+  const btn = document.getElementById('broadcastBtn');
+  if(btn){
+    btn.classList.toggle('on', on);
+    btn.textContent = on ? '📺 Exit Broadcast Mode' : '📺 Broadcast Mode';
+  }
+  storageSet(BROADCAST_KEY, on ? '1' : '0');
+  // Toolbar/stats-bar sizes shift between modes — recompute after the class
+  // change lands so anything pinned sits flush instead of overlapping or gapping.
+  requestAnimationFrame(updateStickyOffsets);
+}
+document.getElementById('broadcastBtn').addEventListener('click', ()=>{
+  setBroadcastMode(!document.body.classList.contains('broadcast'));
+});
+
+function setSplitMode(on){
+  document.body.classList.toggle('split', on);
+  const btn = document.getElementById('splitBtn');
+  if(btn){
+    btn.classList.toggle('on', on);
+    btn.textContent = on ? '🪟 Exit Split View' : '🪟 Split View';
+  }
+  storageSet(SPLIT_KEY, on ? '1' : '0');
+  requestAnimationFrame(updateStickyOffsets);
+}
+document.getElementById('splitBtn').addEventListener('click', ()=>{
+  setSplitMode(!document.body.classList.contains('split'));
+});
+
+window.addEventListener('resize', updateStickyOffsets);
+
+let previewDataUrl = null;
+
+function openPreviewModal(dataUrl){
+  previewDataUrl = dataUrl;
+  document.getElementById('previewImg').src = dataUrl;
+  document.getElementById('previewOverlay').classList.add('open');
+}
+
+function closePreviewModal(){
+  document.getElementById('previewOverlay').classList.remove('open');
+}
+
+document.getElementById('downloadLineupBtn').addEventListener('click', ()=>{
+  const exportEl = document.getElementById('fullExport');
+  const btn = document.getElementById('downloadLineupBtn');
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = 'Preparing image…';
+  html2canvas(exportEl, {backgroundColor:'#ffffff', scale:2}).then(canvas=>{
+    openPreviewModal(canvas.toDataURL('image/png'));
+  }).catch(e=>{
+    console.error('Could not generate roster/lineups image', e);
+    alert('Something went wrong generating the image — please try again.');
+  }).finally(()=>{
+    btn.disabled = false;
+    btn.textContent = originalText;
+  });
+});
+
+document.getElementById('previewDownloadBtn').addEventListener('click', ()=>{
+  if(!previewDataUrl) return;
+  const link = document.createElement('a');
+  link.download = 'yankees-roster-and-lineups.png';
+  link.href = previewDataUrl;
+  link.click();
+});
+
+document.getElementById('previewCloseBtn').addEventListener('click', closePreviewModal);
+document.getElementById('previewOverlay').addEventListener('click', e=>{
+  if(e.target.id === 'previewOverlay') closePreviewModal();
+});
+
+(async function init(){
+  // Reopening the page (or just reloading it) should pick up wherever you
+  // left off, not always reset to the Yankees — restore the last team
+  // BEFORE building the dropdown or touching `players`, same as switchTeam()
+  // does when switching live.
+  try{
+    const tres = await storageGet(LAST_TEAM_KEY);
+    const savedId = tres && tres.value ? parseInt(tres.value, 10) : null;
+    if(savedId && teamById(savedId).id === savedId && savedId !== DEFAULT_TEAM_ID){
+      currentTeamId = savedId;
+      players = [];
+    }
+  }catch(e){}
+
+  const teamSelect = document.getElementById('teamSelect');
+  if(teamSelect){
+    teamSelect.innerHTML = TEAMS.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+    teamSelect.addEventListener('change', e=>{ switchTeam(+e.target.value); });
+  }
+  applyTeamBranding(currentTeamId);
+  try{
+    const bres = await storageGet(BROADCAST_KEY);
+    if(bres && bres.value === '1') setBroadcastMode(true);
+  }catch(e){}
+  try{
+    const sres = await storageGet(SPLIT_KEY);
+    if(sres && sres.value != null){
+      // Respect whatever this browser last chose, including an explicit "off".
+      if(sres.value === '1') setSplitMode(true);
+    } else if(window.matchMedia('(min-width: 900px)').matches){
+      // No saved preference yet (first visit on this device) — default to
+      // Split View on a desktop-sized window. Mobile's own layout ignores
+      // Split View regardless, so there's no need to gate this further.
+      setSplitMode(true);
+    }
+  }catch(e){}
+  await loadState();
+  render();
+  updateStickyOffsets();
+  syncRosterFromAPI();
+  setInterval(syncRosterFromAPI, 60 * 60 * 1000); // every hour
+})();
+</script>
+</body>
+</html>
