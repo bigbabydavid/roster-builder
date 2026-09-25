@@ -57,12 +57,12 @@
     padding:22px 30px; border-bottom-width:6px;
     border-top-left-radius:18px; border-top-right-radius:18px;
   }
-  /* Toolbar is already sticky at top:0. In Broadcast Mode the stats bar (roster
-     count / pitcher-hitter split / position breakdown) pins right beneath it, so
-     the key numbers stay on screen the whole time you're dragging players around
-     lower on the page. */
+  /* Header + toolbar are already pinned above this. In Broadcast Mode the
+     stats bar (roster count / pitcher-hitter split / position breakdown)
+     pins right beneath both of them, so the key numbers stay on screen the
+     whole time you're dragging players around lower on the page. */
   body.broadcast .stats-bar{
-    position:sticky; top:var(--toolbar-h, 54px); z-index:40;
+    position:sticky; top:calc(var(--header-h, 64px) + var(--toolbar-h, 54px)); z-index:40;
   }
   body.broadcast .brand .interlock{ width:60px; height:60px; font-size:38px; }
   body.broadcast .brand h1{ font-size:25px; letter-spacing:0.8px; }
@@ -115,6 +115,11 @@
     flex-wrap:wrap;
     gap:10px;
     border-bottom:4px solid var(--bubble);
+    /* Pinned right alongside the toolbar below it, in every mode and at every
+       size — see .toolbar's top offset, which leaves exactly this much room. */
+    position:sticky;
+    top:0;
+    z-index:60;
   }
   .brand{display:flex; align-items:center; gap:12px;}
   .brand .interlock{
@@ -158,7 +163,7 @@
     background:white;
     border-bottom:1px solid #dfe3e8;
     position:sticky;
-    top:0;
+    top:var(--header-h, 64px);
     z-index:50;
   }
   .legend{display:flex; gap:12px; flex-wrap:wrap; font-size:11px;}
@@ -676,13 +681,23 @@
     .toolbar{ flex-direction:column; align-items:stretch; padding:10px 16px; gap:10px; }
     /* The wrapping div still carries its own inline flex styles (harmless
        on desktop), so this overrides them directly rather than fighting
-       them with a competing display mode. */
-    .toolbar-actions{ flex-direction:column !important; align-items:stretch !important; gap:8px !important; }
-    .toolbar-actions .team-picker{ font-size:13px; }
+       them with a competing display mode. Broadcast Mode and Split View
+       both assume desktop-width room to work with (a clean wide streaming
+       frame; two panes side by side) that the stacked mobile layout doesn't
+       have, so both buttons are hidden here rather than shown doing nothing
+       useful — that also leaves Sync Now and Reset free to share one row
+       instead of each stealing a full one. */
+    .toolbar-actions{
+      display:flex !important; flex-direction:row !important; flex-wrap:wrap !important;
+      align-items:stretch !important; gap:8px !important;
+    }
+    .toolbar-actions .team-picker{ flex:1 1 100%; font-size:13px; }
     #teamSelect{ width:100%; max-width:none; flex:1; }
-    #saveNote{ font-size:10.5px; }
-    #syncNote{ font-size:10.5px; }
-    .toolbar-actions button{ width:100%; padding:12px 10px; font-size:13px; }
+    #saveNote{ flex:1 1 100%; font-size:10.5px; }
+    #syncNote{ flex:1 1 100%; font-size:10.5px; }
+    #broadcastBtn, #splitBtn{ display:none; }
+    .toolbar-actions button{ padding:12px 10px; font-size:13px; }
+    #syncBtn, #resetBtn{ flex:1 1 calc(50% - 4px); }
     .btn-full{ display:none; }
     .btn-short{ display:inline; }
 
@@ -695,7 +710,13 @@
 
     .roster-section, .pool-section, .lineup-section{ padding-left:16px; padding-right:16px; }
     .roster-grid, .roster-grid-pitch{ grid-template-columns:1fr; }
-    .tile{ padding:10px 12px; font-size:13px; flex-wrap:wrap; }
+    /* Desktop's touch-action:none is what lets the pointer-drag JS take over
+       every touch that starts on a tile — great for precise drag-and-drop,
+       but it also swallows an ordinary finger-swipe meant to scroll the page
+       past a tile. pan-y hands vertical scrolling back to the browser; the
+       "+ Add Player" spot buttons and tapping a tile (see JS) cover moving
+       players around instead of dragging on this size screen. */
+    .tile{ padding:10px 12px; font-size:13px; flex-wrap:wrap; touch-action:pan-y; }
     .tile .meta{ font-size:10.5px; }
     .mini-toggle{ width:22px; height:22px; font-size:11px; }
     .toggle-col{ gap:6px; }
@@ -1771,7 +1792,11 @@ function onPointerDown(e){
     startX: e.clientX, startY: e.clientY,
     offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top,
     width: rect.width,
-    isDragging: false
+    isDragging: false,
+    moved: false,
+    // Decided once, at the start of the gesture, so a mid-drag resize can't
+    // flip behavior partway through.
+    mobile: window.matchMedia('(max-width:768px)').matches
   };
   document.addEventListener('pointermove', onPointerMove);
   document.addEventListener('pointerup', onPointerUp);
@@ -1782,6 +1807,14 @@ function onPointerMove(e){
   if(!dragState) return;
   const dx = e.clientX - dragState.startX;
   const dy = e.clientY - dragState.startY;
+  if(dragState.mobile){
+    // Don't hijack the gesture at all here — .tile's touch-action:pan-y (see
+    // CSS) already hands vertical scrolling straight to the browser. Just
+    // remember whether this turned into real movement, so onPointerUp below
+    // can tell a scroll/swipe apart from an actual tap.
+    if(Math.hypot(dx,dy) > 8) dragState.moved = true;
+    return;
+  }
   if(!dragState.isDragging && Math.hypot(dx,dy) > 6){
     dragState.isDragging = true;
     const t = dragState.tile;
@@ -1849,7 +1882,7 @@ function computeOrderForInsert(lane, insertIndex){
 
 function onPointerUp(e){
   if(!dragState) return;
-  const {id, tile, isDragging} = dragState;
+  const {id, tile, isDragging, mobile, moved} = dragState;
   document.removeEventListener('pointermove', onPointerMove);
   document.removeEventListener('pointerup', onPointerUp);
   document.removeEventListener('pointercancel', onPointerUp);
@@ -1869,9 +1902,11 @@ function onPointerUp(e){
     } else {
       render();
     }
-  } else if(window.matchMedia('(max-width:768px)').matches){
-    // A tap that never turned into a drag — on a phone/tablet, that's the
-    // signal to pop up a "Move to…" list instead of requiring a precise drag.
+  } else if(mobile && !moved && e.type === 'pointerup'){
+    // A genuine tap — finger came up in roughly the same spot it went down,
+    // with no scroll in between (a real scroll ends in 'pointercancel', which
+    // this deliberately excludes). That's the signal to pop up a "Move to…"
+    // list instead of requiring a precise drag.
     openMovePopupForTile(id);
   }
   dragState = null;
@@ -1935,15 +1970,19 @@ document.getElementById('apName').addEventListener('keydown', e=>{
 const BROADCAST_KEY = 'mlb_roster_broadcast_mode';
 const SPLIT_KEY = 'mlb_roster_split_mode';
 
-// --toolbar-h: height of the sticky toolbar alone.
-// --pinned-h: everything currently pinned to the top (toolbar, plus the stats
-// bar too once Broadcast Mode makes it sticky) — Split View's pool column
-// starts sticking right below whichever of those is actually stuck in place.
+// --header-h: height of the sticky brand header alone.
+// --toolbar-h: height of the sticky toolbar alone (it pins right below the header).
+// --pinned-h: everything currently pinned to the top (header + toolbar, plus
+// the stats bar too once Broadcast Mode makes it sticky) — Split View's pool
+// column starts sticking right below whichever of those is actually stuck.
 function updateStickyOffsets(){
+  const header = document.querySelector('header.topbar');
   const tb = document.querySelector('.toolbar');
+  const headerH = header ? header.offsetHeight : 64;
   const toolbarH = tb ? tb.offsetHeight : 54;
+  document.documentElement.style.setProperty('--header-h', headerH + 'px');
   document.documentElement.style.setProperty('--toolbar-h', toolbarH + 'px');
-  let pinnedH = toolbarH;
+  let pinnedH = headerH + toolbarH;
   if(document.body.classList.contains('broadcast')){
     const statsBar = document.querySelector('.stats-bar');
     if(statsBar) pinnedH += statsBar.offsetHeight;
@@ -1952,6 +1991,10 @@ function updateStickyOffsets(){
 }
 
 function setBroadcastMode(on){
+  // Broadcast Mode is built for a wide streaming/recording layout — the
+  // stacked mobile layout doesn't have room for it (and the button itself is
+  // hidden there), so it can never actually turn on below the mobile breakpoint.
+  if(on && window.matchMedia('(max-width:768px)').matches) on = false;
   document.body.classList.toggle('broadcast', on);
   const btn = document.getElementById('broadcastBtn');
   if(btn){
@@ -1982,6 +2025,14 @@ document.getElementById('splitBtn').addEventListener('click', ()=>{
 });
 
 window.addEventListener('resize', updateStickyOffsets);
+window.addEventListener('resize', ()=>{
+  // If the window (or a rotated tablet) shrinks into mobile range while
+  // Broadcast Mode is on, turn it off rather than leave it stuck showing a
+  // desktop-only layout that no longer fits.
+  if(document.body.classList.contains('broadcast') && window.matchMedia('(max-width:768px)').matches){
+    setBroadcastMode(false);
+  }
+});
 
 let previewDataUrl = null;
 
