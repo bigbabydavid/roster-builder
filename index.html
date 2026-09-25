@@ -227,6 +227,8 @@
   .stats-bar .type-split{ font-size:12px; opacity:0.9; white-space:nowrap; }
   .stats-bar .lock-summary{ font-size:11px; opacity:0.75; margin-top:3px; white-space:nowrap; }
   .stats-bar-divider{ width:1px; align-self:stretch; background:rgba(255,255,255,0.18); }
+  /* Mobile-only expand/collapse control for the banner — see @media block below. */
+  .stats-bar-toggle{ display:none; }
   .stats-bar .breakdown{ display:flex; flex-wrap:wrap; gap:14px 20px; flex:1; }
   .stats-bar .breakdown-row{ display:flex; flex-direction:column; min-width:56px; }
   .stats-bar .breakdown-row .gcount{ font-family:Georgia,serif; font-weight:700; font-size:17px; }
@@ -712,19 +714,36 @@
        has too much text to also force onto one row — that combination is
        what was running the two lines together edge to edge. Stacking that
        one back up, letting it wrap, and trimming every font size a notch
-       keeps the whole banner from eating the screen. */
-    .stats-bar{ flex-direction:column; align-items:stretch; gap:8px; padding:10px 14px; margin:10px 16px 0 16px; }
+       keeps the whole banner from eating the screen.
+       This is also the one piece of information worth having pinned on
+       screen while you scroll (unlike Broadcast Mode, which pins it for a
+       different reason and stays desktop-only) — so it sticks right below
+       the header+toolbar here, and opens collapsed to just the headline
+       numbers, with the position-by-position breakdown tucked behind the
+       toggle button below so the pinned area doesn't stay maximally tall. */
+    .stats-bar{
+      flex-direction:column; align-items:stretch; gap:6px; padding:10px 14px; margin:10px 16px 0 16px;
+      position:sticky; top:calc(var(--header-h, 64px) + var(--toolbar-h, 54px)); z-index:45;
+    }
     .stats-bar-divider{ display:none; }
     .stats-bar-block-total{ flex-direction:row; align-items:baseline; justify-content:space-between; }
     .stats-bar-block-split{ flex-direction:column; align-items:flex-start; gap:1px; }
     .stats-bar .stat-big{ font-size:22px; }
     .stats-bar .stat-label{ font-size:9px; }
     .stats-bar .type-split, .stats-bar .lock-summary{ white-space:normal; font-size:10px; }
-    .breakdown{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px 6px; }
+    .stats-bar .breakdown{ display:none; grid-template-columns:repeat(4,1fr); gap:8px 6px; }
+    .stats-bar.expanded .breakdown{ display:grid; }
     .breakdown-row{ min-width:0; }
     .breakdown-row .gcount{ font-size:14px; }
     .breakdown-row .glabel{ font-size:8.5px; }
     .breakdown-row .glock{ font-size:8px; }
+    .stats-bar-toggle{
+      display:block; width:100%; margin-top:2px; padding:6px;
+      background:rgba(255,255,255,0.12); border:none; border-radius:6px;
+      color:white; font-size:10.5px; font-weight:700; letter-spacing:0.2px;
+      cursor:pointer; touch-action:manipulation;
+    }
+    .stats-bar-toggle:active{ background:rgba(255,255,255,0.22); }
 
     .roster-section, .pool-section, .lineup-section{ padding-left:16px; padding-right:16px; }
     .roster-grid, .roster-grid-pitch{ grid-template-columns:1fr; }
@@ -818,7 +837,7 @@
 
 <p class="hint" id="hintText">The roster pool syncs with MLB's live 40-man roster automatically on load and every hour after — new call-ups or trades show up in the pool, and injury status stays current. It only ever adds players or refreshes their name/number/injury flag; it never touches where you've placed someone or any Lock/Bubble/Cut you've set. Drag a player tile between the roster columns and the pool below to change where they sit — a thin orange line shows exactly where they'll land as you drag, so you can drop them at any precise spot rather than just the end (on a phone or tablet, a "Move to" dropdown on each tile does the same job without dragging). Each tile has two small buttons on its right edge: the top dot cycles blank → <span style="color:var(--lock);font-weight:700;">green (Lock)</span> → <span style="color:var(--bubble);font-weight:700;">yellow (Bubble)</span> → <span style="color:var(--cut);font-weight:700;">red (Cut)</span> → blank again with each click; the <strong>+</strong> below it is a separate on/off toggle for currently injured. Neither moves the player anywhere.</p>
 
-<section class="stats-bar">
+<section class="stats-bar" id="statsBar">
   <div class="stats-bar-block stats-bar-block-total">
     <div class="stat-big" id="rosterTotal">0/26</div>
     <div class="stat-label">On Final Roster</div>
@@ -830,6 +849,9 @@
   </div>
   <div class="stats-bar-divider"></div>
   <div class="breakdown" id="breakdown"></div>
+  <!-- Mobile-only: this banner is pinned there (see CSS), so it opens
+       collapsed to just the headline numbers and expands on tap. -->
+  <button type="button" id="statsBarToggle" class="stats-bar-toggle" aria-expanded="false">▾ Position Breakdown</button>
 </section>
 
 <div class="board-split" id="boardSplit">
@@ -2057,6 +2079,20 @@ window.addEventListener('resize', ()=>{
     setBroadcastMode(false);
   }
 });
+
+// Mobile-only: the stats bar defaults to a collapsed, headline-only view
+// (see CSS) and expands to show the position breakdown on tap.
+const statsBarToggleBtn = document.getElementById('statsBarToggle');
+if(statsBarToggleBtn){
+  statsBarToggleBtn.addEventListener('click', ()=>{
+    const bar = document.getElementById('statsBar');
+    if(!bar) return;
+    const isOpen = bar.classList.toggle('expanded');
+    statsBarToggleBtn.textContent = isOpen ? '▴ Hide Breakdown' : '▾ Position Breakdown';
+    statsBarToggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    requestAnimationFrame(updateStickyOffsets);
+  });
+}
 
 let previewDataUrl = null;
 
