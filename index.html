@@ -14,6 +14,8 @@
     --lockbg:#E7F4EC;
     --bubble:#B9791F;
     --bubblebg:#FDF3E2;
+    --cut:#C0293B;
+    --cutbg:#FBE7E9;
     --il:#A3241C;
     --ilbg:#FBEAE8;
     --neutralbg:#FFFFFF;
@@ -571,6 +573,7 @@
   .mini-toggle.status-dot:hover{ border-color:var(--grey); }
   .mini-toggle.status-dot.lock{ background:var(--lock); border-color:var(--lock); }
   .mini-toggle.status-dot.bubble{ background:var(--bubble); border-color:var(--bubble); }
+  .mini-toggle.status-dot.cut{ background:var(--cut); border-color:var(--cut); }
   .mini-toggle.hurt:hover{ border-color:var(--il); color:var(--il); }
   .mini-toggle.hurt.active{ background:var(--il); border-color:var(--il); color:white; }
 
@@ -609,6 +612,12 @@
 
   .tile.label-lock{ border-left-color:var(--lock); background:var(--lockbg); }
   .tile.label-bubble{ border-left-color:var(--bubble); background:var(--bubblebg); }
+  .tile.label-cut{ border-left-color:var(--cut); background:var(--cutbg); }
+
+  /* ---- Move-to-spot dropdown (mobile) ---- everyone gets this markup, but it
+     only shows on small/touch screens (see @media block below) — desktop
+     keeps drag-and-drop as its only way to move a tile. */
+  .move-select{ display:none; }
 
   /* ---- Mobile ---- everything above this block is the desktop experience,
      left exactly as it was. Below is a dedicated pass for small/touch
@@ -657,10 +666,20 @@
 
     .roster-section, .pool-section, .lineup-section{ padding-left:16px; padding-right:16px; }
     .roster-grid, .roster-grid-pitch{ grid-template-columns:1fr; }
-    .tile{ padding:10px 12px; font-size:13px; }
+    .tile{ padding:10px 12px; font-size:13px; flex-wrap:wrap; }
     .tile .meta{ font-size:10.5px; }
     .mini-toggle{ width:22px; height:22px; font-size:11px; }
     .toggle-col{ gap:6px; }
+
+    /* Dragging works with a finger too, but pinpointing a tiny drop target on
+       a phone is fiddly — this dropdown gives every tile a tap-friendly way
+       to jump straight to a spot (or back to the pool) instead. */
+    .move-select{
+      display:block; flex:1 1 100%; width:100%; margin-top:8px;
+      padding:9px 8px; font-size:13px; border-radius:6px;
+      border:1px solid #d7dbe0; background:white; color:var(--navy);
+      touch-action:manipulation;
+    }
 
     .pool-header-row{ flex-direction:column; align-items:flex-start; gap:8px; }
     #addPlayerBtn{ width:100%; }
@@ -697,13 +716,14 @@
       <h1 id="brandTitle">26-Man Roster Builder<span class="sub" id="brandSub">New York Yankees — 40-man pool</span></h1>
     </div>
   </div>
-  <div id="headerBlurb" style="font-size:12px; opacity:0.75; text-align:right; max-width:220px;">Drag players onto the roster above. Click any tile to label it Lock or Bubble.</div>
+  <div id="headerBlurb" style="font-size:12px; opacity:0.75; text-align:right; max-width:220px;">Drag players onto the roster above. Click any tile to label it Lock, Bubble, or Cut.</div>
 </header>
 
 <div class="toolbar">
   <div class="legend" id="legendRow">
     <span><i style="background:var(--lock)"></i>Lock label</span>
     <span><i style="background:var(--bubble)"></i>Bubble label</span>
+    <span><i style="background:var(--cut)"></i>Cut label</span>
     <span><i style="background:var(--il)"></i>Injured (+)</span>
     <span><i style="background:var(--neutral); border:1px solid #ccc"></i>No label</span>
   </div>
@@ -720,7 +740,7 @@
   </div>
 </div>
 
-<p class="hint" id="hintText">The roster pool syncs with MLB's live 40-man roster automatically on load and every hour after — new call-ups or trades show up in the pool, and injury status stays current. It only ever adds players or refreshes their name/number/injury flag; it never touches where you've placed someone or any Lock/Bubble you've set. Drag a player tile between the roster columns and the pool below to change where they sit — a thin orange line shows exactly where they'll land as you drag, so you can drop them at any precise spot rather than just the end. Each tile has two small buttons on its right edge: the top dot cycles blank → <span style="color:var(--lock);font-weight:700;">green (Lock)</span> → <span style="color:var(--bubble);font-weight:700;">yellow (Bubble)</span> → blank again with each click; the <strong>+</strong> below it is a separate on/off toggle for currently injured. Neither moves the player anywhere.</p>
+<p class="hint" id="hintText">The roster pool syncs with MLB's live 40-man roster automatically on load and every hour after — new call-ups or trades show up in the pool, and injury status stays current. It only ever adds players or refreshes their name/number/injury flag; it never touches where you've placed someone or any Lock/Bubble/Cut you've set. Drag a player tile between the roster columns and the pool below to change where they sit — a thin orange line shows exactly where they'll land as you drag, so you can drop them at any precise spot rather than just the end (on a phone or tablet, a "Move to" dropdown on each tile does the same job without dragging). Each tile has two small buttons on its right edge: the top dot cycles blank → <span style="color:var(--lock);font-weight:700;">green (Lock)</span> → <span style="color:var(--bubble);font-weight:700;">yellow (Bubble)</span> → <span style="color:var(--cut);font-weight:700;">red (Cut)</span> → blank again with each click; the <strong>+</strong> below it is a separate on/off toggle for currently injured. Neither moves the player anywhere.</p>
 
 <section class="stats-bar">
   <div class="stats-bar-block">
@@ -1109,7 +1129,7 @@ async function saveState(){
 function cycleStatus(id){
   const p = players.find(pl=>pl.id===id);
   if(!p) return;
-  const order = [null,'lock','bubble'];
+  const order = [null,'lock','bubble','cut'];
   const i = order.indexOf(p.status || null);
   p.status = order[(i+1) % order.length];
   saveState();
@@ -1126,10 +1146,41 @@ function placePlayer(id, place, group, order){
   render();
 }
 
+// Touch-friendly alternative to dragging: move a player straight to a roster
+// spot (or back to the pool) by picking it from a dropdown on the tile.
+// Lands at the end of whatever list it's dropped into, same as a drag would
+// if you didn't need it at a precise spot.
+function moveToSpot(id, value){
+  const p = players.find(pl=>pl.id===id);
+  if(!p) return;
+  if(value === 'pool'){
+    placePlayer(id, 'pool', null);
+    return;
+  }
+  const dest = players.filter(pl=>pl.placed==='roster' && pl.group===value);
+  const maxOrder = dest.reduce((m,pl)=>Math.max(m, pl.order||0), 0);
+  placePlayer(id, 'roster', value, maxOrder + 10);
+}
+
+// The mobile "Move to" dropdown's option list — pitchers can only go to
+// Starters/Relievers/Pool, position players to any non-pitching spot/Pool.
+function moveOptionsHTML(p){
+  const destColumns = p.type === 'P'
+    ? ROSTER_COLUMNS.filter(c=>c.key==='SP'||c.key==='RP')
+    : ROSTER_COLUMNS.filter(c=>c.key!=='SP'&&c.key!=='RP');
+  const current = p.placed === 'pool' ? 'pool' : p.group;
+  const poolOpt = `<option value="pool" ${current==='pool'?'selected':''}>Move to: Pool</option>`;
+  const colOpts = destColumns.map(c=>
+    `<option value="${c.key}" ${current===c.key?'selected':''}>Move to: ${c.label}</option>`
+  ).join('');
+  return poolOpt + colOpts;
+}
+
 function tileHTML(p){
   const visual = p.status ? `label-${p.status}` : '';
   const statusTitle = p.status === 'lock' ? 'Lock — click to set Bubble'
-                     : p.status === 'bubble' ? 'Bubble — click to clear'
+                     : p.status === 'bubble' ? 'Bubble — click to set Cut'
+                     : p.status === 'cut' ? 'Cut — click to clear'
                      : 'No label — click to set Lock';
   const nameBadges = p.hurt ? `<span class="hurt-badge" title="Currently injured">+</span>` : '';
   const numPart = p.num ? `#${p.num} · ` : '';
@@ -1147,6 +1198,7 @@ function tileHTML(p){
       <div class="mini-toggle hurt ${p.hurt ? 'active' : ''}" data-toggle="hurt" data-id="${p.id}" title="${p.hurt ? 'Mark healthy' : 'Mark injured'}">+</div>
       ${removeToggle}
     </div>
+    <select class="move-select" data-id="${p.id}" title="Move this player">${moveOptionsHTML(p)}</select>
   </div>`;
 }
 
@@ -1632,6 +1684,16 @@ function attachTileEvents(tile){
       else if(btn.dataset.toggle === 'remove') removePlayer(id);
     });
   });
+  const moveSelect = tile.querySelector('.move-select');
+  if(moveSelect){
+    // Keep taps on the dropdown from starting a drag on the tile underneath it.
+    moveSelect.addEventListener('pointerdown', e=>{ e.stopPropagation(); });
+    moveSelect.addEventListener('click', e=>{ e.stopPropagation(); });
+    moveSelect.addEventListener('change', e=>{
+      e.stopPropagation();
+      moveToSpot(moveSelect.dataset.id, moveSelect.value);
+    });
+  }
 }
 
 function onPointerDown(e){
