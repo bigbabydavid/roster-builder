@@ -614,10 +614,39 @@
   .tile.label-bubble{ border-left-color:var(--bubble); background:var(--bubblebg); }
   .tile.label-cut{ border-left-color:var(--cut); background:var(--cutbg); }
 
-  /* ---- Move-to-spot dropdown (mobile) ---- everyone gets this markup, but it
-     only shows on small/touch screens (see @media block below) — desktop
-     keeps drag-and-drop as its only way to move a tile. */
-  .move-select{ display:none; }
+  /* ---- "Fill this spot" button (mobile) ---- sits at the end of each
+     roster lane; hidden on desktop, where drag-and-drop already does this. */
+  .fill-spot-btn{ display:none; }
+
+  /* ---- Move/Add picker popup ---- shared by "tap a tile to move it" and
+     "tap + Add Player to fill a spot" on mobile; harmless if ever opened on
+     desktop too, so no display:none gate here. */
+  .picker-overlay{
+    display:none;
+    position:fixed; inset:0; background:rgba(12,35,64,0.55);
+    align-items:center; justify-content:center; z-index:300; padding:24px;
+  }
+  .picker-overlay.open{ display:flex; }
+  .picker-modal{
+    background:white; border-radius:12px; overflow:hidden; width:min(360px, 92vw);
+    max-height:80vh; display:flex; flex-direction:column; box-shadow:0 12px 40px rgba(0,0,0,0.35);
+  }
+  .picker-title{
+    padding:14px 16px; background:var(--navy); color:white; font-weight:700; font-size:14px;
+  }
+  .picker-list{ overflow:auto; padding:8px; display:flex; flex-direction:column; gap:6px; }
+  .picker-item{
+    display:block; width:100%; text-align:left; padding:12px 12px; border-radius:8px;
+    border:1px solid #d7dbe0; background:white; color:var(--navy); font-size:14px;
+    font-weight:600; cursor:pointer;
+  }
+  .picker-item:active{ background:#eef1f5; }
+  .picker-item.current{ border-color:var(--navy); background:#eef3fb; }
+  .picker-empty{ padding:16px; color:var(--grey); font-style:italic; text-align:center; font-size:13px; }
+  .picker-cancel{
+    margin:8px; padding:11px; border-radius:8px; border:1px solid #d7dbe0; background:#f3f4f6;
+    color:var(--navy); font-weight:700; font-size:13.5px; cursor:pointer;
+  }
 
   /* ---- Mobile ---- everything above this block is the desktop experience,
      left exactly as it was. Below is a dedicated pass for small/touch
@@ -672,14 +701,16 @@
     .toggle-col{ gap:6px; }
 
     /* Dragging works with a finger too, but pinpointing a tiny drop target on
-       a phone is fiddly — this dropdown gives every tile a tap-friendly way
-       to jump straight to a spot (or back to the pool) instead. */
-    .move-select{
-      display:block; flex:1 1 100%; width:100%; margin-top:8px;
-      padding:9px 8px; font-size:13px; border-radius:6px;
-      border:1px solid #d7dbe0; background:white; color:var(--navy);
+       a phone is fiddly — tapping a tile (without dragging it) pops up a
+       "Move to…" list instead, and each roster spot gets its own button to
+       pull a player straight out of the pool. */
+    .fill-spot-btn{
+      display:block; width:calc(100% - 16px); margin:0 8px 8px 8px;
+      padding:10px 8px; font-size:12.5px; font-weight:700; border-radius:7px;
+      border:1.5px dashed #b7bec7; background:transparent; color:var(--grey);
       touch-action:manipulation;
     }
+    .fill-spot-btn:active{ background:#eef1f5; }
 
     .pool-header-row{ flex-direction:column; align-items:flex-start; gap:8px; }
     #addPlayerBtn{ width:100%; }
@@ -844,6 +875,15 @@
     <div class="preview-modal-footer">
       <button id="previewDownloadBtn">Download PNG</button>
     </div>
+  </div>
+</div>
+
+<!-- Move/Add picker popup (mobile) -->
+<div id="pickerOverlay" class="picker-overlay">
+  <div class="picker-modal">
+    <div class="picker-title" id="pickerTitle"></div>
+    <div class="picker-list" id="pickerList"></div>
+    <button type="button" class="picker-cancel" id="pickerCancel">Cancel</button>
   </div>
 </div>
 
@@ -1147,7 +1187,7 @@ function placePlayer(id, place, group, order){
 }
 
 // Touch-friendly alternative to dragging: move a player straight to a roster
-// spot (or back to the pool) by picking it from a dropdown on the tile.
+// spot (or back to the pool) without needing to drag them there.
 // Lands at the end of whatever list it's dropped into, same as a drag would
 // if you didn't need it at a precise spot.
 function moveToSpot(id, value){
@@ -1162,18 +1202,53 @@ function moveToSpot(id, value){
   placePlayer(id, 'roster', value, maxOrder + 10);
 }
 
-// The mobile "Move to" dropdown's option list — pitchers can only go to
-// Starters/Relievers/Pool, position players to any non-pitching spot/Pool.
-function moveOptionsHTML(p){
+/* ---- Move/Add picker popup (mobile) ----
+   One small overlay reused two ways:
+   - Tap a tile (without dragging it) → "Move <name>" → list of spots/Pool.
+   - Tap "+ Add Player" on an empty (or not-yet-full) roster spot → list of
+     eligible pool players to drop straight into it.
+   `items` is [{label, value, current}]; `onPick(value)` runs on tap. */
+function openPicker(title, items, onPick){
+  const overlay = document.getElementById('pickerOverlay');
+  document.getElementById('pickerTitle').textContent = title;
+  const list = document.getElementById('pickerList');
+  list.innerHTML = items.length
+    ? items.map((it,i)=>`<button type="button" class="picker-item${it.current?' current':''}" data-i="${i}">${it.label}${it.current?' (current)':''}</button>`).join('')
+    : `<div class="picker-empty">Nobody available</div>`;
+  list.querySelectorAll('.picker-item').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const it = items[+btn.dataset.i];
+      closePicker();
+      onPick(it.value);
+    });
+  });
+  overlay.classList.add('open');
+}
+function closePicker(){
+  document.getElementById('pickerOverlay').classList.remove('open');
+  document.getElementById('pickerList').innerHTML = '';
+}
+
+function openMovePopupForTile(id){
+  const p = players.find(pl=>pl.id===id);
+  if(!p) return;
   const destColumns = p.type === 'P'
     ? ROSTER_COLUMNS.filter(c=>c.key==='SP'||c.key==='RP')
     : ROSTER_COLUMNS.filter(c=>c.key!=='SP'&&c.key!=='RP');
   const current = p.placed === 'pool' ? 'pool' : p.group;
-  const poolOpt = `<option value="pool" ${current==='pool'?'selected':''}>Move to: Pool</option>`;
-  const colOpts = destColumns.map(c=>
-    `<option value="${c.key}" ${current===c.key?'selected':''}>Move to: ${c.label}</option>`
-  ).join('');
-  return poolOpt + colOpts;
+  const items = [{label:'Pool', value:'pool', current:current==='pool'}]
+    .concat(destColumns.map(c=>({label:c.label, value:c.key, current:current===c.key})));
+  openPicker(`Move ${p.name}`, items, value=>moveToSpot(id, value));
+}
+
+function openFillSpotPopup(groupKey){
+  const col = ROSTER_COLUMNS.find(c=>c.key===groupKey);
+  if(!col) return;
+  const isPitcherCol = groupKey === 'SP' || groupKey === 'RP';
+  const eligible = players.filter(p=>p.placed==='pool' && (isPitcherCol ? p.type==='P' : p.type==='H'))
+                           .sort((a,b)=>(a.order??0)-(b.order??0));
+  const items = eligible.map(p=>({label:`${p.name}${p.num?' #'+p.num:''}`, value:p.id}));
+  openPicker(`Add to ${col.label}`, items, id=>moveToSpot(id, groupKey));
 }
 
 function tileHTML(p){
@@ -1198,7 +1273,6 @@ function tileHTML(p){
       <div class="mini-toggle hurt ${p.hurt ? 'active' : ''}" data-toggle="hurt" data-id="${p.id}" title="${p.hurt ? 'Mark healthy' : 'Mark injured'}">+</div>
       ${removeToggle}
     </div>
-    <select class="move-select" data-id="${p.id}" title="Move this player">${moveOptionsHTML(p)}</select>
   </div>`;
 }
 
@@ -1298,6 +1372,7 @@ function render(){
     return `<div class="roster-col">
       <h3>${col.label} <span class="n">${inCol.length}</span></h3>
       <div class="lane" data-place="roster" data-group="${col.key}">${inCol.map(tileHTML).join('')}</div>
+      <button type="button" class="fill-spot-btn" data-group="${col.key}">+ Add Player</button>
     </div>`;
   };
   const pitchGrid = document.getElementById('rosterGridPitch');
@@ -1684,16 +1759,6 @@ function attachTileEvents(tile){
       else if(btn.dataset.toggle === 'remove') removePlayer(id);
     });
   });
-  const moveSelect = tile.querySelector('.move-select');
-  if(moveSelect){
-    // Keep taps on the dropdown from starting a drag on the tile underneath it.
-    moveSelect.addEventListener('pointerdown', e=>{ e.stopPropagation(); });
-    moveSelect.addEventListener('click', e=>{ e.stopPropagation(); });
-    moveSelect.addEventListener('change', e=>{
-      e.stopPropagation();
-      moveToSpot(moveSelect.dataset.id, moveSelect.value);
-    });
-  }
 }
 
 function onPointerDown(e){
@@ -1804,6 +1869,10 @@ function onPointerUp(e){
     } else {
       render();
     }
+  } else if(window.matchMedia('(max-width:768px)').matches){
+    // A tap that never turned into a drag — on a phone/tablet, that's the
+    // signal to pop up a "Move to…" list instead of requiring a precise drag.
+    openMovePopupForTile(id);
   }
   dragState = null;
 }
@@ -1954,6 +2023,18 @@ document.getElementById('previewDownloadBtn').addEventListener('click', ()=>{
 document.getElementById('previewCloseBtn').addEventListener('click', closePreviewModal);
 document.getElementById('previewOverlay').addEventListener('click', e=>{
   if(e.target.id === 'previewOverlay') closePreviewModal();
+});
+
+document.getElementById('pickerCancel').addEventListener('click', closePicker);
+document.getElementById('pickerOverlay').addEventListener('click', e=>{
+  if(e.target.id === 'pickerOverlay') closePicker();
+});
+
+// "+ Add Player" buttons are re-created by render() every time, so use
+// delegation on the document rather than re-binding after each render.
+document.addEventListener('click', e=>{
+  const btn = e.target.closest('.fill-spot-btn');
+  if(btn) openFillSpotPopup(btn.dataset.group);
 });
 
 (async function init(){
