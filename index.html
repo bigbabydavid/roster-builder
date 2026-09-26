@@ -355,22 +355,31 @@
   /* ---- Split View: Final Roster (+ Lineups) on the left, Pool pinned on the
      right so it's always reachable while dragging. Best for a tall-ish,
      roughly-square capture window (e.g. an OBS scene).
-     Lineups are grouped into the LEFT column specifically so that column is
-     reliably taller than the Pool panel — a sticky element can't hold still
-     if it's the one defining its container's height, so the left side needs
-     real slack above the Pool's own (viewport-capped) height for the pin to
-     actually work instead of just scrolling away with the page. ---- */
+     In normal (non-split) flow, the Pool sits between the Final Roster and
+     Lineups in plain document order (see the HTML), so it's a CSS Grid
+     here rather than a flex row — that's what lets the Pool be placed on
+     the right, spanning both rows, without needing it physically between
+     the other two sections in the markup. Lineups are still stacked under
+     the Final Roster in the left column specifically so that column is
+     reliably taller than the Pool panel — a sticky element can't hold
+     still if it's the one defining its container's height, so the left
+     side needs real slack above the Pool's own (viewport-capped) height
+     for the pin to actually work instead of just scrolling away with the
+     page. ---- */
   .board-split{ display:block; }
-  body.split .board-split{ display:flex; align-items:flex-start; gap:0; }
+  body.split .board-split{
+    display:grid; grid-template-columns:1.4fr 1fr; align-items:start; gap:0;
+  }
   body.split .board-main{
-    flex:1.4; min-width:0;
+    grid-column:1; grid-row:1; min-width:0;
     /* Guarantees the left column can never be shorter than the Pool's own
        capped height, so the sticky Pool always has room to actually stick,
        even right after loading with an empty/near-empty roster. */
     min-height:calc(100vh - var(--pinned-h, 54px) - 10px + 260px);
   }
+  body.split .lineup-section{ grid-column:1; grid-row:2; }
   body.split .pool-section{
-    flex:1; min-width:0; border-left:1px solid #dfe3e8;
+    grid-column:2; grid-row:1 / span 2; min-width:0; border-left:1px solid #dfe3e8;
     position:sticky; top:var(--pinned-h, 54px);
     max-height:calc(100vh - var(--pinned-h, 54px) - 10px);
     overflow-y:auto;
@@ -878,24 +887,6 @@
     <div class="roster-grid" id="rosterGridHit"></div>
   </div>
 </section>
-
-<section class="lineup-section">
-  <h2 class="section-title">Lineups</h2>
-  <p class="hint" id="lineupHint" style="margin:0 0 12px 0; padding:0;">Pick from your Final 26-Man Roster hitters — any player can bat in any spot and play any position for the day, independent of how they're slotted above. The letter badge next to each name shows how they bat (L / R / S for switch).</p>
-  <div class="lineup-grid">
-    <div class="lineup-card">
-      <h3 class="lineup-card-title">vs RHP</h3>
-      <div class="lineup-rows" id="lineupRows_RHP"></div>
-      <div class="lineup-warnings" id="lineupWarnings_RHP"></div>
-    </div>
-    <div class="lineup-card">
-      <h3 class="lineup-card-title">vs LHP</h3>
-      <div class="lineup-rows" id="lineupRows_LHP"></div>
-      <div class="lineup-warnings" id="lineupWarnings_LHP"></div>
-    </div>
-  </div>
-  <button id="downloadLineupBtn">Download Roster &amp; Lineups Image</button>
-</section>
 </div><!-- /#boardMain -->
 
 <section class="pool-section">
@@ -933,6 +924,24 @@
       <div class="pool-lane" data-place="pool" data-type="H"></div>
     </div>
   </div>
+</section>
+
+<section class="lineup-section">
+  <h2 class="section-title">Lineups</h2>
+  <p class="hint" id="lineupHint" style="margin:0 0 12px 0; padding:0;">Pick from your Final 26-Man Roster hitters — any player can bat in any spot and play any position for the day, independent of how they're slotted above. The letter badge next to each name shows how they bat (L / R / S for switch).</p>
+  <div class="lineup-grid">
+    <div class="lineup-card">
+      <h3 class="lineup-card-title">vs RHP</h3>
+      <div class="lineup-rows" id="lineupRows_RHP"></div>
+      <div class="lineup-warnings" id="lineupWarnings_RHP"></div>
+    </div>
+    <div class="lineup-card">
+      <h3 class="lineup-card-title">vs LHP</h3>
+      <div class="lineup-rows" id="lineupRows_LHP"></div>
+      <div class="lineup-warnings" id="lineupWarnings_LHP"></div>
+    </div>
+  </div>
+  <button id="downloadLineupBtn">Download Roster &amp; Lineups Image</button>
 </section>
 </div><!-- /#boardSplit -->
 
