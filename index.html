@@ -2168,7 +2168,8 @@ document.addEventListener('click', e=>{
 
   const teamSelect = document.getElementById('teamSelect');
   if(teamSelect){
-    teamSelect.innerHTML = TEAMS.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+    const teamsAlpha = [...TEAMS].sort((a,b)=>a.name.localeCompare(b.name));
+    teamSelect.innerHTML = teamsAlpha.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
     teamSelect.addEventListener('change', e=>{ switchTeam(+e.target.value); });
   }
   applyTeamBranding(currentTeamId);
