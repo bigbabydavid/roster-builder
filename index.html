@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MLB 26-Man Roster Builder</title>
+<link rel="icon" id="favicon" type="image/svg+xml" href="">
 <style>
   :root{
     --navy:#0C2340;
@@ -1134,6 +1135,9 @@ function applyTeamBranding(teamId){
   if(sub) sub.textContent = `${team.name} — 40-man pool`;
   const teamSelect = document.getElementById('teamSelect');
   if(teamSelect) teamSelect.value = String(teamId);
+  // Browser tab icon follows whichever team is selected.
+  const favicon = document.getElementById('favicon');
+  if(favicon) favicon.href = logoURL(team.id);
 }
 
 const LAST_TEAM_KEY = 'mlb_roster_last_team';
