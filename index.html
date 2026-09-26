@@ -170,17 +170,6 @@
   .legend{display:flex; gap:12px; flex-wrap:wrap; font-size:11px;}
   .legend span{display:flex; align-items:center; gap:5px;}
   .legend i{width:11px;height:11px;border-radius:3px;display:inline-block;}
-  #resetBtn{
-    background:var(--navy);
-    color:white;
-    border:none;
-    padding:7px 12px;
-    border-radius:6px;
-    cursor:pointer;
-    font-weight:600;
-    font-size:12px;
-  }
-  #resetBtn:hover{background:var(--navy2);}
   #saveNote{font-size:11px; color:var(--grey); opacity:0.85;}
   #syncNote{font-size:11px;}
   #syncBtn{
@@ -194,6 +183,17 @@
     font-size:12px;
   }
   #syncBtn:hover{background:#eef1f5;}
+  #fillActiveBtn, #clearBtn{
+    background:white;
+    color:var(--navy);
+    border:1px solid var(--navy);
+    padding:6px 11px;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:600;
+    font-size:12px;
+  }
+  #fillActiveBtn:hover, #clearBtn:hover{background:#eef1f5;}
   .team-picker{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--grey); font-weight:600; }
   #teamSelect{
     border:1px solid #d7dbe0; border-radius:6px; padding:6px 8px; font-size:12px; color:var(--navy);
@@ -282,9 +282,15 @@
   }
   .roster-col h3{
     margin:0; background:var(--navy); color:white; font-size:11.5px; text-transform:uppercase;
-    letter-spacing:0.8px; padding:8px 10px; font-weight:700; display:flex; justify-content:space-between;
+    letter-spacing:0.8px; padding:8px 10px; font-weight:700; display:flex; align-items:center; justify-content:space-between; gap:8px;
   }
   .roster-col h3 .n{ opacity:0.7; font-weight:400; }
+  .col-clear-btn{
+    flex-shrink:0; background:rgba(255,255,255,0.15); border:none; color:white;
+    font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px;
+    padding:3px 7px; border-radius:5px; cursor:pointer;
+  }
+  .col-clear-btn:hover{ background:rgba(255,255,255,0.3); }
   .lane{
     padding:10px;
     display:flex;
@@ -341,6 +347,8 @@
   }
   .mini-toggle.remove{ color:#A3241C; font-size:12px; }
   .mini-toggle.remove:hover{ background:var(--il); border-color:var(--il); color:white; }
+  .mini-toggle.to-pool{ color:var(--grey); font-size:10px; }
+  .mini-toggle.to-pool:hover{ background:var(--navy); border-color:var(--navy); color:white; }
   .pool-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   @media (max-width:760px){ .pool-grid{ grid-template-columns:1fr; } }
 
@@ -706,7 +714,7 @@
     #saveNote, #syncNote{ display:none; }
     #broadcastBtn, #splitBtn{ display:none; }
     .toolbar-actions button{ padding:9px 10px; font-size:12.5px; }
-    #syncBtn, #resetBtn{ flex:1 1 calc(50% - 3px); }
+    #syncBtn, #fillActiveBtn, #clearBtn{ flex:1 1 calc(50% - 3px); }
     .btn-full{ display:none; }
     .btn-short{ display:inline; }
 
@@ -764,6 +772,7 @@
     .tile .meta{ font-size:10.5px; }
     .mini-toggle{ width:22px; height:22px; font-size:11px; }
     .toggle-col{ gap:6px; }
+    .col-clear-btn{ padding:6px 9px; font-size:11px; touch-action:manipulation; }
 
     /* Dragging works with a finger too, but pinpointing a tiny drop target on
        a phone is fiddly — tapping a tile (without dragging it) pops up a
@@ -830,7 +839,8 @@
     <span id="saveNote">Autosaves in this browser</span>
     <span id="syncNote" style="color:var(--grey); opacity:0.85;">Syncing…</span>
     <button id="syncBtn" title="Pull the latest 40-man roster now">Sync Now</button>
-    <button id="resetBtn"><span class="btn-full">Reset to Current Roster</span><span class="btn-short">Reset</span></button>
+    <button id="fillActiveBtn" title="Place everyone currently on the active roster onto the board, with educated guesses for backups"><span class="btn-full">Fill with Active Roster</span><span class="btn-short">Fill Active</span></button>
+    <button id="clearBtn" title="Send every player back to the pool so you can build from scratch">Clear</button>
     <button id="broadcastBtn" title="Switch between working view and a clean look for recording/streaming">📺 Broadcast Mode</button>
     <button id="splitBtn" title="Show the Final Roster and the Pool side by side so both stay in view while dragging">🪟 Split View</button>
   </div>
@@ -1334,6 +1344,12 @@ function tileHTML(p){
   const removeToggle = p.custom
     ? `<div class="mini-toggle remove" data-toggle="remove" data-id="${p.id}" title="Remove this player">×</div>`
     : '';
+  // Quickest way to pull one guy off the roster without dragging — only
+  // makes sense once they're actually placed there, not while they're
+  // still sitting in the pool.
+  const toPoolToggle = p.placed === 'roster'
+    ? `<div class="mini-toggle to-pool" data-toggle="to-pool" data-id="${p.id}" title="Send back to the pool">⤓</div>`
+    : '';
   return `<div class="tile ${visual}" data-id="${p.id}">
     <div class="info">
       <div class="name"><span class="name-text" title="${p.name}">${p.name}</span>${nameBadges}${orgBadge}</div>
@@ -1342,6 +1358,7 @@ function tileHTML(p){
     <div class="toggle-col">
       <div class="mini-toggle status-dot ${p.status ? p.status : ''}" data-toggle="status" data-id="${p.id}" title="${statusTitle}"></div>
       <div class="mini-toggle hurt ${p.hurt ? 'active' : ''}" data-toggle="hurt" data-id="${p.id}" title="${p.hurt ? 'Mark healthy' : 'Mark injured'}">+</div>
+      ${toPoolToggle}
       ${removeToggle}
     </div>
   </div>`;
@@ -1440,8 +1457,11 @@ function render(){
   const colHTML = col=>{
     const inCol = players.filter(p=>p.placed==='roster' && p.group===col.key)
                           .sort((a,b)=>(a.order??0)-(b.order??0));
+    const clearGroupBtn = inCol.length
+      ? `<button type="button" class="col-clear-btn" data-group="${col.key}" title="Send everyone in ${col.label} back to the pool">Clear</button>`
+      : '';
     return `<div class="roster-col">
-      <h3>${col.label} <span class="n">${inCol.length}</span></h3>
+      <h3><span class="col-title-group">${col.label} <span class="n">${inCol.length}</span></span>${clearGroupBtn}</h3>
       <div class="lane" data-place="roster" data-group="${col.key}">${inCol.map(tileHTML).join('')}</div>
       <button type="button" class="fill-spot-btn" data-group="${col.key}">+ Add Player</button>
     </div>`;
@@ -1805,6 +1825,27 @@ function toggleHurt(id){
   render();
 }
 
+// Quick alternative to dragging a tile down to the pool — same result as
+// dropping them there by hand, just one click/tap on the tile itself.
+function sendToPool(id){
+  placePlayer(id, 'pool', null);
+}
+
+// Sends every player currently in one roster column (e.g. just Relievers,
+// or just Catcher) back to the pool in one go, leaving every other column
+// untouched — a faster way to redo one part of the board than clearing
+// everything or dragging each tile down one at a time.
+function clearGroup(groupKey){
+  const col = ROSTER_COLUMNS.find(c=>c.key===groupKey);
+  if(!col) return;
+  const inGroup = players.filter(p=>p.placed==='roster' && p.group===groupKey);
+  if(inGroup.length === 0) return;
+  if(!confirm(`Send everyone in ${col.label} (${inGroup.length}) back to the pool?`)) return;
+  inGroup.forEach(p=>{ p.placed = 'pool'; });
+  saveState();
+  render();
+}
+
 // Only ever called on manually-added, not-on-the-40-man players — there's no
 // "×" control on anyone who came from DEFAULTS or the live API sync, since
 // removing them would just have them reappear on the next sync anyway.
@@ -1827,6 +1868,7 @@ function attachTileEvents(tile){
       const id = btn.dataset.id;
       if(btn.dataset.toggle === 'status') cycleStatus(id);
       else if(btn.dataset.toggle === 'hurt') toggleHurt(id);
+      else if(btn.dataset.toggle === 'to-pool') sendToPool(id);
       else if(btn.dataset.toggle === 'remove') removePlayer(id);
     });
   });
@@ -1962,16 +2004,110 @@ function onPointerUp(e){
   dragState = null;
 }
 
-document.getElementById('resetBtn').addEventListener('click', async ()=>{
-  if(!confirm('Reset the board back to the default roster? This clears your saved placements, labels, and any manually-added players.')) return;
-  players = currentTeamId === DEFAULT_TEAM_ID ? DEFAULTS.map((p,i)=>({...p, order:i*10})) : [];
-  savedPlayerState = null; // otherwise the next sync would restore what we just cleared
-  try{ await storageDelete(storageKey(currentTeamId)); }catch(e){}
+document.getElementById('syncBtn').addEventListener('click', ()=>{ syncRosterFromAPI(); });
+
+// "Clear" — a lighter reset than Reset to Current Roster: every player goes
+// back to the pool and every Lock/Bubble/Cut label + lineup is wiped, but
+// nobody is deleted — manually-added players stay in the pool ready to be
+// placed again, and the 40-man list itself is untouched.
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  if(!confirm('Clear the board? Every player goes back to the pool and all Lock/Bubble/Cut labels and lineups are cleared. Manually-added players are kept in the pool.')) return;
+  players.forEach(p=>{ p.placed = 'pool'; p.status = null; });
+  lineups = {
+    RHP: Array.from({length:9}, ()=>({playerId:null, position:null})),
+    LHP: Array.from({length:9}, ()=>({playerId:null, position:null})),
+  };
+  saveState();
   render();
-  syncRosterFromAPI();
 });
 
-document.getElementById('syncBtn').addEventListener('click', ()=>{ syncRosterFromAPI(); });
+// "Fill Active Roster" — places every player currently on the team's real
+// active roster onto the board, with an educated guess at where backups
+// belong. Pulls MLB's own depth chart (which, unlike the 40-man list, tells
+// starters from relievers and ranks hitters at each position they can
+// play) rather than trying to reinvent that judgment call from scratch.
+async function fillActiveRoster(){
+  const btn = document.getElementById('fillActiveBtn');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = 'Loading…';
+  try{
+    const res = await fetch(`${API}/teams/${currentTeamId}/roster/depthChart`);
+    if(!res.ok) throw new Error('depth chart fetch failed: ' + res.status);
+    const data = await res.json();
+    const list = data.roster || [];
+    if(list.length === 0) throw new Error('empty depth chart response');
+
+    // Start from a clean board — this button's whole job is to replace
+    // whatever's currently placed with a fresh guess based on live moves.
+    players.forEach(p=>{ p.placed = 'pool'; });
+
+    const assigned = new Set(); // pids already placed this pass
+    const placeAt = (pid, col)=>{
+      const p = players.find(pl=>pl.pid===pid);
+      if(!p || assigned.has(pid)) return false;
+      const dest = players.filter(pl=>pl.placed==='roster' && pl.group===col);
+      const maxOrder = dest.reduce((m,pl)=>Math.max(m, pl.order||0), 0);
+      p.placed = 'roster'; p.group = col; p.order = maxOrder + 10;
+      assigned.add(pid);
+      return true;
+    };
+
+    // Pitchers: the depth chart already splits Starters (SP) from everyone
+    // else (generic "P" bullpen arms and the "CP" closer both read as
+    // Relievers here) — no guessing needed, each pitcher appears once.
+    list.forEach(entry=>{
+      const pid = entry.person && entry.person.id;
+      const statusCode = (entry.status && entry.status.code) || '';
+      if(!pid || statusCode !== 'A') return;
+      const posAbbr = entry.position && entry.position.abbreviation;
+      if(posAbbr === 'SP') placeAt(pid, 'SP');
+      else if(posAbbr === 'P' || posAbbr === 'CP') placeAt(pid, 'RP');
+    });
+
+    // Hitters can appear several times (once per position they can cover),
+    // so specialist/scarce spots are claimed first — catcher, then middle
+    // infield, corners, outfield — and DH last, as a catch-all for whoever
+    // active is left over rather than a true position. Only the single
+    // best-ranked still-unclaimed player is grabbed per column per pass —
+    // grabbing everyone eligible in one go would stack every utility guy
+    // onto whichever position happens to come first and leave others empty.
+    // Repeating the pass spreads the rest out as backups, each landing at
+    // their next-best open position, until every active hitter has a spot.
+    const HITTER_ORDER = ['C','2B','SS','3B','1B','CF','LF','RF','DH'];
+    let placedSomething = true;
+    let guard = 0;
+    while(placedSomething && guard < 20){
+      placedSomething = false;
+      guard++;
+      HITTER_ORDER.forEach(posKey=>{
+        for(const entry of list){
+          const pid = entry.person && entry.person.id;
+          if(!pid || assigned.has(pid)) continue;
+          const statusCode = (entry.status && entry.status.code) || '';
+          if(statusCode !== 'A') continue;
+          const posAbbr = entry.position && entry.position.abbreviation;
+          if(posAbbr !== posKey) continue;
+          if(placeAt(pid, posKey)) placedSomething = true;
+          break; // one grab per column per pass
+        }
+      });
+    }
+
+    saveState();
+    render();
+  }catch(e){
+    console.error('Fill Active Roster failed', e);
+    alert('Could not load the active roster right now — check your connection and try again.');
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+}
+document.getElementById('fillActiveBtn').addEventListener('click', ()=>{
+  if(!confirm("Place everyone currently on the active roster onto the board? This is an educated guess at where backups go, and replaces your current placements (labels and lineups are left alone).")) return;
+  fillActiveRoster();
+});
 
 function clearAddPlayerForm(){
   document.getElementById('apName').value = '';
@@ -2148,8 +2284,10 @@ document.getElementById('pickerOverlay').addEventListener('click', e=>{
 // "+ Add Player" buttons are re-created by render() every time, so use
 // delegation on the document rather than re-binding after each render.
 document.addEventListener('click', e=>{
-  const btn = e.target.closest('.fill-spot-btn');
-  if(btn) openFillSpotPopup(btn.dataset.group);
+  const fillBtn = e.target.closest('.fill-spot-btn');
+  if(fillBtn){ openFillSpotPopup(fillBtn.dataset.group); return; }
+  const clearBtn = e.target.closest('.col-clear-btn');
+  if(clearBtn){ clearGroup(clearBtn.dataset.group); return; }
 });
 
 (async function init(){
