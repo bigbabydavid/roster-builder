@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MLB 26-Man Roster Builder</title>
+<link rel="icon" id="favicon" type="image/svg+xml" href="">
 <style>
   :root{
     --navy:#0C2340;
@@ -14,6 +15,8 @@
     --lockbg:#E7F4EC;
     --bubble:#B9791F;
     --bubblebg:#FDF3E2;
+    --cut:#C0293B;
+    --cutbg:#FBE7E9;
     --il:#A3241C;
     --ilbg:#FBEAE8;
     --neutralbg:#FFFFFF;
@@ -55,12 +58,12 @@
     padding:22px 30px; border-bottom-width:6px;
     border-top-left-radius:18px; border-top-right-radius:18px;
   }
-  /* Toolbar is already sticky at top:0. In Broadcast Mode the stats bar (roster
-     count / pitcher-hitter split / position breakdown) pins right beneath it, so
-     the key numbers stay on screen the whole time you're dragging players around
-     lower on the page. */
+  /* Header + toolbar are already pinned above this. In Broadcast Mode the
+     stats bar (roster count / pitcher-hitter split / position breakdown)
+     pins right beneath both of them, so the key numbers stay on screen the
+     whole time you're dragging players around lower on the page. */
   body.broadcast .stats-bar{
-    position:sticky; top:var(--toolbar-h, 54px); z-index:40;
+    position:sticky; top:calc(var(--header-h, 64px) + var(--toolbar-h, 54px)); z-index:40;
   }
   body.broadcast .brand .interlock{ width:60px; height:60px; font-size:38px; }
   body.broadcast .brand h1{ font-size:25px; letter-spacing:0.8px; }
@@ -113,6 +116,11 @@
     flex-wrap:wrap;
     gap:10px;
     border-bottom:4px solid var(--bubble);
+    /* Pinned right alongside the toolbar below it, in every mode and at every
+       size — see .toolbar's top offset, which leaves exactly this much room. */
+    position:sticky;
+    top:0;
+    z-index:60;
   }
   .brand{display:flex; align-items:center; gap:12px;}
   .brand .interlock{
@@ -156,23 +164,12 @@
     background:white;
     border-bottom:1px solid #dfe3e8;
     position:sticky;
-    top:0;
+    top:var(--header-h, 64px);
     z-index:50;
   }
   .legend{display:flex; gap:12px; flex-wrap:wrap; font-size:11px;}
   .legend span{display:flex; align-items:center; gap:5px;}
   .legend i{width:11px;height:11px;border-radius:3px;display:inline-block;}
-  #resetBtn{
-    background:var(--navy);
-    color:white;
-    border:none;
-    padding:7px 12px;
-    border-radius:6px;
-    cursor:pointer;
-    font-weight:600;
-    font-size:12px;
-  }
-  #resetBtn:hover{background:var(--navy2);}
   #saveNote{font-size:11px; color:var(--grey); opacity:0.85;}
   #syncNote{font-size:11px;}
   #syncBtn{
@@ -186,6 +183,17 @@
     font-size:12px;
   }
   #syncBtn:hover{background:#eef1f5;}
+  #fillActiveBtn, #clearBtn{
+    background:white;
+    color:var(--navy);
+    border:1px solid var(--navy);
+    padding:6px 11px;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:600;
+    font-size:12px;
+  }
+  #fillActiveBtn:hover, #clearBtn:hover{background:#eef1f5;}
   .team-picker{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--grey); font-weight:600; }
   #teamSelect{
     border:1px solid #d7dbe0; border-radius:6px; padding:6px 8px; font-size:12px; color:var(--navy);
@@ -220,6 +228,8 @@
   .stats-bar .type-split{ font-size:12px; opacity:0.9; white-space:nowrap; }
   .stats-bar .lock-summary{ font-size:11px; opacity:0.75; margin-top:3px; white-space:nowrap; }
   .stats-bar-divider{ width:1px; align-self:stretch; background:rgba(255,255,255,0.18); }
+  /* Mobile-only expand/collapse control for the banner — see @media block below. */
+  .stats-bar-toggle{ display:none; }
   .stats-bar .breakdown{ display:flex; flex-wrap:wrap; gap:14px 20px; flex:1; }
   .stats-bar .breakdown-row{ display:flex; flex-direction:column; min-width:56px; }
   .stats-bar .breakdown-row .gcount{ font-family:Georgia,serif; font-weight:700; font-size:17px; }
@@ -272,9 +282,15 @@
   }
   .roster-col h3{
     margin:0; background:var(--navy); color:white; font-size:11.5px; text-transform:uppercase;
-    letter-spacing:0.8px; padding:8px 10px; font-weight:700; display:flex; justify-content:space-between;
+    letter-spacing:0.8px; padding:8px 10px; font-weight:700; display:flex; align-items:center; justify-content:space-between; gap:8px;
   }
   .roster-col h3 .n{ opacity:0.7; font-weight:400; }
+  .col-clear-btn{
+    flex-shrink:0; background:rgba(255,255,255,0.15); border:none; color:white;
+    font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px;
+    padding:3px 7px; border-radius:5px; cursor:pointer;
+  }
+  .col-clear-btn:hover{ background:rgba(255,255,255,0.3); }
   .lane{
     padding:10px;
     display:flex;
@@ -331,28 +347,39 @@
   }
   .mini-toggle.remove{ color:#A3241C; font-size:12px; }
   .mini-toggle.remove:hover{ background:var(--il); border-color:var(--il); color:white; }
+  .mini-toggle.to-pool{ color:var(--grey); font-size:10px; }
+  .mini-toggle.to-pool:hover{ background:var(--navy); border-color:var(--navy); color:white; }
   .pool-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   @media (max-width:760px){ .pool-grid{ grid-template-columns:1fr; } }
 
   /* ---- Split View: Final Roster (+ Lineups) on the left, Pool pinned on the
      right so it's always reachable while dragging. Best for a tall-ish,
      roughly-square capture window (e.g. an OBS scene).
-     Lineups are grouped into the LEFT column specifically so that column is
-     reliably taller than the Pool panel — a sticky element can't hold still
-     if it's the one defining its container's height, so the left side needs
-     real slack above the Pool's own (viewport-capped) height for the pin to
-     actually work instead of just scrolling away with the page. ---- */
+     In normal (non-split) flow, the Pool sits between the Final Roster and
+     Lineups in plain document order (see the HTML), so it's a CSS Grid
+     here rather than a flex row — that's what lets the Pool be placed on
+     the right, spanning both rows, without needing it physically between
+     the other two sections in the markup. Lineups are still stacked under
+     the Final Roster in the left column specifically so that column is
+     reliably taller than the Pool panel — a sticky element can't hold
+     still if it's the one defining its container's height, so the left
+     side needs real slack above the Pool's own (viewport-capped) height
+     for the pin to actually work instead of just scrolling away with the
+     page. ---- */
   .board-split{ display:block; }
-  body.split .board-split{ display:flex; align-items:flex-start; gap:0; }
+  body.split .board-split{
+    display:grid; grid-template-columns:1.4fr 1fr; align-items:start; gap:0;
+  }
   body.split .board-main{
-    flex:1.4; min-width:0;
+    grid-column:1; grid-row:1; min-width:0;
     /* Guarantees the left column can never be shorter than the Pool's own
        capped height, so the sticky Pool always has room to actually stick,
        even right after loading with an empty/near-empty roster. */
     min-height:calc(100vh - var(--pinned-h, 54px) - 10px + 260px);
   }
+  body.split .lineup-section{ grid-column:1; grid-row:2; }
   body.split .pool-section{
-    flex:1; min-width:0; border-left:1px solid #dfe3e8;
+    grid-column:2; grid-row:1 / span 2; min-width:0; border-left:1px solid #dfe3e8;
     position:sticky; top:var(--pinned-h, 54px);
     max-height:calc(100vh - var(--pinned-h, 54px) - 10px);
     overflow-y:auto;
@@ -480,6 +507,15 @@
     width:820px; background:white; font-family:-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     border-radius:14px; overflow:hidden;
   }
+  /* Small credit in the corner of the downloaded/shared image — subtle
+     enough not to compete with the roster itself, but there so a repost
+     of the image still points back to the site. */
+  .fx-watermark{
+    position:absolute; right:16px; bottom:10px;
+    font-size:11px; font-weight:700; letter-spacing:0.3px;
+    color:rgba(12,35,64,0.32);
+    pointer-events:none;
+  }
   .fx-header{
     background:var(--navy); color:white; padding:18px 24px;
     background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px, transparent 1px, transparent 12px);
@@ -571,6 +607,7 @@
   .mini-toggle.status-dot:hover{ border-color:var(--grey); }
   .mini-toggle.status-dot.lock{ background:var(--lock); border-color:var(--lock); }
   .mini-toggle.status-dot.bubble{ background:var(--bubble); border-color:var(--bubble); }
+  .mini-toggle.status-dot.cut{ background:var(--cut); border-color:var(--cut); }
   .mini-toggle.hurt:hover{ border-color:var(--il); color:var(--il); }
   .mini-toggle.hurt.active{ background:var(--il); border-color:var(--il); color:white; }
 
@@ -609,6 +646,41 @@
 
   .tile.label-lock{ border-left-color:var(--lock); background:var(--lockbg); }
   .tile.label-bubble{ border-left-color:var(--bubble); background:var(--bubblebg); }
+  .tile.label-cut{ border-left-color:var(--cut); background:var(--cutbg); }
+
+  /* ---- "Fill this spot" button (mobile) ---- sits at the end of each
+     roster lane; hidden on desktop, where drag-and-drop already does this. */
+  .fill-spot-btn{ display:none; }
+
+  /* ---- Move/Add picker popup ---- shared by "tap a tile to move it" and
+     "tap + Add Player to fill a spot" on mobile; harmless if ever opened on
+     desktop too, so no display:none gate here. */
+  .picker-overlay{
+    display:none;
+    position:fixed; inset:0; background:rgba(12,35,64,0.55);
+    align-items:center; justify-content:center; z-index:300; padding:24px;
+  }
+  .picker-overlay.open{ display:flex; }
+  .picker-modal{
+    background:white; border-radius:12px; overflow:hidden; width:min(360px, 92vw);
+    max-height:80vh; display:flex; flex-direction:column; box-shadow:0 12px 40px rgba(0,0,0,0.35);
+  }
+  .picker-title{
+    padding:14px 16px; background:var(--navy); color:white; font-weight:700; font-size:14px;
+  }
+  .picker-list{ overflow:auto; padding:8px; display:flex; flex-direction:column; gap:6px; }
+  .picker-item{
+    display:block; width:100%; text-align:left; padding:12px 12px; border-radius:8px;
+    border:1px solid #d7dbe0; background:white; color:var(--navy); font-size:14px;
+    font-weight:600; cursor:pointer;
+  }
+  .picker-item:active{ background:#eef1f5; }
+  .picker-item.current{ border-color:var(--navy); background:#eef3fb; }
+  .picker-empty{ padding:16px; color:var(--grey); font-style:italic; text-align:center; font-size:13px; }
+  .picker-cancel{
+    margin:8px; padding:11px; border-radius:8px; border:1px solid #d7dbe0; background:#f3f4f6;
+    color:var(--navy); font-weight:700; font-size:13.5px; cursor:pointer;
+  }
 
   /* ---- Mobile ---- everything above this block is the desktop experience,
      left exactly as it was. Below is a dedicated pass for small/touch
@@ -621,13 +693,17 @@
   @media (max-width:768px){
     body{ padding-bottom:40px; }
 
+    /* Header + toolbar are pinned on screen the whole time on this size
+       screen (see the sticky rules above), so every pixel of height here is
+       permanently taken away from the roster below — kept as tight as it
+       can be while still showing the team, Sync Now, and Reset. */
     header.topbar{
-      flex-direction:column; align-items:flex-start; gap:8px;
-      padding:14px 16px;
+      flex-direction:column; align-items:flex-start; gap:4px;
+      padding:8px 16px;
     }
-    .brand .interlock{ width:38px; height:38px; font-size:22px; }
-    .brand h1{ font-size:15px; }
-    .brand .sub{ font-size:9.5px; }
+    .brand .interlock{ width:30px; height:30px; font-size:18px; }
+    .brand h1{ font-size:13px; }
+    .brand .sub{ font-size:8.5px; }
     #headerBlurb{ display:none; }
 
     /* The long explanatory paragraphs are useful once, not every visit —
@@ -635,32 +711,98 @@
        before you ever reach the roster itself. */
     #legendRow, #hintText, #lineupHint, #addPlayerHint{ display:none; }
 
-    .toolbar{ flex-direction:column; align-items:stretch; padding:10px 16px; gap:10px; }
+    .toolbar{ flex-direction:column; align-items:stretch; padding:8px 16px; gap:6px; }
     /* The wrapping div still carries its own inline flex styles (harmless
        on desktop), so this overrides them directly rather than fighting
-       them with a competing display mode. */
-    .toolbar-actions{ flex-direction:column !important; align-items:stretch !important; gap:8px !important; }
-    .toolbar-actions .team-picker{ font-size:13px; }
-    #teamSelect{ width:100%; max-width:none; flex:1; }
-    #saveNote{ font-size:10.5px; }
-    #syncNote{ font-size:10.5px; }
-    .toolbar-actions button{ width:100%; padding:12px 10px; font-size:13px; }
+       them with a competing display mode. Broadcast Mode and Split View
+       both assume desktop-width room to work with (a clean wide streaming
+       frame; two panes side by side) that the stacked mobile layout doesn't
+       have, so both buttons are hidden here rather than shown doing nothing
+       useful — that also leaves Sync Now and Reset free to share one row
+       instead of each stealing a full one. */
+    .toolbar-actions{
+      display:flex !important; flex-direction:row !important; flex-wrap:wrap !important;
+      align-items:stretch !important; gap:6px !important;
+    }
+    .toolbar-actions .team-picker{ flex:1 1 100%; font-size:12.5px; }
+    #teamSelect{ width:100%; max-width:none; flex:1; padding:6px 8px; }
+    /* "Autosaves in this browser" and the last-synced time are nice to know,
+       but not worth two permanent lines of a bar that's pinned on screen —
+       Sync Now is always right there if you want a fresh pull. */
+    #saveNote, #syncNote{ display:none; }
+    #broadcastBtn, #splitBtn{ display:none; }
+    .toolbar-actions button{ padding:9px 10px; font-size:12.5px; }
+    #syncBtn, #fillActiveBtn, #clearBtn{ flex:1 1 calc(50% - 3px); }
     .btn-full{ display:none; }
     .btn-short{ display:inline; }
 
-    .stats-bar{ flex-direction:column; align-items:stretch; gap:12px; padding:14px 16px; margin:12px 16px 0 16px; }
+    /* The stats bar's "total" block (21/26 · On Final Roster) reads fine
+       side by side, but the pitcher/hitter + lock-count block underneath it
+       has too much text to also force onto one row — that combination is
+       what was running the two lines together edge to edge. Stacking that
+       one back up, letting it wrap, and trimming every font size a notch
+       keeps the whole banner from eating the screen.
+       This is also the one piece of information worth having pinned on
+       screen while you scroll (unlike Broadcast Mode, which pins it for a
+       different reason and stays desktop-only) — so it sticks right below
+       the header+toolbar here, and opens collapsed to just the headline
+       numbers, with the position-by-position breakdown tucked behind the
+       toggle button below so the pinned area doesn't stay maximally tall. */
+    .stats-bar{
+      flex-direction:column; align-items:stretch; gap:6px; padding:10px 14px; margin:10px 16px 0 16px;
+      position:sticky; top:calc(var(--header-h, 64px) + var(--toolbar-h, 54px)); z-index:45;
+    }
     .stats-bar-divider{ display:none; }
-    .stats-bar-block{ flex-direction:row; align-items:baseline; justify-content:space-between; }
-    .stats-bar .stat-big{ font-size:28px; }
-    .breakdown{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px 6px; }
+    .stats-bar-block-total{ flex-direction:row; align-items:baseline; justify-content:space-between; }
+    .stats-bar-block-split{ flex-direction:column; align-items:flex-start; gap:1px; }
+    .stats-bar .stat-big{ font-size:22px; }
+    .stats-bar .stat-label{ font-size:9px; }
+    .stats-bar .type-split, .stats-bar .lock-summary{ white-space:normal; font-size:10px; }
+    .stats-bar .breakdown{ display:none; grid-template-columns:repeat(4,1fr); gap:8px 6px; }
+    .stats-bar.expanded .breakdown{ display:grid; }
     .breakdown-row{ min-width:0; }
+    .breakdown-row .gcount{ font-size:14px; }
+    .breakdown-row .glabel{ font-size:8.5px; }
+    .breakdown-row .glock{ font-size:8px; }
+    .stats-bar-toggle{
+      display:block; width:100%; margin-top:2px; padding:6px;
+      background:rgba(255,255,255,0.12); border:none; border-radius:6px;
+      color:white; font-size:10.5px; font-weight:700; letter-spacing:0.2px;
+      cursor:pointer; touch-action:manipulation;
+    }
+    .stats-bar-toggle:active{ background:rgba(255,255,255,0.22); }
 
     .roster-section, .pool-section, .lineup-section{ padding-left:16px; padding-right:16px; }
     .roster-grid, .roster-grid-pitch{ grid-template-columns:1fr; }
-    .tile{ padding:10px 12px; font-size:13px; }
+    /* Split View is a desktop-only feature here (see body.split.board-split
+       below), but a saved "on" preference from a wider screen still carries
+       over as a class on <body> — without this, its own higher-specificity
+       column rules for these same grids would win out and quietly bring
+       back multi-column layouts this whole mobile pass is trying to avoid. */
+    body.split .roster-grid, body.split .roster-grid-pitch, body.split .pool-grid{ grid-template-columns:1fr; }
+    /* Desktop's touch-action:none is what lets the pointer-drag JS take over
+       every touch that starts on a tile — great for precise drag-and-drop,
+       but it also swallows an ordinary finger-swipe meant to scroll the page
+       past a tile. pan-y hands vertical scrolling back to the browser; the
+       "+ Add Player" spot buttons and tapping a tile (see JS) cover moving
+       players around instead of dragging on this size screen. */
+    .tile{ padding:10px 12px; font-size:13px; flex-wrap:wrap; touch-action:pan-y; }
     .tile .meta{ font-size:10.5px; }
     .mini-toggle{ width:22px; height:22px; font-size:11px; }
     .toggle-col{ gap:6px; }
+    .col-clear-btn{ padding:6px 9px; font-size:11px; touch-action:manipulation; }
+
+    /* Dragging works with a finger too, but pinpointing a tiny drop target on
+       a phone is fiddly — tapping a tile (without dragging it) pops up a
+       "Move to…" list instead, and each roster spot gets its own button to
+       pull a player straight out of the pool. */
+    .fill-spot-btn{
+      display:block; width:calc(100% - 16px); margin:0 8px 8px 8px;
+      padding:10px 8px; font-size:12.5px; font-weight:700; border-radius:7px;
+      border:1.5px dashed #b7bec7; background:transparent; color:var(--grey);
+      touch-action:manipulation;
+    }
+    .fill-spot-btn:active{ background:#eef1f5; }
 
     .pool-header-row{ flex-direction:column; align-items:flex-start; gap:8px; }
     #addPlayerBtn{ width:100%; }
@@ -697,13 +839,14 @@
       <h1 id="brandTitle">26-Man Roster Builder<span class="sub" id="brandSub">New York Yankees — 40-man pool</span></h1>
     </div>
   </div>
-  <div id="headerBlurb" style="font-size:12px; opacity:0.75; text-align:right; max-width:220px;">Drag players onto the roster above. Click any tile to label it Lock or Bubble.</div>
+  <div id="headerBlurb" style="font-size:12px; opacity:0.75; text-align:right; max-width:220px;">Drag players onto the roster above. Click any tile to label it Lock, Bubble, or Cut.</div>
 </header>
 
 <div class="toolbar">
   <div class="legend" id="legendRow">
     <span><i style="background:var(--lock)"></i>Lock label</span>
     <span><i style="background:var(--bubble)"></i>Bubble label</span>
+    <span><i style="background:var(--cut)"></i>Cut label</span>
     <span><i style="background:var(--il)"></i>Injured (+)</span>
     <span><i style="background:var(--neutral); border:1px solid #ccc"></i>No label</span>
   </div>
@@ -714,26 +857,30 @@
     <span id="saveNote">Autosaves in this browser</span>
     <span id="syncNote" style="color:var(--grey); opacity:0.85;">Syncing…</span>
     <button id="syncBtn" title="Pull the latest 40-man roster now">Sync Now</button>
-    <button id="resetBtn"><span class="btn-full">Reset to Current Roster</span><span class="btn-short">Reset</span></button>
+    <button id="fillActiveBtn" title="Place everyone currently on the active roster onto the board, with educated guesses for backups"><span class="btn-full">Fill with Active Roster</span><span class="btn-short">Fill Active</span></button>
+    <button id="clearBtn" title="Send every player back to the pool so you can build from scratch">Clear</button>
     <button id="broadcastBtn" title="Switch between working view and a clean look for recording/streaming">📺 Broadcast Mode</button>
     <button id="splitBtn" title="Show the Final Roster and the Pool side by side so both stay in view while dragging">🪟 Split View</button>
   </div>
 </div>
 
-<p class="hint" id="hintText">The roster pool syncs with MLB's live 40-man roster automatically on load and every hour after — new call-ups or trades show up in the pool, and injury status stays current. It only ever adds players or refreshes their name/number/injury flag; it never touches where you've placed someone or any Lock/Bubble you've set. Drag a player tile between the roster columns and the pool below to change where they sit — a thin orange line shows exactly where they'll land as you drag, so you can drop them at any precise spot rather than just the end. Each tile has two small buttons on its right edge: the top dot cycles blank → <span style="color:var(--lock);font-weight:700;">green (Lock)</span> → <span style="color:var(--bubble);font-weight:700;">yellow (Bubble)</span> → blank again with each click; the <strong>+</strong> below it is a separate on/off toggle for currently injured. Neither moves the player anywhere.</p>
+<p class="hint" id="hintText">The roster pool syncs with MLB's live 40-man roster automatically on load and every hour after — new call-ups or trades show up in the pool, and injury status stays current. It only ever adds players or refreshes their name/number/injury flag; it never touches where you've placed someone or any Lock/Bubble/Cut you've set. Drag a player tile between the roster columns and the pool below to change where they sit — a thin orange line shows exactly where they'll land as you drag, so you can drop them at any precise spot rather than just the end (on a phone or tablet, a "Move to" dropdown on each tile does the same job without dragging). Each tile has two small buttons on its right edge: the top dot cycles blank → <span style="color:var(--lock);font-weight:700;">green (Lock)</span> → <span style="color:var(--bubble);font-weight:700;">yellow (Bubble)</span> → <span style="color:var(--cut);font-weight:700;">red (Cut)</span> → blank again with each click; the <strong>+</strong> below it is a separate on/off toggle for currently injured. Neither moves the player anywhere.</p>
 
-<section class="stats-bar">
-  <div class="stats-bar-block">
+<section class="stats-bar" id="statsBar">
+  <div class="stats-bar-block stats-bar-block-total">
     <div class="stat-big" id="rosterTotal">0/26</div>
     <div class="stat-label">On Final Roster</div>
   </div>
   <div class="stats-bar-divider"></div>
-  <div class="stats-bar-block">
+  <div class="stats-bar-block stats-bar-block-split">
     <div class="type-split" id="typeSplit">0 Pitchers · 0 Position Players</div>
     <div class="lock-summary" id="lockSummary">0 locked · 26 up for grabs</div>
   </div>
   <div class="stats-bar-divider"></div>
   <div class="breakdown" id="breakdown"></div>
+  <!-- Mobile-only: this banner is pinned there (see CSS), so it opens
+       collapsed to just the headline numbers and expands on tap. -->
+  <button type="button" id="statsBarToggle" class="stats-bar-toggle" aria-expanded="false">▾ Position Breakdown</button>
 </section>
 
 <div class="board-split" id="boardSplit">
@@ -748,24 +895,6 @@
     <h3 class="roster-subtitle">Position Players</h3>
     <div class="roster-grid" id="rosterGridHit"></div>
   </div>
-</section>
-
-<section class="lineup-section">
-  <h2 class="section-title">Lineups</h2>
-  <p class="hint" id="lineupHint" style="margin:0 0 12px 0; padding:0;">Pick from your Final 26-Man Roster hitters — any player can bat in any spot and play any position for the day, independent of how they're slotted above. The letter badge next to each name shows how they bat (L / R / S for switch).</p>
-  <div class="lineup-grid">
-    <div class="lineup-card">
-      <h3 class="lineup-card-title">vs RHP</h3>
-      <div class="lineup-rows" id="lineupRows_RHP"></div>
-      <div class="lineup-warnings" id="lineupWarnings_RHP"></div>
-    </div>
-    <div class="lineup-card">
-      <h3 class="lineup-card-title">vs LHP</h3>
-      <div class="lineup-rows" id="lineupRows_LHP"></div>
-      <div class="lineup-warnings" id="lineupWarnings_LHP"></div>
-    </div>
-  </div>
-  <button id="downloadLineupBtn">Download Roster &amp; Lineups Image</button>
 </section>
 </div><!-- /#boardMain -->
 
@@ -805,6 +934,24 @@
     </div>
   </div>
 </section>
+
+<section class="lineup-section">
+  <h2 class="section-title">Lineups</h2>
+  <p class="hint" id="lineupHint" style="margin:0 0 12px 0; padding:0;">Pick from your Final 26-Man Roster hitters — any player can bat in any spot and play any position for the day, independent of how they're slotted above. The letter badge next to each name shows how they bat (L / R / S for switch).</p>
+  <div class="lineup-grid">
+    <div class="lineup-card">
+      <h3 class="lineup-card-title">vs RHP</h3>
+      <div class="lineup-rows" id="lineupRows_RHP"></div>
+      <div class="lineup-warnings" id="lineupWarnings_RHP"></div>
+    </div>
+    <div class="lineup-card">
+      <h3 class="lineup-card-title">vs LHP</h3>
+      <div class="lineup-rows" id="lineupRows_LHP"></div>
+      <div class="lineup-warnings" id="lineupWarnings_LHP"></div>
+    </div>
+  </div>
+  <button id="downloadLineupBtn">Download Roster &amp; Lineups Image</button>
+</section>
 </div><!-- /#boardSplit -->
 
 </div><!-- /#appFrame -->
@@ -824,6 +971,15 @@
     <div class="preview-modal-footer">
       <button id="previewDownloadBtn">Download PNG</button>
     </div>
+  </div>
+</div>
+
+<!-- Move/Add picker popup (mobile) -->
+<div id="pickerOverlay" class="picker-overlay">
+  <div class="picker-modal">
+    <div class="picker-title" id="pickerTitle"></div>
+    <div class="picker-list" id="pickerList"></div>
+    <button type="button" class="picker-cancel" id="pickerCancel">Cancel</button>
   </div>
 </div>
 
@@ -1007,6 +1163,9 @@ function applyTeamBranding(teamId){
   if(sub) sub.textContent = `${team.name} — 40-man pool`;
   const teamSelect = document.getElementById('teamSelect');
   if(teamSelect) teamSelect.value = String(teamId);
+  // Browser tab icon follows whichever team is selected.
+  const favicon = document.getElementById('favicon');
+  if(favicon) favicon.href = logoURL(team.id);
 }
 
 const LAST_TEAM_KEY = 'mlb_roster_last_team';
@@ -1109,7 +1268,7 @@ async function saveState(){
 function cycleStatus(id){
   const p = players.find(pl=>pl.id===id);
   if(!p) return;
-  const order = [null,'lock','bubble'];
+  const order = [null,'lock','bubble','cut'];
   const i = order.indexOf(p.status || null);
   p.status = order[(i+1) % order.length];
   saveState();
@@ -1126,16 +1285,88 @@ function placePlayer(id, place, group, order){
   render();
 }
 
+// Touch-friendly alternative to dragging: move a player straight to a roster
+// spot (or back to the pool) without needing to drag them there.
+// Lands at the end of whatever list it's dropped into, same as a drag would
+// if you didn't need it at a precise spot.
+function moveToSpot(id, value){
+  const p = players.find(pl=>pl.id===id);
+  if(!p) return;
+  if(value === 'pool'){
+    placePlayer(id, 'pool', null);
+    return;
+  }
+  const dest = players.filter(pl=>pl.placed==='roster' && pl.group===value);
+  const maxOrder = dest.reduce((m,pl)=>Math.max(m, pl.order||0), 0);
+  placePlayer(id, 'roster', value, maxOrder + 10);
+}
+
+/* ---- Move/Add picker popup (mobile) ----
+   One small overlay reused two ways:
+   - Tap a tile (without dragging it) → "Move <name>" → list of spots/Pool.
+   - Tap "+ Add Player" on an empty (or not-yet-full) roster spot → list of
+     eligible pool players to drop straight into it.
+   `items` is [{label, value, current}]; `onPick(value)` runs on tap. */
+function openPicker(title, items, onPick){
+  const overlay = document.getElementById('pickerOverlay');
+  document.getElementById('pickerTitle').textContent = title;
+  const list = document.getElementById('pickerList');
+  list.innerHTML = items.length
+    ? items.map((it,i)=>`<button type="button" class="picker-item${it.current?' current':''}" data-i="${i}">${it.label}${it.current?' (current)':''}</button>`).join('')
+    : `<div class="picker-empty">Nobody available</div>`;
+  list.querySelectorAll('.picker-item').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const it = items[+btn.dataset.i];
+      closePicker();
+      onPick(it.value);
+    });
+  });
+  overlay.classList.add('open');
+}
+function closePicker(){
+  document.getElementById('pickerOverlay').classList.remove('open');
+  document.getElementById('pickerList').innerHTML = '';
+}
+
+function openMovePopupForTile(id){
+  const p = players.find(pl=>pl.id===id);
+  if(!p) return;
+  const destColumns = p.type === 'P'
+    ? ROSTER_COLUMNS.filter(c=>c.key==='SP'||c.key==='RP')
+    : ROSTER_COLUMNS.filter(c=>c.key!=='SP'&&c.key!=='RP');
+  const current = p.placed === 'pool' ? 'pool' : p.group;
+  const items = [{label:'Pool', value:'pool', current:current==='pool'}]
+    .concat(destColumns.map(c=>({label:c.label, value:c.key, current:current===c.key})));
+  openPicker(`Move ${p.name}`, items, value=>moveToSpot(id, value));
+}
+
+function openFillSpotPopup(groupKey){
+  const col = ROSTER_COLUMNS.find(c=>c.key===groupKey);
+  if(!col) return;
+  const isPitcherCol = groupKey === 'SP' || groupKey === 'RP';
+  const eligible = players.filter(p=>p.placed==='pool' && (isPitcherCol ? p.type==='P' : p.type==='H'))
+                           .sort((a,b)=>(a.order??0)-(b.order??0));
+  const items = eligible.map(p=>({label:`${p.name}${p.num?' #'+p.num:''}`, value:p.id}));
+  openPicker(`Add to ${col.label}`, items, id=>moveToSpot(id, groupKey));
+}
+
 function tileHTML(p){
   const visual = p.status ? `label-${p.status}` : '';
   const statusTitle = p.status === 'lock' ? 'Lock — click to set Bubble'
-                     : p.status === 'bubble' ? 'Bubble — click to clear'
+                     : p.status === 'bubble' ? 'Bubble — click to set Cut'
+                     : p.status === 'cut' ? 'Cut — click to clear'
                      : 'No label — click to set Lock';
   const nameBadges = p.hurt ? `<span class="hurt-badge" title="Currently injured">+</span>` : '';
   const numPart = p.num ? `#${p.num} · ` : '';
   const orgBadge = p.custom ? `<span class="org-badge" title="Not currently on the 40-man roster">Not 40-man</span>` : '';
   const removeToggle = p.custom
     ? `<div class="mini-toggle remove" data-toggle="remove" data-id="${p.id}" title="Remove this player">×</div>`
+    : '';
+  // Quickest way to pull one guy off the roster without dragging — only
+  // makes sense once they're actually placed there, not while they're
+  // still sitting in the pool.
+  const toPoolToggle = p.placed === 'roster'
+    ? `<div class="mini-toggle to-pool" data-toggle="to-pool" data-id="${p.id}" title="Send back to the pool">⤓</div>`
     : '';
   return `<div class="tile ${visual}" data-id="${p.id}">
     <div class="info">
@@ -1145,6 +1376,7 @@ function tileHTML(p){
     <div class="toggle-col">
       <div class="mini-toggle status-dot ${p.status ? p.status : ''}" data-toggle="status" data-id="${p.id}" title="${statusTitle}"></div>
       <div class="mini-toggle hurt ${p.hurt ? 'active' : ''}" data-toggle="hurt" data-id="${p.id}" title="${p.hurt ? 'Mark healthy' : 'Mark injured'}">+</div>
+      ${toPoolToggle}
       ${removeToggle}
     </div>
   </div>`;
@@ -1243,9 +1475,13 @@ function render(){
   const colHTML = col=>{
     const inCol = players.filter(p=>p.placed==='roster' && p.group===col.key)
                           .sort((a,b)=>(a.order??0)-(b.order??0));
+    const clearGroupBtn = inCol.length
+      ? `<button type="button" class="col-clear-btn" data-group="${col.key}" title="Send everyone in ${col.label} back to the pool">Clear</button>`
+      : '';
     return `<div class="roster-col">
-      <h3>${col.label} <span class="n">${inCol.length}</span></h3>
+      <h3><span class="col-title-group">${col.label} <span class="n">${inCol.length}</span></span>${clearGroupBtn}</h3>
       <div class="lane" data-place="roster" data-group="${col.key}">${inCol.map(tileHTML).join('')}</div>
+      <button type="button" class="fill-spot-btn" data-group="${col.key}">+ Add Player</button>
     </div>`;
   };
   const pitchGrid = document.getElementById('rosterGridPitch');
@@ -1578,6 +1814,16 @@ function buildFullExport(){
     </div>`;
   };
 
+  // A lineup nobody's touched yet is just nine "—" rows — noise on a shared
+  // image rather than information, so it's left off entirely. Only a
+  // lineup with at least one player actually slotted in gets included,
+  // and the whole "Lineups" section disappears if neither one does.
+  const hasAnyLineupEntry = key => lineups[key].some(slot=>slot.playerId);
+  const lineupSections = ['RHP','LHP'].filter(hasAnyLineupEntry).map(lineupHtml).join('');
+  const lineupsBlockHtml = lineupSections
+    ? `<div class="fx-section-title">Lineups</div><div class="fx-lineups">${lineupSections}</div>`
+    : '';
+
   const team = teamById(currentTeamId);
   exportEl.innerHTML = `
     <div class="fx-header">
@@ -1585,17 +1831,14 @@ function buildFullExport(){
         <div class="fx-team-logo"><img src="${logoURL(team.id)}" alt="${team.name}" onerror="this.remove();"></div>
         <div>
           <div class="team">${team.name}</div>
-          <div class="title">Final 26-Man Roster &amp; Lineups</div>
+          <div class="title">Final 26-Man Roster${lineupSections ? ' &amp; Lineups' : ''}</div>
         </div>
       </div>
     </div>
     <div class="fx-section-title">Final 26-Man Roster</div>
     ${diamondHtml}
-    <div class="fx-section-title">Lineups</div>
-    <div class="fx-lineups">
-      ${lineupHtml('RHP')}
-      ${lineupHtml('LHP')}
-    </div>
+    ${lineupsBlockHtml}
+    <div class="fx-watermark">mlbrostertool.com</div>
   `;
 }
 
@@ -1603,6 +1846,27 @@ function toggleHurt(id){
   const p = players.find(pl=>pl.id===id);
   if(!p) return;
   p.hurt = !p.hurt;
+  saveState();
+  render();
+}
+
+// Quick alternative to dragging a tile down to the pool — same result as
+// dropping them there by hand, just one click/tap on the tile itself.
+function sendToPool(id){
+  placePlayer(id, 'pool', null);
+}
+
+// Sends every player currently in one roster column (e.g. just Relievers,
+// or just Catcher) back to the pool in one go, leaving every other column
+// untouched — a faster way to redo one part of the board than clearing
+// everything or dragging each tile down one at a time.
+function clearGroup(groupKey){
+  const col = ROSTER_COLUMNS.find(c=>c.key===groupKey);
+  if(!col) return;
+  const inGroup = players.filter(p=>p.placed==='roster' && p.group===groupKey);
+  if(inGroup.length === 0) return;
+  if(!confirm(`Send everyone in ${col.label} (${inGroup.length}) back to the pool?`)) return;
+  inGroup.forEach(p=>{ p.placed = 'pool'; });
   saveState();
   render();
 }
@@ -1629,6 +1893,7 @@ function attachTileEvents(tile){
       const id = btn.dataset.id;
       if(btn.dataset.toggle === 'status') cycleStatus(id);
       else if(btn.dataset.toggle === 'hurt') toggleHurt(id);
+      else if(btn.dataset.toggle === 'to-pool') sendToPool(id);
       else if(btn.dataset.toggle === 'remove') removePlayer(id);
     });
   });
@@ -1644,7 +1909,11 @@ function onPointerDown(e){
     startX: e.clientX, startY: e.clientY,
     offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top,
     width: rect.width,
-    isDragging: false
+    isDragging: false,
+    moved: false,
+    // Decided once, at the start of the gesture, so a mid-drag resize can't
+    // flip behavior partway through.
+    mobile: window.matchMedia('(max-width:768px)').matches
   };
   document.addEventListener('pointermove', onPointerMove);
   document.addEventListener('pointerup', onPointerUp);
@@ -1655,6 +1924,14 @@ function onPointerMove(e){
   if(!dragState) return;
   const dx = e.clientX - dragState.startX;
   const dy = e.clientY - dragState.startY;
+  if(dragState.mobile){
+    // Don't hijack the gesture at all here — .tile's touch-action:pan-y (see
+    // CSS) already hands vertical scrolling straight to the browser. Just
+    // remember whether this turned into real movement, so onPointerUp below
+    // can tell a scroll/swipe apart from an actual tap.
+    if(Math.hypot(dx,dy) > 8) dragState.moved = true;
+    return;
+  }
   if(!dragState.isDragging && Math.hypot(dx,dy) > 6){
     dragState.isDragging = true;
     const t = dragState.tile;
@@ -1722,7 +1999,7 @@ function computeOrderForInsert(lane, insertIndex){
 
 function onPointerUp(e){
   if(!dragState) return;
-  const {id, tile, isDragging} = dragState;
+  const {id, tile, isDragging, mobile, moved} = dragState;
   document.removeEventListener('pointermove', onPointerMove);
   document.removeEventListener('pointerup', onPointerUp);
   document.removeEventListener('pointercancel', onPointerUp);
@@ -1742,20 +2019,120 @@ function onPointerUp(e){
     } else {
       render();
     }
+  } else if(mobile && !moved && e.type === 'pointerup'){
+    // A genuine tap — finger came up in roughly the same spot it went down,
+    // with no scroll in between (a real scroll ends in 'pointercancel', which
+    // this deliberately excludes). That's the signal to pop up a "Move to…"
+    // list instead of requiring a precise drag.
+    openMovePopupForTile(id);
   }
   dragState = null;
 }
 
-document.getElementById('resetBtn').addEventListener('click', async ()=>{
-  if(!confirm('Reset the board back to the default roster? This clears your saved placements, labels, and any manually-added players.')) return;
-  players = currentTeamId === DEFAULT_TEAM_ID ? DEFAULTS.map((p,i)=>({...p, order:i*10})) : [];
-  savedPlayerState = null; // otherwise the next sync would restore what we just cleared
-  try{ await storageDelete(storageKey(currentTeamId)); }catch(e){}
+document.getElementById('syncBtn').addEventListener('click', ()=>{ syncRosterFromAPI(); });
+
+// "Clear" — a lighter reset than Reset to Current Roster: every player goes
+// back to the pool and every Lock/Bubble/Cut label + lineup is wiped, but
+// nobody is deleted — manually-added players stay in the pool ready to be
+// placed again, and the 40-man list itself is untouched.
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  if(!confirm('Clear the board? Every player goes back to the pool and all Lock/Bubble/Cut labels and lineups are cleared. Manually-added players are kept in the pool.')) return;
+  players.forEach(p=>{ p.placed = 'pool'; p.status = null; });
+  lineups = {
+    RHP: Array.from({length:9}, ()=>({playerId:null, position:null})),
+    LHP: Array.from({length:9}, ()=>({playerId:null, position:null})),
+  };
+  saveState();
   render();
-  syncRosterFromAPI();
 });
 
-document.getElementById('syncBtn').addEventListener('click', ()=>{ syncRosterFromAPI(); });
+// "Fill Active Roster" — places every player currently on the team's real
+// active roster onto the board, with an educated guess at where backups
+// belong. Pulls MLB's own depth chart (which, unlike the 40-man list, tells
+// starters from relievers and ranks hitters at each position they can
+// play) rather than trying to reinvent that judgment call from scratch.
+async function fillActiveRoster(){
+  const btn = document.getElementById('fillActiveBtn');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = 'Loading…';
+  try{
+    const res = await fetch(`${API}/teams/${currentTeamId}/roster/depthChart`);
+    if(!res.ok) throw new Error('depth chart fetch failed: ' + res.status);
+    const data = await res.json();
+    const list = data.roster || [];
+    if(list.length === 0) throw new Error('empty depth chart response');
+
+    // Start from a clean board — this button's whole job is to replace
+    // whatever's currently placed with a fresh guess based on live moves.
+    players.forEach(p=>{ p.placed = 'pool'; });
+
+    const assigned = new Set(); // pids already placed this pass
+    const placeAt = (pid, col)=>{
+      const p = players.find(pl=>pl.pid===pid);
+      if(!p || assigned.has(pid)) return false;
+      const dest = players.filter(pl=>pl.placed==='roster' && pl.group===col);
+      const maxOrder = dest.reduce((m,pl)=>Math.max(m, pl.order||0), 0);
+      p.placed = 'roster'; p.group = col; p.order = maxOrder + 10;
+      assigned.add(pid);
+      return true;
+    };
+
+    // Pitchers: the depth chart already splits Starters (SP) from everyone
+    // else (generic "P" bullpen arms and the "CP" closer both read as
+    // Relievers here) — no guessing needed, each pitcher appears once.
+    list.forEach(entry=>{
+      const pid = entry.person && entry.person.id;
+      const statusCode = (entry.status && entry.status.code) || '';
+      if(!pid || statusCode !== 'A') return;
+      const posAbbr = entry.position && entry.position.abbreviation;
+      if(posAbbr === 'SP') placeAt(pid, 'SP');
+      else if(posAbbr === 'P' || posAbbr === 'CP') placeAt(pid, 'RP');
+    });
+
+    // Hitters can appear several times (once per position they can cover),
+    // so specialist/scarce spots are claimed first — catcher, then middle
+    // infield, corners, outfield — and DH last, as a catch-all for whoever
+    // active is left over rather than a true position. Only the single
+    // best-ranked still-unclaimed player is grabbed per column per pass —
+    // grabbing everyone eligible in one go would stack every utility guy
+    // onto whichever position happens to come first and leave others empty.
+    // Repeating the pass spreads the rest out as backups, each landing at
+    // their next-best open position, until every active hitter has a spot.
+    const HITTER_ORDER = ['C','2B','SS','3B','1B','CF','LF','RF','DH'];
+    let placedSomething = true;
+    let guard = 0;
+    while(placedSomething && guard < 20){
+      placedSomething = false;
+      guard++;
+      HITTER_ORDER.forEach(posKey=>{
+        for(const entry of list){
+          const pid = entry.person && entry.person.id;
+          if(!pid || assigned.has(pid)) continue;
+          const statusCode = (entry.status && entry.status.code) || '';
+          if(statusCode !== 'A') continue;
+          const posAbbr = entry.position && entry.position.abbreviation;
+          if(posAbbr !== posKey) continue;
+          if(placeAt(pid, posKey)) placedSomething = true;
+          break; // one grab per column per pass
+        }
+      });
+    }
+
+    saveState();
+    render();
+  }catch(e){
+    console.error('Fill Active Roster failed', e);
+    alert('Could not load the active roster right now — check your connection and try again.');
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+}
+document.getElementById('fillActiveBtn').addEventListener('click', ()=>{
+  if(!confirm("Place everyone currently on the active roster onto the board? This is an educated guess at where backups go, and replaces your current placements (labels and lineups are left alone).")) return;
+  fillActiveRoster();
+});
 
 function clearAddPlayerForm(){
   document.getElementById('apName').value = '';
@@ -1804,15 +2181,19 @@ document.getElementById('apName').addEventListener('keydown', e=>{
 const BROADCAST_KEY = 'mlb_roster_broadcast_mode';
 const SPLIT_KEY = 'mlb_roster_split_mode';
 
-// --toolbar-h: height of the sticky toolbar alone.
-// --pinned-h: everything currently pinned to the top (toolbar, plus the stats
-// bar too once Broadcast Mode makes it sticky) — Split View's pool column
-// starts sticking right below whichever of those is actually stuck in place.
+// --header-h: height of the sticky brand header alone.
+// --toolbar-h: height of the sticky toolbar alone (it pins right below the header).
+// --pinned-h: everything currently pinned to the top (header + toolbar, plus
+// the stats bar too once Broadcast Mode makes it sticky) — Split View's pool
+// column starts sticking right below whichever of those is actually stuck.
 function updateStickyOffsets(){
+  const header = document.querySelector('header.topbar');
   const tb = document.querySelector('.toolbar');
+  const headerH = header ? header.offsetHeight : 64;
   const toolbarH = tb ? tb.offsetHeight : 54;
+  document.documentElement.style.setProperty('--header-h', headerH + 'px');
   document.documentElement.style.setProperty('--toolbar-h', toolbarH + 'px');
-  let pinnedH = toolbarH;
+  let pinnedH = headerH + toolbarH;
   if(document.body.classList.contains('broadcast')){
     const statsBar = document.querySelector('.stats-bar');
     if(statsBar) pinnedH += statsBar.offsetHeight;
@@ -1821,6 +2202,10 @@ function updateStickyOffsets(){
 }
 
 function setBroadcastMode(on){
+  // Broadcast Mode is built for a wide streaming/recording layout — the
+  // stacked mobile layout doesn't have room for it (and the button itself is
+  // hidden there), so it can never actually turn on below the mobile breakpoint.
+  if(on && window.matchMedia('(max-width:768px)').matches) on = false;
   document.body.classList.toggle('broadcast', on);
   const btn = document.getElementById('broadcastBtn');
   if(btn){
@@ -1851,6 +2236,56 @@ document.getElementById('splitBtn').addEventListener('click', ()=>{
 });
 
 window.addEventListener('resize', updateStickyOffsets);
+window.addEventListener('resize', ()=>{
+  // If the window (or a rotated tablet) shrinks into mobile range while
+  // Broadcast Mode is on, turn it off rather than leave it stuck showing a
+  // desktop-only layout that no longer fits.
+  if(document.body.classList.contains('broadcast') && window.matchMedia('(max-width:768px)').matches){
+    setBroadcastMode(false);
+  }
+});
+
+// Mobile-only: the stats bar defaults to a collapsed, headline-only view
+// (see CSS) and expands to show the position breakdown on tap.
+const statsBarToggleBtn = document.getElementById('statsBarToggle');
+if(statsBarToggleBtn){
+  statsBarToggleBtn.addEventListener('click', ()=>{
+    const bar = document.getElementById('statsBar');
+    if(!bar) return;
+    const isOpen = bar.classList.toggle('expanded');
+    statsBarToggleBtn.textContent = isOpen ? '▴ Hide Breakdown' : '▾ Position Breakdown';
+    statsBarToggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    requestAnimationFrame(updateStickyOffsets);
+  });
+}
+
+// MLB's own logo CDN doesn't send CORS headers, so a canvas that has drawn
+// one is "tainted" and html2canvas quietly skips it — that's why the logo
+// shows fine on screen (an <img> tag never needs CORS to just display) but
+// comes out blank in the downloaded image. Routing through images.weserv.nl
+// (a free image proxy that re-serves whatever it fetches with a permissive
+// Access-Control-Allow-Origin header) gets a version of the same logo that
+// canvas is actually allowed to read. If that fetch fails for any reason,
+// callers just get null back and fall through to the plain (blank-in-export)
+// logo rather than blocking the download entirely.
+async function fetchLogoDataUri(url){
+  try{
+    const bare = url.replace(/^https?:\/\//, '');
+    const proxied = `https://images.weserv.nl/?url=${encodeURIComponent(bare)}`;
+    const res = await fetch(proxied);
+    if(!res.ok) throw new Error('logo proxy fetch failed: ' + res.status);
+    const blob = await res.blob();
+    return await new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }catch(e){
+    console.error('Could not load team logo for export', e);
+    return null;
+  }
+}
 
 let previewDataUrl = null;
 
@@ -1864,21 +2299,27 @@ function closePreviewModal(){
   document.getElementById('previewOverlay').classList.remove('open');
 }
 
-document.getElementById('downloadLineupBtn').addEventListener('click', ()=>{
+document.getElementById('downloadLineupBtn').addEventListener('click', async ()=>{
   const exportEl = document.getElementById('fullExport');
   const btn = document.getElementById('downloadLineupBtn');
   btn.disabled = true;
   const originalText = btn.textContent;
   btn.textContent = 'Preparing image…';
-  html2canvas(exportEl, {backgroundColor:'#ffffff', scale:2}).then(canvas=>{
+  try{
+    const logoImg = exportEl.querySelector('.fx-team-logo img');
+    if(logoImg){
+      const dataUri = await fetchLogoDataUri(logoURL(currentTeamId));
+      if(dataUri) logoImg.src = dataUri;
+    }
+    const canvas = await html2canvas(exportEl, {backgroundColor:'#ffffff', scale:2});
     openPreviewModal(canvas.toDataURL('image/png'));
-  }).catch(e=>{
+  }catch(e){
     console.error('Could not generate roster/lineups image', e);
     alert('Something went wrong generating the image — please try again.');
-  }).finally(()=>{
+  }finally{
     btn.disabled = false;
     btn.textContent = originalText;
-  });
+  }
 });
 
 document.getElementById('previewDownloadBtn').addEventListener('click', ()=>{
@@ -1892,6 +2333,20 @@ document.getElementById('previewDownloadBtn').addEventListener('click', ()=>{
 document.getElementById('previewCloseBtn').addEventListener('click', closePreviewModal);
 document.getElementById('previewOverlay').addEventListener('click', e=>{
   if(e.target.id === 'previewOverlay') closePreviewModal();
+});
+
+document.getElementById('pickerCancel').addEventListener('click', closePicker);
+document.getElementById('pickerOverlay').addEventListener('click', e=>{
+  if(e.target.id === 'pickerOverlay') closePicker();
+});
+
+// "+ Add Player" buttons are re-created by render() every time, so use
+// delegation on the document rather than re-binding after each render.
+document.addEventListener('click', e=>{
+  const fillBtn = e.target.closest('.fill-spot-btn');
+  if(fillBtn){ openFillSpotPopup(fillBtn.dataset.group); return; }
+  const clearBtn = e.target.closest('.col-clear-btn');
+  if(clearBtn){ clearGroup(clearBtn.dataset.group); return; }
 });
 
 (async function init(){
@@ -1910,7 +2365,8 @@ document.getElementById('previewOverlay').addEventListener('click', e=>{
 
   const teamSelect = document.getElementById('teamSelect');
   if(teamSelect){
-    teamSelect.innerHTML = TEAMS.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+    const teamsAlpha = [...TEAMS].sort((a,b)=>a.name.localeCompare(b.name));
+    teamSelect.innerHTML = teamsAlpha.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
     teamSelect.addEventListener('change', e=>{ switchTeam(+e.target.value); });
   }
   applyTeamBranding(currentTeamId);
