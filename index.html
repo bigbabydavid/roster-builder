@@ -507,6 +507,15 @@
     width:820px; background:white; font-family:-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     border-radius:14px; overflow:hidden;
   }
+  /* Small credit in the corner of the downloaded/shared image — subtle
+     enough not to compete with the roster itself, but there so a repost
+     of the image still points back to the site. */
+  .fx-watermark{
+    position:absolute; right:16px; bottom:10px;
+    font-size:11px; font-weight:700; letter-spacing:0.3px;
+    color:rgba(12,35,64,0.32);
+    pointer-events:none;
+  }
   .fx-header{
     background:var(--navy); color:white; padding:18px 24px;
     background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px, transparent 1px, transparent 12px);
@@ -1805,6 +1814,16 @@ function buildFullExport(){
     </div>`;
   };
 
+  // A lineup nobody's touched yet is just nine "—" rows — noise on a shared
+  // image rather than information, so it's left off entirely. Only a
+  // lineup with at least one player actually slotted in gets included,
+  // and the whole "Lineups" section disappears if neither one does.
+  const hasAnyLineupEntry = key => lineups[key].some(slot=>slot.playerId);
+  const lineupSections = ['RHP','LHP'].filter(hasAnyLineupEntry).map(lineupHtml).join('');
+  const lineupsBlockHtml = lineupSections
+    ? `<div class="fx-section-title">Lineups</div><div class="fx-lineups">${lineupSections}</div>`
+    : '';
+
   const team = teamById(currentTeamId);
   exportEl.innerHTML = `
     <div class="fx-header">
@@ -1812,17 +1831,14 @@ function buildFullExport(){
         <div class="fx-team-logo"><img src="${logoURL(team.id)}" alt="${team.name}" onerror="this.remove();"></div>
         <div>
           <div class="team">${team.name}</div>
-          <div class="title">Final 26-Man Roster &amp; Lineups</div>
+          <div class="title">Final 26-Man Roster${lineupSections ? ' &amp; Lineups' : ''}</div>
         </div>
       </div>
     </div>
     <div class="fx-section-title">Final 26-Man Roster</div>
     ${diamondHtml}
-    <div class="fx-section-title">Lineups</div>
-    <div class="fx-lineups">
-      ${lineupHtml('RHP')}
-      ${lineupHtml('LHP')}
-    </div>
+    ${lineupsBlockHtml}
+    <div class="fx-watermark">mlbrostertool.com</div>
   `;
 }
 
