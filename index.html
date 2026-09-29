@@ -2259,6 +2259,34 @@ if(statsBarToggleBtn){
   });
 }
 
+// MLB's own logo CDN doesn't send CORS headers, so a canvas that has drawn
+// one is "tainted" and html2canvas quietly skips it — that's why the logo
+// shows fine on screen (an <img> tag never needs CORS to just display) but
+// comes out blank in the downloaded image. Routing through images.weserv.nl
+// (a free image proxy that re-serves whatever it fetches with a permissive
+// Access-Control-Allow-Origin header) gets a version of the same logo that
+// canvas is actually allowed to read. If that fetch fails for any reason,
+// callers just get null back and fall through to the plain (blank-in-export)
+// logo rather than blocking the download entirely.
+async function fetchLogoDataUri(url){
+  try{
+    const bare = url.replace(/^https?:\/\//, '');
+    const proxied = `https://images.weserv.nl/?url=${encodeURIComponent(bare)}`;
+    const res = await fetch(proxied);
+    if(!res.ok) throw new Error('logo proxy fetch failed: ' + res.status);
+    const blob = await res.blob();
+    return await new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }catch(e){
+    console.error('Could not load team logo for export', e);
+    return null;
+  }
+}
+
 let previewDataUrl = null;
 
 function openPreviewModal(dataUrl){
@@ -2271,21 +2299,27 @@ function closePreviewModal(){
   document.getElementById('previewOverlay').classList.remove('open');
 }
 
-document.getElementById('downloadLineupBtn').addEventListener('click', ()=>{
+document.getElementById('downloadLineupBtn').addEventListener('click', async ()=>{
   const exportEl = document.getElementById('fullExport');
   const btn = document.getElementById('downloadLineupBtn');
   btn.disabled = true;
   const originalText = btn.textContent;
   btn.textContent = 'Preparing image…';
-  html2canvas(exportEl, {backgroundColor:'#ffffff', scale:2}).then(canvas=>{
+  try{
+    const logoImg = exportEl.querySelector('.fx-team-logo img');
+    if(logoImg){
+      const dataUri = await fetchLogoDataUri(logoURL(currentTeamId));
+      if(dataUri) logoImg.src = dataUri;
+    }
+    const canvas = await html2canvas(exportEl, {backgroundColor:'#ffffff', scale:2});
     openPreviewModal(canvas.toDataURL('image/png'));
-  }).catch(e=>{
+  }catch(e){
     console.error('Could not generate roster/lineups image', e);
     alert('Something went wrong generating the image — please try again.');
-  }).finally(()=>{
+  }finally{
     btn.disabled = false;
     btn.textContent = originalText;
-  });
+  }
 });
 
 document.getElementById('previewDownloadBtn').addEventListener('click', ()=>{
