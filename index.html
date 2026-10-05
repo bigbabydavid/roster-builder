@@ -1626,7 +1626,10 @@ function render(){
   // since both still occupy an actual 40-man spot. Manually-added players
   // (no pid — rehab arms not yet on the 40-man, non-roster invites, etc.)
   // don't count toward this.
-  const fortyManCount = players.filter(p=>p.pid).length;
+  // 60-day IL players are still returned by that roster feed but, under MLB's
+  // rules, don't take up a 40-man spot while they're on it — so they're left
+  // out of the count (Boston reads 47 in the raw feed but really has 40).
+  const fortyManCount = players.filter(p=>p.pid && p.ilLabel !== '60-Day IL').length;
   const fortyManEl = document.getElementById('fortyManTotal');
   if(fortyManEl){
     fortyManEl.textContent = `${fortyManCount}/40`;
