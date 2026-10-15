@@ -1078,6 +1078,32 @@
   .pay-log .lg-row{ display:flex; align-items:center; gap:8px; padding:3px 8px; margin:1px -8px; border-radius:6px; transition:background .1s; font-size:12.5px; } .pay-log .lg-row span{ flex:1; color:var(--ink,#222); font-size:12.5px; } .pay-log .lg-row em{ font-style:normal; font-family:Georgia,serif; color:#1f8a4c; font-weight:700; }
   .pay-log .lg-row:hover{ background:rgba(192,57,43,0.14); box-shadow:inset 3px 0 0 #c0392b; } .pay-log .lg-row:hover button{ border-color:#c0392b; color:#9b2c20; }
   .pay-log .log-grp[open] summary .sh{ display:none; }
+
+  .pyrs{ display:none; }
+  @media (max-width:700px){
+    /* tables become cards on a phone: name + the selected season's number, other seasons as a line, buttons underneath */
+    table.pay-tbl:not(.pay-outlook){ min-width:0 !important; display:block; }
+    .pay-tbl:not(.pay-outlook) thead{ display:none; }
+    .pay-tbl:not(.pay-outlook) tbody{ display:block; }
+    .pay-tbl:not(.pay-outlook) tr{ display:grid; grid-template-columns:1fr auto; gap:4px 10px; padding:10px 12px; border-bottom:1px solid #eef1f4; align-items:start; }
+    .pay-tbl:not(.pay-outlook) tr:last-child{ border-bottom:none; }
+    .pay-tbl:not(.pay-outlook) td{ border:none !important; padding:0 !important; }
+    .pay-tbl:not(.pay-outlook) td.pname-cell{ grid-column:1; min-width:0; }
+    .pay-tbl:not(.pay-outlook) td.num{ display:none; }
+    .pay-tbl:not(.pay-outlook) td.num.col-sel{ display:block; grid-column:2; grid-row:1; background:none; font-size:16px; font-weight:800; text-align:right; }
+    .pay-tbl:not(.pay-outlook) td.acts{ grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-start; white-space:normal; }
+    .pay-tbl:not(.pay-outlook) td.acts:empty{ display:none; }
+    .pay-tbl:not(.pay-outlook) td.acts .pay-btn{ padding:7px 12px; font-size:12.5px; }
+    .pay-tbl:not(.pay-outlook) .pinfo{ max-width:none; }
+    .pay-tbl:not(.pay-outlook) tr.tot{ background:#fafbfc; }
+    .pay-tbl:not(.pay-outlook) tr.tot td:empty{ display:none; }
+    .pay-tbl .pyrs{ display:flex; flex-wrap:wrap; gap:2px 12px; margin-top:4px; font-size:11px; color:var(--grey); }
+    table.pay-outlook{ min-width:0 !important; font-size:12px; }
+    .pay-outlook th, .pay-outlook td{ padding:7px 6px; }
+    .pay-outlook th:nth-child(4), .pay-outlook td:nth-child(4), .pay-outlook th:nth-child(6), .pay-outlook td:nth-child(6){ display:none; }
+    .pay-opt{ margin-top:6px; }
+    .pay-opt select{ max-width:100%; }
+  }
   .pay-log .eff{ font-family:Georgia,serif; font-weight:700; }
   .pay-log .eff.up{ color:var(--il); } .pay-log .eff.down{ color:#1f8a4c; }
     .pay-log .lacts{ display:flex; gap:6px; }
@@ -2990,7 +3016,7 @@ function expandTeam(tid){
   const D = TEAM_SIM[tid]; if(!D) return null;
   const g = D.g.map((x,i)=>{
     const it = {id:'g'+i, name:x.n, pos:x.ps||'', type:posKind(x.ps), contract:x.c, base:{...x.b}};
-    if(x.o){ it.option = {year:x.o.y, years:x.o.ys||[x.o.y], salary:x.o.s, buyout:x.o.bo||0, kind:x.o.k||'club'}; it.note = `FanGraphs leaves the ${it.option.years.length>1?it.option.years[0]+'–'+it.option.years[it.option.years.length-1]:x.o.y} money off the payroll until this is decided. Choose what happens below; "undecided" counts nothing.`; }
+    if(x.o){ it.option = {year:x.o.y, years:x.o.ys||[x.o.y], salary:x.o.s, buyout:x.o.bo||0, kind:x.o.k||'club'}; }
     return it; });
   const arb = [], pre = [];
   D.ap.forEach((x,i)=>{
@@ -3514,6 +3540,8 @@ function rowHTML(it, rmap){
       <select data-act="option" data-id="${esc(it.id)}"><option value="undecided"${v==='undecided'?' selected':''}>Undecided (not counted)</option><option value="exercise"${v==='exercise'?' selected':''}>${ol.yes}</option><option value="decline"${v==='decline'?' selected':''}>${ol.no}</option></select></div>`;
   }
   const info = [it.contract, it.note].filter(Boolean).join(' — ');
+  const yrs = YEARS.filter(y=>y!==S.season).map(y=>{ const r = rawCharge(it,y); return r==null||r===0 ? '' : `<span>${y}: ${fmt(r,2)}</span>`; }).filter(Boolean).join('');
+  const pyrs = yrs ? `<div class="pyrs">${yrs}</div>` : ''; // phones only: the other seasons as one line
   const acts = it.added
     ? `<button class="pay-btn tiny" data-act="editAdded" data-id="${esc(it.id)}">Edit</button> <button class="pay-btn tiny danger" data-act="removeAdded" data-id="${esc(it.id)}">Remove</button>`
     : it.kind==='custom'
@@ -3523,7 +3551,7 @@ function rowHTML(it, rmap){
           ? `<button class="pay-btn tiny" data-act="undoStatus" data-id="${esc(it.id)}">Undo</button>`
           : `<button class="pay-btn tiny" data-act="tradeAway" data-id="${esc(it.id)}">Trade</button> ${it.cat==='guaranteed'?`<button class="pay-btn tiny ghost" data-act="release" data-id="${esc(it.id)}" title="Released players' salaries still count toward the tax">Release</button>`:`<button class="pay-btn tiny ghost" data-act="nontender" data-id="${esc(it.id)}" title="Let him go before the tender deadline — his salary comes off the books">Non-tender</button>`}`)
         + (hasOverride(it) ? ` <button class="pay-btn tiny ghost" data-act="resetRow" data-id="${esc(it.id)}" title="Undo your edits to this player">↺</button>` : '');
-  return `<tr class="${cls}"><td class="pname-cell"><div class="pname">${it.added&&it.added.from?teamLogo(it.added.from):''}${esc(it.name)}${it.pos?` <span style="color:var(--grey);font-weight:600;font-size:11px">${esc(it.pos)}</span>`:''}${tags.join('')}</div>${info?`<div class="pinfo">${esc(info)}</div>`:''}${opt}</td>
+  return `<tr class="${cls}"><td class="pname-cell"><div class="pname">${it.added&&it.added.from?teamLogo(it.added.from):''}${esc(it.name)}${it.pos?` <span style="color:var(--grey);font-weight:600;font-size:11px">${esc(it.pos)}</span>`:''}${tags.join('')}</div>${info?`<div class="pinfo">${esc(info)}</div>`:''}${opt}${pyrs}</td>
     ${YEARS.map(y=>cellHTML(it,y)).join('')}<td class="acts">${acts}</td></tr>`;
 }
 function tableCard(title, sub, items, rmap, extraHead){
