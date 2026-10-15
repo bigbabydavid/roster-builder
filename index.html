@@ -3349,7 +3349,20 @@ function rosterAdd(a){
   const maxOrder = arr.reduce((m,p)=>Math.max(m,p.order||0), 0);
   arr.push({id:'pay_'+a.id, pid:null, name:a.name, num:'', bt:'', type:a.type||'H', group:null, placed:'pool',
     status:null, hurt:false, order:maxOrder+10, custom:true, via:'payroll', payId:a.id});
-  saveRoster();
+  saveRoster(); setTimeout(fillMissingBats, 0);
+}
+const BATS_TRIED = new Set();
+function fillMissingBats(){ // players you add or acquire have no bats/throws yet — look them up so lineups know their handedness
+  if(typeof players==='undefined' || currentTeamId!==TEAM_ID) return;
+  realP().filter(p=>p.custom && !p.bt && p.name && !BATS_TRIED.has(norm(p.name))).forEach(pl=>{
+    const k = norm(pl.name); BATS_TRIED.add(k);
+    fetch('https://statsapi.mlb.com/api/v1/people/search?names='+encodeURIComponent(pl.name)).then(r=>r.json()).then(j=>{
+      const l = (j&&j.people)||[], x = l.find(y=>norm(y.fullName)===k && y.active) || l.find(y=>norm(y.fullName)===k); if(!x || !x.batSide) return;
+      const bt = (x.batSide.code||'')+'/'+((x.pitchHand&&x.pitchHand.code)||'R'); let ch = false;
+      realP().forEach(q=>{ if(q.custom && !q.bt && norm(q.name)===k){ q.bt = bt; ch = true; } });
+      if(ch){ saveRoster(); if(window.render) window.render(); }
+    }).catch(()=>{ BATS_TRIED.delete(k); });
+  });
 }
 function rosterRemove(id){
   if(typeof players === 'undefined') return;
@@ -4667,6 +4680,7 @@ function open(){
   useTeam(currentTeamId);
   loadState();
   S.added.forEach(a=>rosterAdd(a)); // keep the roster builder pool in step with saved signings
+  fillMissingBats();
   if(!REAL && dedupePayrollTiles()){ window.saveState(); window.render(); }
   if(window.__bootPlan){ const raw = window.__bootPlan; window.__bootPlan = null; try{ history.replaceState(null,'',location.pathname); }catch(e){} importPlan(raw); }
   document.body.classList.add('view-payroll');
