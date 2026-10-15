@@ -1113,6 +1113,9 @@
   .pay-logo{ width:20px; height:20px; object-fit:contain; vertical-align:-5px; margin-right:6px; }
   .pay-sugg-item{ display:block; width:100%; text-align:left; appearance:none; border:none; background:#fff; font:inherit; padding:8px 11px; cursor:pointer; border-bottom:1px solid #eef1f4; color:var(--navy); }
   .pay-sugg-item:last-child{ border-bottom:none; }
+  .pay-addnew{ display:flex; align-items:center; gap:9px; width:100%; appearance:none; border:none; border-bottom:1px solid #cfe0d6; background:#e9f5ee; color:#0f5a36; font:inherit; font-weight:600; font-size:13px; padding:11px 12px; cursor:pointer; text-align:left; }
+  .pay-addnew i{ font-style:normal; width:20px; height:20px; border-radius:50%; background:#0f5a36; color:#fff; display:inline-grid; place-items:center; font-size:15px; line-height:1; flex:none; }
+  .pay-addnew:hover{ background:#dcefe3; }
   .pro-b{ font-style:normal; font-size:10.5px; font-weight:600; border:1px solid #c9d3de; color:#3a4a5c; padding:0 5px; margin-left:6px; border-radius:3px; white-space:nowrap; vertical-align:1px; }
   .pro-b.t100{ background:#12263f; border-color:#12263f; color:#fff; }
   .pay-sugg-item:hover{ background:#eef3f9; }
@@ -4037,6 +4040,13 @@ function matchFA(){ const n = norm(M.f.name); M.fa = (M.picked && norm(M.picked.
 /* --- add a minor leaguer to the 40-man --- */
 const FARM_LVL = {11:'AAA',12:'AA',13:'High-A',14:'A'};
 let FARM = [], FARMSTATE = 0; // 0 none, 1 loading, 2 done, 3 failed
+const PROS_LVL = {AAA:'AAA', AA:'AA', 'A+':'High-A', A:'A', Rk:'FCL'};
+function farmFromDB(){
+  const nick = teamNick(), out = [];
+  PROS_POOL.filter(x=>x.t===nick).forEach(x=>{ const q = prosRank(x.n, nick);
+    out.push({id:x.i, name:x.n, pos:x.pos||'', type:/P$/.test(x.pos||'')?'P':'H', age:x.g||null, lvl:PROS_LVL[x.lv]||'', rank:q}); });
+  return out;
+}
 function ensureFarm(){
   if(FARMSTATE!==0) return; FARMSTATE = 1; const tid = TEAM_ID;
   fetch(`https://statsapi.mlb.com/api/v1/teams/affiliates?teamIds=${tid}&season=2026`).then(r=>r.json()).then(j=>{
@@ -4044,7 +4054,14 @@ function ensureFarm(){
     return Promise.all(aff.map(([id,lvl])=>fetch(`https://statsapi.mlb.com/api/v1/teams/${id}/roster?rosterType=fullSeason&season=2026&hydrate=person`).then(r=>r.json()).then(j=>(j.roster||[]).map(e=>({id:e.person.id, name:e.person.fullName, pos:e.position?e.position.abbreviation:'', type:e.position&&e.position.type==='Pitcher'?'P':'H', age:e.person.currentAge||null, lvl}))).catch(()=>[])));
   }).then(groups=>{ if(tid!==TEAM_ID) return; const seen = new Set(); FARM = [];
     groups.flat().forEach(p=>{ if(seen.has(p.id)) return; seen.add(p.id); FARM.push(p); });
-    FARMSTATE = FARM.length ? 2 : 3; if(M && M.type==='promo') updateFarm(); }).catch(()=>{ if(tid===TEAM_ID){ FARMSTATE = 3; if(M && M.type==='promo') updateFarm(); } });
+    mergeFarmDB();
+    FARMSTATE = FARM.length ? 2 : 3; if(M && M.type==='promo') updateFarm(); }).catch(()=>{ if(tid===TEAM_ID){ FARM = []; mergeFarmDB(); FARMSTATE = FARM.length ? 2 : 3; if(M && M.type==='promo') updateFarm(); } });
+}
+function mergeFarmDB(){
+  const have = new Map(FARM.map(p=>[norm(p.name),p]));
+  farmFromDB().forEach(d=>{ const e = have.get(norm(d.name)); if(e){ e.rank = d.rank; if(!e.pos) e.pos = d.pos; } else { FARM.push(d); have.set(norm(d.name), d); } });
+  const nick = teamNick(); FARM.forEach(p=>{ if(!p.rank) p.rank = prosRank(p.name, nick); });
+  FARM.sort((a,b)=>(b.rank?(b.rank.h?300-b.rank.h:100-b.rank.r):0)-(a.rank?(a.rank.h?300-a.rank.h:100-a.rank.r):0) || a.name.localeCompare(b.name));
 }
 function farmOn40(){ const s = new Set(); if(typeof players!=='undefined' && currentTeamId===TEAM_ID) realP().filter(p=>p.pid).forEach(p=>s.add(norm(p.name))); S.added.forEach(a=>{ if(!M || a.id!==M.editing) s.add(norm(a.name)); }); return s; }
 function updateMulti(){
@@ -4062,7 +4079,10 @@ function updateFarm(){
     if(toks.length){ const n = norm(p.name); if(!toks.every(t=>n.includes(t))) return; } list.push([p,i]); });
   const total = list.length; list = list.slice(0,150);
   const cur = M.picked ? norm(M.picked.name) : '', sel = new Set((M.multi||[]).map(x=>x.id)), isOn = p => sel.has(p.id) || (M.editing && norm(p.name)===cur);
-  box.innerHTML = list.length ? list.map(([p,i])=>`<button type="button" class="pay-sugg-item${isOn(p)?' added':''}" data-m="farmpick" data-i="${i}">${isOn(p)?'<i class="chk">✓</i>':''}<b>${esc(p.name)}</b><span>${esc(p.pos)} · ${p.age?'age '+p.age+' · ':''}${esc(p.lvl)}</span></button>`).join('') + (total>150?`<div class="pay-hint" style="padding:8px 12px">Showing 150 of ${total} — filter or search to narrow.</div>`:'') : '<div class="pay-hint" style="padding:10px 12px">No one matches — you can still type any name below.</div>';
+  const rawq = ((document.getElementById('mName')||{}).value||'').trim();
+  const custom = (!M.editing && rawq.length>2 && !FARM.some(p=>norm(p.name)===q) && !(M.multi||[]).some(x=>norm(x.name)===q))
+    ? `<button type="button" class="pay-addnew" data-m="farmcustom"><i>+</i> Add “${esc(rawq)}” — not in the list</button>` : '';
+  box.innerHTML = custom + (list.length ? list.map(([p,i])=>`<button type="button" class="pay-sugg-item${isOn(p)?' added':''}" data-m="farmpick" data-i="${i}">${isOn(p)?'<i class="chk">✓</i>':''}<b>${esc(p.name)}</b>${prosBadge({n:p.name,t:teamNick()})}<span>${esc(p.pos)} · ${p.age?'age '+p.age+' · ':''}${esc(p.lvl)}</span></button>`).join('') + (total>150?`<div class="pay-hint" style="padding:8px 12px">Showing 150 of ${total} — filter or search to narrow.</div>`:'') : '<div class="pay-hint" style="padding:10px 12px">No one matches.</div>');
 }
 function promoHTML(){
   const f = M.f; const lvls = ['AAA','AA','High-A','A','FCL','DSL'];
@@ -4286,6 +4306,7 @@ function updateBrowse(){
     const meta = [pi?pi.abbr:(p.pos||''), f.team?'':p.t, p.k==='m'&&p.lv?p.lv:'', p.g?'age '+p.g:'', p.k==='m' ? 'minors' : p.k==='g' ? `${fmt(p.v,2)} AAV through ${dbThrough(p)||'?'}` : (p.k==='p'?'pre-arb':'arb-eligible'+(p.m!=null?` (proj. ${fmt(p.m)})`:''))].filter(Boolean).join(' · ');
     return `<button type="button" class="pay-sugg-item${on?' added':''}" data-m="getpick" data-i="${i}">${on?'<i class="chk">✓</i>':''}${teamLogo(p.t)}<b>${esc(p.n)}</b>${prosBadge(p)}<span>${esc(meta)}</span></button>`;
   }).join('') + (total>120?`<div class="pay-hint" style="padding:8px 12px">Showing 120 of ${total} — narrow it with a team or name.</div>`:'') : (POSSTATE<2 && f.posf ? '' : '<div class="pay-hint" style="padding:10px 12px">No players match.</div>'));
+  if(q.length>2 && !pool.some(p=>norm(p.n)===norm(q))) box.innerHTML = `<button type="button" class="pay-addnew" data-m="addmanual"><i>+</i> Add “${esc(q)}” — not in the list</button>` + box.innerHTML;
 }
 function getRowHTML(g, i){
   const eat = g.eatOpen ? `<div class="pay-eat-box"><div class="pay-row2">
@@ -4458,6 +4479,12 @@ function onModalClick(e){
   if(m==='fapick'){ const p = faPool()[+b.dataset.i]; if(p){ readFields(); faApply(p, true); } return; }
   if(m==='faposf'){ readFields(); M.f.faposf = v; paint(); return; }
   if(m==='multirm'){ M.multi = (M.multi||[]).filter(x=>String(x.id)!==b.dataset.id); updateFarm(); updateMulti(); return; }
+  if(m==='farmcustom'){ readFields(); const nm = ((document.getElementById('mName')||{}).value||'').trim(); if(!nm) return;
+    const pk = {id:'c'+Date.now(), name:nm.replace(/\s+/g,' '), pos:'', type:'H', age:null, lvl:''}; M.multi = M.multi||[]; M.multi.push(pk);
+    setVal('mName',''); updateFarm(); updateMulti();
+    fetch('https://statsapi.mlb.com/api/v1/people/search?names='+encodeURIComponent(nm)).then(r=>r.json()).then(j=>{ const l=(j&&j.people)||[], x=l.find(y=>norm(y.fullName)===norm(nm)&&y.active)||l.find(y=>norm(y.fullName)===norm(nm)); if(!x) return;
+      pk.pos = x.primaryPosition?x.primaryPosition.abbreviation:''; pk.type = x.primaryPosition&&x.primaryPosition.type==='Pitcher'?'P':'H'; pk.age = x.currentAge||null; updateMulti(); }).catch(()=>{});
+    return; }
   if(m==='farmpick'){ const p = FARM[+b.dataset.i]; if(!p) return; readFields();
     if(!M.editing){ M.multi = M.multi||[]; const at = M.multi.findIndex(x=>x.id===p.id); if(at>=0) M.multi.splice(at,1); else M.multi.push(p); updateFarm(); updateMulti(); return; }
     M.picked = p; M.f.name = p.name; setVal('mName', p.name);
