@@ -672,12 +672,13 @@
 
 
   .tile .info{display:flex; flex-direction:column; line-height:1.25; min-width:0; flex:1;}
-  .tile .name{font-weight:700; display:flex; align-items:flex-start; gap:5px; min-width:0;}
+  .tile .name{font-weight:700; display:flex; flex-wrap:wrap; align-items:flex-start; gap:2px 6px; min-width:0;}
   /* Names are shown in full (no truncation) — in a narrow column a long one
      needs to wrap onto a second line instead of overflowing past its own
      width, which used to visually run underneath the Lock/Bubble/Injured
      icons since they're painted after it in the tile's markup. */
-  .tile .name-text{ min-width:0; overflow-wrap:break-word; word-break:break-word; }
+  .tile .name-text{ flex:0 1 auto; max-width:100%; overflow-wrap:break-word; }
+  .tile .name .org-badge, .tile .name .badge{ flex:none; white-space:nowrap; }
   .tile .meta{font-size:10px; color:var(--grey); text-transform:none; letter-spacing:0.3px;}
   .badge{ font-size:8.5px; font-weight:800; letter-spacing:0.4px; padding:1px 5px; border-radius:20px; text-transform:none; }
   .badge.lock{ background:var(--lock); color:white; }
@@ -1854,6 +1855,20 @@ function tileHTML(p){
   </div>`;
 }
 
+// A payroll signing (a re-signed free agent, say) can land in the pool as its own tile while the same man is also on the live 40-man.
+// Fold the extra tile into the real one so each player counts once. Returns true if anything changed.
+function dedupePayrollTiles(){
+  if(typeof players==='undefined') return false;
+  const nn = x => String(x||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\./g,'').replace(/\b(jr|sr|ii|iii)\b/g,'').replace(/[^a-z ]/g,' ').replace(/\s+/g,' ').trim();
+  const real = {}; players.forEach(p=>{ if(p.pid) real[nn(p.name)] = p; });
+  const keep = players.filter(p=>{
+    if(!(p.via==='payroll' && !p.pid)) return true;
+    const r = real[nn(p.name)]; if(!r) return true;
+    if(p.placed!=='pool' && r.placed==='pool'){ r.placed = p.placed; r.group = p.group; r.order = p.order; r.status = p.status; }
+    return false; });
+  if(keep.length===players.length) return false;
+  players = keep; return true;
+}
 async function syncRosterFromAPI(){
   if(window.__planActive) return; // the offseason simulator's depth chart is a separate copy; sync runs again when you leave it
   const syncNote = document.getElementById('syncNote');
@@ -1929,6 +1944,8 @@ async function syncRosterFromAPI(){
         });
       }
     });
+
+    dedupePayrollTiles();
 
     // Anyone with a pid who is no longer in the live 40-man response has been
     // traded, DFA'd, released, or outrighted off it — drop them from the board
@@ -4597,6 +4614,7 @@ function open(){
   useTeam(currentTeamId);
   loadState();
   S.added.forEach(a=>rosterAdd(a)); // keep the roster builder pool in step with saved signings
+  if(!REAL && dedupePayrollTiles()){ window.saveState(); window.render(); }
   if(window.__bootPlan){ const raw = window.__bootPlan; window.__bootPlan = null; try{ history.replaceState(null,'',location.pathname); }catch(e){} importPlan(raw); }
   document.body.classList.add('view-payroll');
   $('payrollView').hidden = false;
