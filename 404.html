@@ -993,7 +993,7 @@
   }
   .pay-cell:hover{ border-color:#cfd5dc; background:#fff; }
   .pay-cell:focus{ outline:2px solid var(--navy); background:#fff; }
-  .pay-cell.est{ font-style:italic; color:#8a5a00; }
+  .pay-cell.est{ font-style:normal; color:#8a5a00; text-decoration:underline dotted #c9a45a; text-underline-offset:4px; }
   .pay-cell.ovr{ color:#0b5; font-weight:700; }
   .pay-cell.blank{ color:#c3c8ce; }
   .pay-tag{
@@ -1174,6 +1174,7 @@
   .pay-r5{ list-style:none; margin:0; padding:0; } .pay-r5 li{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 14px; border-top:1px solid #eef0f2; } .pay-r5 em{ font-style:normal; color:var(--grey); font-size:12.5px; margin-left:6px; }
   .dfa-opt{ display:flex !important; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; padding:10px 12px; width:100%; margin-top:8px; white-space:normal; } .dfa-opt span{ font-weight:500; color:var(--grey); font-size:12.5px; }
   @media (max-width:700px){ .pay-r5 li{ flex-wrap:wrap; } }
+  .opt-ast{ color:var(--bubble); font-weight:800; cursor:help; }
   .pay-tag.qo{ background:var(--bubblebg); color:var(--bubble); }
   .pay-banner .pay-btn{ margin-left:6px; }
   .sc-wrap{ overflow-x:auto; border:1px solid var(--line,#d9dde3); border-radius:4px; background:#fff; }
@@ -3170,6 +3171,7 @@ function addedBase(a, y){
   // trade
   return (y>=a.start && y<=a.through) ? Math.max(0, ((a.sched && a.sched[y]!=null) ? a.sched[y] : a.aav) - (a.eat||0)) : null;
 }
+const isResign = a => a && a.kind==='fa' && !a.promo && PENDING_FA.some(x=>norm(x.name)===norm(a.name));
 const nomAav = a => a.aavNom!=null ? a.aavNom : a.aav;
 function structText(a){
   const p = [], st = a.struct||{};
@@ -3179,6 +3181,14 @@ function structText(a){
   if(a.opt) p.push(`${a.start+a.years} ${a.opt.kind} option ${fmt(a.opt.salary)}${a.opt.buyout?` (${fmt(a.opt.buyout)} buyout in the AAV)`:''}`);
   return p.join(' · ');
 }
+const EXTRA_POS = {}; let EXTRA_ASKED = new Set();
+function fetchExtraPos(items){ // positions for 40-man players FanGraphs doesn't itemize
+  const ids = items.filter(i=>i.pid && !EXTRA_POS[i.pid] && !EXTRA_ASKED.has(i.pid)).map(i=>i.pid); if(!ids.length) return;
+  ids.forEach(i=>EXTRA_ASKED.add(i));
+  fetch(`https://statsapi.mlb.com/api/v1/people?personIds=${ids.join(',')}&fields=people,id,primaryPosition,abbreviation`).then(r=>r.json()).then(j=>{
+    (j.people||[]).forEach(x=>{ if(x.primaryPosition) EXTRA_POS[x.id] = x.primaryPosition.abbreviation; });
+    if(isOpen() && !M) renderAll(); }).catch(()=>{});
+}
 function allItems(){
   const items = SEED.map(s=>({...s}));
   // Anyone on the live 40-man that FanGraphs doesn't itemize still gets a row (counted at the minimum, which is what the roster fill was already doing).
@@ -3186,7 +3196,7 @@ function allItems(){
     PENDING_FA.forEach(x=>have.add(norm(x.name))); S.added.forEach(x=>have.add(norm(x.name))); Object.keys(S.walked||{}).forEach(n=>have.add(norm(n))); (S.extraOrg||[]).forEach(e=>have.add(norm(e.name)));
     if(typeof players!=='undefined' && typeof currentTeamId!=='undefined' && currentTeamId===TEAM_ID){
       realP().filter(x=>x.pid && x.via!=='payroll').forEach(x=>{ const n = norm(x.name); if(have.has(n)) return; have.add(n);
-        items.push({id:'r'+x.pid, name:x.name, cat:'pre', kind:'seed', pos:x.pos||'', type:'', lvl:{2027:'Pre'}, base:{}, note:'On the 40-man — FanGraphs doesn’t list him separately, so he’s counted at the minimum'}); }); } }
+        items.push({id:'r'+x.pid, pid:x.pid, name:x.name, cat:'pre', kind:'seed', pos:EXTRA_POS[x.pid]||'', type:'', lvl:{2027:'Pre'}, base:{}}); }); } }
   (S.extraOrg||[]).forEach(e=>items.push({id:e.id, name:e.name, cat:'org', kind:'org', pos:e.pos||'', type:'', base:{}}));
   S.customOther.forEach(c=>items.push({id:c.id, name:c.name, cat:'other', kind:'custom', pos:'', type:'', base:{...c.base}, note:c.note||''}));
   S.added.forEach(a=>items.push({id:a.id, name:a.name, pos:a.pos||'', type:a.type, kind:a.kind, cat:a.kind==='fa'?'fa':'trade',
@@ -3393,6 +3403,7 @@ function renderAll(){
   const root = $('payrollView'); if(!root) return;
   unmountPlan();
   const calc = calcAll();
+  fetchExtraPos(calc.items);
   const yr = calc.years[S.season];
   const rmap = rosterNameMap();
   root.innerHTML = `<div class="pay-wrap">
@@ -3508,7 +3519,7 @@ function logEntries(calc){
   S.added.forEach(a=>{
     const it = byId[a.id]; const eff = it ? (rawCharge(it,y)||0) : 0;
     if(a.kind==='fa'){
-      L.push({kind:'add', acts:[['editAdded','Edit',{id:a.id}],['removeAdded','Undo',{id:a.id}]], at:a.at||0, eff, text: a.promo ? `Added ${a.name} to the 40-man${a.lvl?' (from '+a.lvl+')':''}` : a.qo ? `Signed ${a.name} to the qualifying offer` : `Signed ${a.name}`, sub:a.promo ? `${fmt(a.aav,2)} in ${a.start}${a.years>1?' · '+a.years+' yr':''}` : `${a.years} yr, ${fmt(nomAav(a)*a.years)} (${fmt(a.aav,2)} ${Math.abs(nomAav(a)-a.aav)>1e-9?'CBT ':''}AAV) from ${a.start}${structText(a)?' · '+structText(a):''}${!a.qo&&qoDecl(a.name)?' · declined the QO — draft pick compensation attached':''}`});
+      L.push({kind:'add', acts:[['editAdded','Edit',{id:a.id}],['removeAdded','Undo',{id:a.id}]], at:a.at||0, eff, text: a.promo ? `Added ${a.name} to the 40-man${a.lvl?' (from '+a.lvl+')':''}` : a.qo ? `${isResign(a)?'Re-signed':'Signed'} ${a.name} to the qualifying offer` : `${isResign(a)?'Re-signed':'Signed'} ${a.name}`, sub:a.promo ? `${fmt(a.aav,2)} in ${a.start}${a.years>1?' · '+a.years+' yr':''}` : `${a.years} yr, ${fmt(nomAav(a)*a.years)} (${fmt(a.aav,2)} ${Math.abs(nomAav(a)-a.aav)>1e-9?'CBT ':''}AAV) from ${a.start}${structText(a)?' · '+structText(a):''}${!a.qo&&qoDecl(a.name)?' · declined the QO — draft pick compensation attached':''}`});
     } else {
       const pkg = a.pkg||a.id; if(seenPkg.has(pkg)) return; seenPkg.add(pkg);
       const grp = S.added.filter(x=>x.kind==='trade' && (x.pkg||x.id)===pkg);
@@ -3634,7 +3645,7 @@ function rowHTML(it, rmap){
   const tradedFor = st && st.tradeId ? S.added.filter(a=>(a.pkg||a.id)===st.tradeId).map(a=>a.name).join(', ') : '';
   const tags = [];
   if(it.lvl){ const l = lvlOf(it, S.season); if(l) tags.push(`<span class="pay-tag est">${esc(l)}${(l==='Pre'||!isEst()||(it.mlbtr&&it.mlbtr[S.season]!=null)||(it.base&&it.base[S.season]!=null))?'':' · est'}</span>`); }
-  if(it.kind==='fa'||it.kind==='trade') tags.push(`<span class="pay-tag new">${it.kind==='fa'?(it.added&&it.added.promo?'Added to 40-man':it.added&&it.added.qo?'Qualifying offer':'Signed'):'Trade'}</span>`);
+  if(it.kind==='fa'||it.kind==='trade') tags.push(`<span class="pay-tag new">${it.kind==='fa'?(it.added&&it.added.promo?'Added to 40-man':it.added&&it.added.qo?'Qualifying offer':isResign(it.added)?'Re-signed':'Signed'):'Trade'}</span>`);
   if(it.added && it.added.kind==='fa' && !it.added.qo && qoDecl(it.name)) tags.push(qoTag(it.name));
   if(rp && rp.placed==='roster') tags.push(`<span class="pay-tag roster" title="Placed on your Final 26-Man Roster in the roster builder">On 26-man</span>`);
   if(st && st.mode==='traded') tags.push(`<span class="pay-tag warn">${st.assumed?'Assumed gone (MLBTR)':tradedFor?'Traded for '+esc(tradedFor):'Traded'}${st.assumed?'':st.pay!=null?` · pays ${fmt(st.pay,2)}/yr`:st.frac?` · pays ${Math.round(st.frac*100)}%`:''}</span>`);
@@ -3670,7 +3681,7 @@ function rowHTML(it, rmap){
           ? `<button class="pay-btn tiny" data-act="undoStatus" data-id="${esc(it.id)}">Undo</button>`
           : `<button class="pay-btn tiny" data-act="tradeAway" data-id="${esc(it.id)}">Trade</button> ${it.cat==='guaranteed'?`<button class="pay-btn tiny ghost" data-act="release" data-id="${esc(it.id)}" title="Released players' salaries still count toward the tax">Release</button>`:`<button class="pay-btn tiny ghost" data-act="nontender" data-id="${esc(it.id)}" title="Let him go before the tender deadline — his salary comes off the books">Non-tender</button>`} <button class="pay-btn tiny ghost" data-act="dfa" data-id="${esc(it.id)}" title="Designate for assignment — clears a 40-man spot">DFA</button>`)
         + (hasOverride(it) ? ` <button class="pay-btn tiny ghost" data-act="resetRow" data-id="${esc(it.id)}" title="Undo your edits to this player">↺</button>` : '');
-  return `<tr class="${cls}"><td class="pname-cell"><div class="pname">${it.added&&it.added.from?teamLogo(it.added.from):''}${esc(it.name)}${it.pos?` <span style="color:var(--grey);font-weight:600;font-size:11px">${esc(it.pos)}</span>`:''}${tags.join('')}</div>${info?`<div class="pinfo">${esc(info)}</div>`:''}${opt}${pyrs}</td>
+  return `<tr class="${cls}"><td class="pname-cell"><div class="pname">${it.added&&it.added.from?teamLogo(it.added.from):''}${esc(it.name)}${it.pos?` <span style="color:var(--grey);font-weight:600;font-size:11px">${esc(it.pos)}</span>`:''}${(()=>{ const v = optOf(it).v; return (typeof v==='number' && v>0 && !it.added) ? ` <span class="opt-ast" title="${v} minor-league option${v>1?'s':''} left — can start 2027 in the minors">*</span>` : ''; })()}${tags.join('')}</div>${info?`<div class="pinfo">${esc(info)}</div>`:''}${opt}${pyrs}</td>
     ${YEARS.map(y=>cellHTML(it,y)).join('')}<td class="acts">${acts}</td></tr>`;
 }
 function tableCard(title, sub, items, rmap, extraHead){
