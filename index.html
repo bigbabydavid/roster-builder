@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MLB 26-Man Roster Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="icon" id="favicon" type="image/svg+xml" href="">
 <style>
   :root{
@@ -151,7 +152,7 @@
     margin:0;
     font-size:19px;
     letter-spacing:0.5px;
-    text-transform:uppercase;
+    text-transform:none;
     font-weight:800;
   }
   .brand .sub{
@@ -259,7 +260,7 @@
   .stats-bar .stat-big{ font-family:Georgia,serif; font-weight:700; font-size:32px; line-height:1; white-space:nowrap; }
   .stats-bar .stat-big.over{ color:#FF8A80; }
   .stats-bar .stat-big.exact{ color:#8CE0A6; }
-  .stats-bar .stat-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.8px; opacity:0.75; margin-top:2px; }
+  .stats-bar .stat-label{ font-size:10.5px; text-transform:none; letter-spacing:0.8px; opacity:0.75; margin-top:2px; }
   .stats-bar .type-split{ font-size:12px; opacity:0.9; white-space:nowrap; }
   .stats-bar .lock-summary{ font-size:11px; opacity:0.75; margin-top:3px; white-space:nowrap; }
   .stats-bar-divider{ width:1px; align-self:stretch; background:rgba(255,255,255,0.18); }
@@ -268,13 +269,13 @@
   .stats-bar .breakdown{ display:flex; flex-wrap:wrap; gap:14px 20px; flex:1; }
   .stats-bar .breakdown-row{ display:flex; flex-direction:column; min-width:56px; }
   .stats-bar .breakdown-row .gcount{ font-family:Georgia,serif; font-weight:700; font-size:17px; }
-  .stats-bar .breakdown-row .glabel{ font-size:10px; text-transform:uppercase; letter-spacing:0.5px; opacity:0.7; font-weight:700; }
+  .stats-bar .breakdown-row .glabel{ font-size:10px; text-transform:none; letter-spacing:0.5px; opacity:0.7; font-weight:700; }
   .stats-bar .breakdown-row .glock{ font-size:9px; opacity:0.6; margin-top:1px; }
 
   /* ---- Final Roster (top) ---- */
   .roster-section{ padding:14px 22px 6px 22px; }
   .roster-section h2.section-title{
-    font-size:14px; text-transform:uppercase; letter-spacing:1px; font-weight:800;
+    font-size:14px; text-transform:none; letter-spacing:1px; font-weight:800;
     color:var(--navy); margin:0 0 8px 0;
   }
   .roster-grid{
@@ -291,7 +292,7 @@
   @media (max-width:640px){ .roster-grid{ grid-template-columns:repeat(2,1fr); } }
   .roster-subsection + .roster-subsection{ margin-top:14px; }
   .roster-subtitle{
-    font-size:10.5px; text-transform:uppercase; letter-spacing:0.8px; font-weight:800;
+    font-size:10.5px; text-transform:none; letter-spacing:0.8px; font-weight:800;
     color:var(--grey); margin:0 0 6px 0;
   }
   /* Pitching staff (Starters/Relievers) gets its own row, sized only against
@@ -316,13 +317,13 @@
     flex-direction:column;
   }
   .roster-col h3{
-    margin:0; background:var(--navy); color:white; font-size:11.5px; text-transform:uppercase;
+    margin:0; background:var(--navy); color:white; font-size:11.5px; text-transform:none;
     letter-spacing:0.8px; padding:8px 10px; font-weight:700; display:flex; align-items:center; justify-content:space-between; gap:8px;
   }
   .roster-col h3 .n{ opacity:0.7; font-weight:400; }
   .col-clear-btn{
     flex-shrink:0; background:rgba(255,255,255,0.15); border:none; color:white;
-    font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px;
+    font-size:9.5px; font-weight:700; text-transform:none; letter-spacing:0.4px;
     padding:3px 7px; border-radius:5px; cursor:pointer;
   }
   .col-clear-btn:hover{ background:rgba(255,255,255,0.3); }
@@ -377,7 +378,7 @@
      their tile ends up (pool or the final roster board). */
   .org-badge{
     font-size:8px; font-weight:800; letter-spacing:0.3px; padding:1px 5px;
-    border-radius:20px; text-transform:uppercase; background:#EDEBFB; color:#5B3DF0;
+    border-radius:20px; text-transform:none; background:#EDEBFB; color:#5B3DF0;
     flex-shrink:0;
   }
   .mini-toggle.remove{ color:#A3241C; font-size:12px; }
@@ -424,7 +425,7 @@
   body.split .pool-grid{ grid-template-columns:1fr; gap:10px; }
   body.split .pool-col h3{ position:sticky; top:0; background:#f7f8fa; padding-bottom:4px; }
   .pool-col h3{
-    font-size:12px; text-transform:uppercase; letter-spacing:0.8px; font-weight:800; color:var(--grey);
+    font-size:12px; text-transform:none; letter-spacing:0.8px; font-weight:800; color:var(--grey);
     margin:0 0 8px 0;
   }
   .pool-lane{
@@ -460,7 +461,7 @@
     box-shadow:0 1px 3px rgba(12,35,64,0.06); padding:16px; flex:1; min-width:320px; max-width:480px;
   }
   .lineup-card-title{
-    margin:0 0 10px 0; font-size:13px; text-transform:uppercase; letter-spacing:1px;
+    margin:0 0 10px 0; font-size:13px; text-transform:none; letter-spacing:1px;
     font-weight:800; color:var(--navy);
   }
   .lineup-row{ display:flex; align-items:center; gap:6px; padding:6px 0; border-bottom:1px dashed #ecedf0; }
@@ -518,7 +519,7 @@
   .preview-modal-header{
     display:flex; align-items:center; justify-content:space-between;
     padding:12px 16px; background:var(--navy); color:white; font-weight:700; font-size:13px;
-    text-transform:uppercase; letter-spacing:0.5px;
+    text-transform:none; letter-spacing:0.5px;
   }
   .preview-close{
     background:transparent; border:none; color:white; font-size:15px; cursor:pointer; line-height:1; padding:4px;
@@ -626,7 +627,7 @@
     flex-shrink:0;
   }
   .il-badge{
-    color:var(--il); font-size:9.5px; font-weight:800; text-transform:uppercase;
+    color:var(--il); font-size:9.5px; font-weight:800; text-transform:none;
     letter-spacing:0.3px; margin-top:1px;
   }
   .toggle-col{
@@ -677,8 +678,8 @@
      width, which used to visually run underneath the Lock/Bubble/Injured
      icons since they're painted after it in the tile's markup. */
   .tile .name-text{ min-width:0; overflow-wrap:break-word; word-break:break-word; }
-  .tile .meta{font-size:10px; color:var(--grey); text-transform:uppercase; letter-spacing:0.3px;}
-  .badge{ font-size:8.5px; font-weight:800; letter-spacing:0.4px; padding:1px 5px; border-radius:20px; text-transform:uppercase; }
+  .tile .meta{font-size:10px; color:var(--grey); text-transform:none; letter-spacing:0.3px;}
+  .badge{ font-size:8.5px; font-weight:800; letter-spacing:0.4px; padding:1px 5px; border-radius:20px; text-transform:none; }
   .badge.lock{ background:var(--lock); color:white; }
   .badge.bubble{ background:var(--bubble); color:white; }
   .tile img{ -webkit-user-drag:none; user-drag:none; }
@@ -895,7 +896,7 @@
   .pay-banner b{ color:#4a3205; }
   .pay-topline{ display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center; justify-content:space-between; }
   .pay-season-chips{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
-  .pay-lbl{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.7px; color:var(--grey); margin-right:2px; }
+  .pay-lbl{ font-size:11px; font-weight:800; text-transform:none; letter-spacing:0.7px; color:var(--grey); margin-right:2px; }
   .pay-chip{
     appearance:none; font:inherit; cursor:pointer; font-size:13px; font-weight:700;
     padding:6px 12px; border-radius:999px; border:1px solid #cfd5dc; background:#fff; color:var(--navy);
@@ -923,14 +924,14 @@
     background:linear-gradient(135deg, var(--navy), var(--navy2)); color:#fff; border-radius:14px;
     padding:18px 22px; display:grid; grid-template-columns: minmax(220px,1.1fr) 1fr; gap:20px 28px;
   }
-  .pay-hero-main .pay-year{ font-size:11px; font-weight:800; letter-spacing:1px; text-transform:uppercase; opacity:0.75; }
+  .pay-hero-main .pay-year{ font-size:11px; font-weight:800; letter-spacing:1px; text-transform:none; opacity:0.75; }
   .pay-bignum{ font-family:Georgia,serif; font-weight:700; font-size:44px; line-height:1.05; margin-top:2px; }
   .pay-bignum.over{ color:#FF9A90; }
   .pay-bignum.under{ color:#8CE0A6; }
   .pay-sub{ font-size:12.5px; opacity:0.85; margin-top:4px; line-height:1.4; }
   .pay-statrow{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:14px; }
   .pay-stat .v{ font-family:Georgia,serif; font-weight:700; font-size:21px; line-height:1.1; }
-  .pay-stat .l{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.7px; opacity:0.72; margin-top:2px; }
+  .pay-stat .l{ font-size:10px; font-weight:700; text-transform:none; letter-spacing:0.7px; opacity:0.72; margin-top:2px; }
   .pay-stat .v.good{ color:#8CE0A6; } .pay-stat .v.bad{ color:#FF9A90; }
   .pay-target-box{
     background:rgba(255,255,255,0.1); border-radius:10px; padding:10px 12px; margin-top:14px;
@@ -965,12 +966,12 @@
     display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px;
     padding:10px 14px; background:#f3f5f8; border-bottom:1px solid #dfe3e8;
   }
-  .pay-card-h h3{ margin:0; font-size:13px; font-weight:800; letter-spacing:0.5px; text-transform:uppercase; color:var(--navy); }
+  .pay-card-h h3{ margin:0; font-size:13px; font-weight:800; letter-spacing:0.5px; text-transform:none; color:var(--navy); }
   .pay-card-h .sub{ font-size:12px; color:var(--grey); font-weight:600; }
   .pay-scroll{ overflow-x:auto; }
   table.pay-tbl{ width:100%; border-collapse:collapse; font-size:13px; min-width:760px; }
   .pay-tbl th{
-    text-align:right; font-size:10.5px; text-transform:uppercase; letter-spacing:0.6px; color:var(--grey);
+    text-align:right; font-size:10.5px; text-transform:none; letter-spacing:0.6px; color:var(--grey);
     font-weight:800; padding:7px 8px; border-bottom:1px solid #e4e8ed; white-space:nowrap;
   }
   .pay-tbl th:first-child, .pay-tbl th.left{ text-align:left; }
@@ -996,7 +997,7 @@
   .pay-cell.ovr{ color:#0b5; font-weight:700; }
   .pay-cell.blank{ color:#c3c8ce; }
   .pay-tag{
-    display:inline-block; font-size:10px; font-weight:800; letter-spacing:0.3px; text-transform:uppercase;
+    display:inline-block; font-size:10px; font-weight:800; letter-spacing:0.3px; text-transform:none;
     padding:1px 6px; border-radius:5px; margin-left:6px; vertical-align:1px;
   }
   .pay-tag.est{ background:#FFF1D1; color:#8a5a00; }
@@ -1019,7 +1020,7 @@
 
   /* Assumptions */
   details.pay-assume{ background:#fff; border:1px solid #dfe3e8; border-radius:12px; }
-  details.pay-assume > summary{ cursor:pointer; padding:11px 14px; font-weight:800; font-size:13px; text-transform:uppercase; letter-spacing:0.5px; color:var(--navy); }
+  details.pay-assume > summary{ cursor:pointer; padding:11px 14px; font-weight:800; font-size:13px; text-transform:none; letter-spacing:0.5px; color:var(--navy); }
   .pay-assume-body{ padding:4px 14px 14px; display:flex; flex-direction:column; gap:12px; }
   .pay-grid-in{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px 14px; }
   .pay-field{ display:flex; flex-direction:column; gap:3px; font-size:11.5px; font-weight:700; color:var(--grey); }
@@ -1068,7 +1069,7 @@
   .pay-outbox span{ color:var(--grey); font-weight:600; margin-left:auto; }
   .pay-log{ list-style:none; margin:0; padding:0; }
   .pay-log li{ display:grid; grid-template-columns:78px 1fr auto auto; gap:10px; padding:9px 16px 9px 13px; border-top:1px solid #eef1f4; align-items:center; font-size:13px; border-left:4px solid #cfd5dc; }
-  .pay-log .tagk{ font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.6px; border-radius:999px; padding:3px 8px; text-align:center; background:#eceff3; color:var(--grey); }
+  .pay-log .tagk{ font-size:10.5px; font-weight:800; text-transform:none; letter-spacing:0.6px; border-radius:999px; padding:3px 8px; text-align:center; background:#eceff3; color:var(--grey); }
   .pay-log li.k-add{ border-left-color:#2f8f5b; background:#f1f9f4; } .pay-log li.k-add .tagk{ background:#d6eedf; color:#1d6b42; }
   .pay-log li.k-remove{ border-left-color:#c0392b; background:#fdf3f2; } .pay-log li.k-remove .tagk{ background:#f6d9d6; color:#9b2c20; }
   .pay-log li.k-swap{ border-left-color:#d9962b; background:#fef8ec; } .pay-log li.k-swap .tagk{ background:#f8e5bd; color:#8a5a0a; }
@@ -1126,6 +1127,50 @@
     .view-tab .tab-sub{ display:none; }
   }
 
+
+  /* ---- Look refresh: print-scorecard feel. Flat panels, condensed headings, no all-caps labels ---- */
+  :root{ --disp:"Barlow Condensed","Arial Narrow",-apple-system,"Segoe UI",sans-serif; --body:"Barlow",-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; --line:#d9dde3; }
+  body{ font-family:var(--body); background:#f6f7f9; font-size:15px; }
+  button,select,input,textarea{ font-family:var(--body); }
+  body:not(.broadcast) *{ box-shadow:none !important; }
+  .tile.dragging{ box-shadow:0 6px 16px rgba(12,35,64,0.3) !important; }
+  .pay-modal,.preview-modal,.pay-sugg{ box-shadow:0 10px 30px rgba(0,0,0,0.28) !important; }
+  /* numbers & headings: condensed, tabular */
+  .stats-bar .stat-big,.stats-bar .breakdown-row .gcount,.pay-bignum,.pay-stat .v,.pay-calc b,.pay-log .eff,.pay-log .lg-row em{ font-family:var(--disp); font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:0; }
+  .stats-bar .stat-big{ font-size:36px; } .pay-bignum{ font-size:52px; line-height:1; } .pay-stat .v{ font-size:24px; }
+  .full-export, .full-export *{ font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  .fx-header .title,.fx-lineup-title{ font-family:Georgia,serif !important; }
+  .brand h1{ font-family:var(--disp); font-size:26px; font-weight:700; letter-spacing:0.2px; }
+  .roster-section h2.section-title,.pay-card-h h3,details.pay-assume > summary{ font-family:var(--disp); font-size:20px; font-weight:700; letter-spacing:0; color:var(--navy); }
+  .roster-subtitle,.pay-lbl,.stats-bar .stat-label,.stats-bar .breakdown-row .glabel,.pay-stat .l,.pay-hero-main .pay-year{ letter-spacing:0; font-weight:600; font-size:12.5px; opacity:0.8; color:inherit; }
+  .roster-subtitle,.pay-lbl{ color:var(--grey); opacity:1; }
+  .pay-hero-main .pay-year{ font-size:14px; }
+  .roster-col h3{ font-family:var(--disp); font-size:15px; letter-spacing:0.2px; font-weight:600; }
+  .col-clear-btn,.preview-modal-header,.pay-log .tagk,.pay-card-h th,.badge{ letter-spacing:0; }
+  /* surfaces: 4px corners, 1px rules */
+  .roster-col,.lineup-card,.pay-card,details.pay-assume,.pay-sec,.pool-wrap,.pool-section,.pay-hero,.stats-bar,.pay-pill,.pay-sugg,.pay-banner{ border-radius:4px !important; }
+  .pay-modal,.preview-modal,.tile-modal{ border-radius:6px !important; }
+  .pay-hero,.stats-bar{ background:var(--navy); background-image:none; }
+  .pay-hero-main + *,.pay-hero .pay-stat{ border-radius:3px; }
+  .tile{ border-radius:3px; }
+  button{ border-radius:3px; }
+  .badge{ border-radius:3px; }
+  .pay-log .tagk{ border-radius:3px; }
+  /* chips become underline tabs, not pills */
+  .pay-season-chips{ gap:0; border-bottom:1px solid var(--line); }
+  .pay-chip{ border:none; background:transparent; border-radius:0; padding:7px 14px; font-size:15px; font-weight:600; color:var(--grey); border-bottom:3px solid transparent; margin-bottom:-1px; }
+  .pay-chip:hover{ color:var(--navy); border-color:transparent; }
+  .pay-chip.active{ background:transparent; color:var(--navy); border-bottom-color:var(--bubble); }
+  .pay-chip.small{ font-size:13px; padding:4px 10px; }
+  /* header: flat navy, one coral rule, no stripe texture */
+  header.topbar{ background-image:none; }
+  .fx-header{ background-image:none; }
+  .pay-hero{ padding-top:18px; }
+  .pay-target-box .pay-chip{ color:#fff; opacity:.7; } .pay-target-box .pay-chip.active{ color:#fff; opacity:1; background:transparent; border-color:transparent; border-bottom-color:var(--bubble); }
+  .pay-target-box .pay-season-chips{ border-bottom-color:rgba(255,255,255,.25); }
+  @media (max-width:700px){ .stats-bar .stat-big{ font-size:30px; } .pay-bignum{ font-size:42px; } .pay-chip{ padding:7px 10px; font-size:14px; } }
+  body.broadcast h2,body.broadcast h3,body.broadcast .section-title,body.broadcast .roster-subtitle,body.broadcast .pool-title{ letter-spacing:0 !important; }
+  h2,.pool-head h2,.pool-header h2{ font-family:var(--disp); letter-spacing:0; }
 </style>
 </head>
 <body>
@@ -1155,7 +1200,7 @@
   </div>
   <div class="team-nav-league">
     <h4 class="team-nav-heading">Tools</h4>
-    <div class="team-nav-row"><button type="button" class="team-nav-item" id="navPayroll" data-view="payroll" title="Yankees offseason simulator">💰 Offseason Simulator</button></div>
+    <div class="team-nav-row"><button type="button" class="team-nav-item" id="navPayroll" data-view="payroll" title="Yankees offseason simulator">Offseason Simulator</button></div>
   </div>
 </nav>
 
@@ -1176,8 +1221,8 @@
     <button id="syncBtn" title="Pull the latest 40-man roster now">Sync Now</button>
     <button id="fillActiveBtn" title="Place everyone currently on the active roster onto the board, with educated guesses for backups"><span class="btn-full">Fill with Active Roster</span><span class="btn-short">Fill Active</span></button>
     <button id="clearBtn" title="Send every player back to the pool so you can build from scratch">Clear</button>
-    <button id="broadcastBtn" title="Switch between working view and a clean look for recording/streaming">📺 Broadcast Mode</button>
-    <button id="splitBtn" title="Show the Final Roster and the Pool side by side so both stay in view while dragging">🪟 Split View</button>
+    <button id="broadcastBtn" title="Switch between working view and a clean look for recording/streaming">Broadcast Mode</button>
+    <button id="splitBtn" title="Show the Final Roster and the Pool side by side so both stay in view while dragging">Split View</button>
   </div>
 </div>
 
@@ -2652,7 +2697,7 @@ function setBroadcastMode(on){
   const btn = document.getElementById('broadcastBtn');
   if(btn){
     btn.classList.toggle('on', on);
-    btn.textContent = on ? '📺 Exit Broadcast Mode' : '📺 Broadcast Mode';
+    btn.textContent = on ? 'Exit Broadcast Mode' : 'Broadcast Mode';
   }
   storageSet(BROADCAST_KEY, on ? '1' : '0');
   // Toolbar/stats-bar sizes shift between modes — recompute after the class
@@ -2668,7 +2713,7 @@ function setSplitMode(on){
   const btn = document.getElementById('splitBtn');
   if(btn){
     btn.classList.toggle('on', on);
-    btn.textContent = on ? '🪟 Exit Split View' : '🪟 Split View';
+    btn.textContent = on ? 'Exit Split View' : 'Split View';
   }
   storageSet(SPLIT_KEY, on ? '1' : '0');
   requestAnimationFrame(updateStickyOffsets);
