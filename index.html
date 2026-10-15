@@ -3402,9 +3402,9 @@ function hero(yr, calc){
   const presets = [
     {k:'none', label:'No limit'},
     {k:T, label:`Under CBT ($${T}M)`},
-    {k:T+W, label:`+1 tier ($${T+W}M)`},
-    {k:T+2*W, label:`+2 tiers ($${T+2*W}M)`},
-    {k:T+3*W, label:`Top tier ($${T+3*W}M)`},
+    {k:T+W, label:`Second CBT Tier ($${T+W}M)`},
+    {k:T+2*W, label:`Third CBT Tier ($${T+2*W}M)`},
+    {k:T+3*W, label:`Top CBT Tier ($${T+3*W}M)`},
   ].map(p=>{
     const active = p.k==='none' ? !S.target.on : (S.target.on && Math.abs(S.target.value - p.k)<1e-9);
     return `<button class="pay-chip small${active?' active':''}" data-act="target" data-v="${p.k}">${p.label}</button>`;
