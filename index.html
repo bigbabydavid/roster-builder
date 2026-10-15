@@ -1171,6 +1171,23 @@
   @media (max-width:700px){ .stats-bar .stat-big{ font-size:30px; } .pay-bignum{ font-size:42px; } .pay-chip{ padding:7px 10px; font-size:14px; } }
   body.broadcast h2,body.broadcast h3,body.broadcast .section-title,body.broadcast .roster-subtitle,body.broadcast .pool-title{ letter-spacing:0 !important; }
   h2,.pool-head h2,.pool-header h2{ font-family:var(--disp); letter-spacing:0; }
+  .pay-r5{ list-style:none; margin:0; padding:0; } .pay-r5 li{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 14px; border-top:1px solid #eef0f2; } .pay-r5 em{ font-style:normal; color:var(--grey); font-size:12.5px; margin-left:6px; }
+  .dfa-opt{ display:flex !important; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; padding:10px 12px; width:100%; margin-top:8px; white-space:normal; } .dfa-opt span{ font-weight:500; color:var(--grey); font-size:12.5px; }
+  @media (max-width:700px){ .pay-r5 li{ flex-wrap:wrap; } }
+  .pay-tag.qo{ background:var(--bubblebg); color:var(--bubble); }
+  .pay-banner .pay-btn{ margin-left:6px; }
+  .sc-wrap{ overflow-x:auto; border:1px solid var(--line,#d9dde3); border-radius:4px; background:#fff; }
+  .sc{ width:100%; max-width:640px; background:#fff; color:var(--navy); font-family:var(--body); }
+  .sc-h{ display:flex; align-items:center; gap:14px; background:var(--navy); color:#fff; padding:18px 22px; border-bottom:4px solid var(--bubble); }
+  .sc-logo{ width:46px; height:46px; border-radius:50%; background:#fff; object-fit:contain; padding:4px; }
+  .sc-t{ font-family:var(--disp); font-size:30px; font-weight:700; line-height:1.05; } .sc-s{ font-size:13px; opacity:.8; }
+  .sc-stats{ display:flex; flex-wrap:wrap; border-bottom:1px solid #e3e6ea; } .sc-stat{ flex:1 1 120px; padding:14px 18px; border-right:1px solid #e3e6ea; } .sc-stat:last-child{ border-right:none; }
+  .sc-v{ font-family:var(--disp); font-size:32px; font-weight:600; line-height:1; font-variant-numeric:tabular-nums; } .sc-v.bad{ color:var(--cut); } .sc-v.ok{ color:var(--lock); }
+  .sc-l{ font-size:12.5px; color:var(--grey); margin-top:4px; }
+  .sc-m{ padding:14px 22px 6px; } .sc-mh{ font-family:var(--disp); font-size:20px; font-weight:700; margin-bottom:6px; }
+  .sc-m ul{ list-style:none; margin:0; padding:0; } .sc-m li{ display:flex; justify-content:space-between; gap:16px; padding:7px 0; border-top:1px solid #eef0f2; font-size:14.5px; } .sc-m li b{ font-family:var(--disp); font-weight:600; font-size:17px; white-space:nowrap; }
+  .sc-m li em{ display:block; font-style:normal; color:var(--grey); font-size:12.5px; } .sc-more{ color:var(--grey); }
+  .sc-f{ padding:10px 22px 14px; font-size:12px; color:var(--grey); }
 </style>
 </head>
 <body>
@@ -2846,6 +2863,8 @@ document.addEventListener('click', e=>{
 /* ===================== Payroll Planner ===================== */
 /* Data note: Yankees contracts come from FanGraphs RosterResource (export dated Oct 12, 2026).
    Dollar amounts are in millions. Arbitration/pre-arb figures are estimates unless noted. */
+// A shared plan arrives as #plan=… on the URL; grab it before anything rewrites the address.
+window.__bootPlan = /^#plan=/.test(location.hash) ? location.hash.slice(6) : null;
 const PayrollPlanner = (function(){
 'use strict';
 
@@ -2874,6 +2893,7 @@ const DEFAULT_RULES = {
   basis: 'fg',                    // 'fg' = FanGraphs' own method; 'est' = fuller estimate (MLBTR arb, fill to 34)
   qo: 23.15,                     // 2026-27 qualifying offer (per Joel Sherman via MLBTR)
   arbOneEstimate: 2.5,           // first-year arbitration estimate
+  deferPct: 4.25,                // discount rate used to count deferred money at present value for the tax
 };
 
 /* ---------- Seed contracts (Yankees) ---------- */
@@ -2944,6 +2964,11 @@ SP|Sandy Alcantara|31|$21M club option, $2M buyout;SP|José Berríos|33|Can opt 
 RP|Bryan Abreu|30|;RP|Jason Adam|35|;RP|Jorge Alcalá|31|;RP|Dan Altavilla|34|;RP|Adbert Alzolay|31|;RP|Taylor Clarke|34|;RP|Emmanuel Clase|29|$10M club option, $2M buyout;RP|Enyel De Los Santos|31|;RP|Carlos Estévez|34|$13M club option, $2M buyout;RP|Yimi García|36|;RP|Kevin Ginkel|33|;RP|Brusdar Graterol|28|;RP|Joe Jiménez|31|;RP|Mark Leiter Jr.|36|;RP|Evan Phillips|32|;RP|Dennis Santana|31|;RP|Josh Sborz|32|;RP|Trevor Stephan|31|$7.25M club option, $1.25M buyout;RP|Robert Stephenson|34|$2.5M club option;RP|Ryan Thompson|35|;RP|Trent Thornton|33|;RP|Justin Topa|36|;RP|Blake Treinen|39|;RP|Jacob Webb|33|;RP|Garrett Whitlock|31|$8.25M club option, $1M buyout;
 RP|Keegan Akin|32|;RP|Kolby Allard|29|;RP|Aaron Bummer|33|;RP|Brock Burke|30|;RP|Aroldis Chapman|39|$13M mutual option, $0.3M buyout;RP|Yuki Matsui|31|Can opt out of remaining two years, $13.5M;RP|Adrián Morejón|28|;RP|Steven Okert|35|;RP|A.J. Puk|32|;RP|JoJo Romero|30|;RP|Matt Strahm|35|;RP|Alex Vesia|31|`;
 // A player is ineligible for the qualifying offer if he has received one before or changed teams during the season.
+// Players who turned down a qualifying offer (fill in once the November decisions are public). A club that signs one gives up draft pick(s); his old club gets a compensation pick.
+const QO_DECLINED = [];
+const qoDecl = name => QO_DECLINED.some(n=>norm(n)===norm(name));
+const QO_NOTE = 'Declined the qualifying offer — signing him costs draft-pick compensation (his old club gets a pick back)';
+const qoTag = name => qoDecl(name) ? `<span class="pay-tag qo" title="${esc(QO_NOTE)}">Declined QO · pick attached</span>` : '';
 const qoBlockOf = name => { const p = PENDING_FA.find(x=>norm(x.name)===norm(name)); return p && p.qoBlock || ''; };
 // FanGraphs 2027 free-agent tracker (Oct 15, 2026). l = FanGraphs' free-agent likelihood: F free agent, P probably, T toss-up, n probably not, X not happening.
 const FA_TRACKER_DATE = 'Oct 15, 2026';
@@ -3085,7 +3110,7 @@ function useTeam(tid){
     PLAN_OPTIONS = teamOptions(tid);
     DEFAULT_RULES.priorConsecutive = X.prior;
   }
-  SEED = resolveSeed(); POOL = {}; FARM = []; FARMSTATE = 0;
+  SEED = resolveSeed(); POOL = {}; FARM = []; FARMSTATE = 0; R5 = {state:0, cands:[], tid:0};
 }
 
 /* ---------- seed resolution ---------- */
@@ -3145,19 +3170,41 @@ function addedBase(a, y){
   // trade
   return (y>=a.start && y<=a.through) ? Math.max(0, ((a.sched && a.sched[y]!=null) ? a.sched[y] : a.aav) - (a.eat||0)) : null;
 }
+const nomAav = a => a.aavNom!=null ? a.aavNom : a.aav;
+function structText(a){
+  const p = [], st = a.struct||{};
+  if(st.bonus) p.push(`${fmt(st.bonus)} signing bonus`);
+  if(st.defer) p.push(`${fmt(st.defer)} deferred${st.deferYrs?` (~${st.deferYrs} yr later)`:''}, counts as ${fmt(st.deferPV,1)}`);
+  if(a.out) p.push(`player opt-out after ${a.out.after}`);
+  if(a.opt) p.push(`${a.start+a.years} ${a.opt.kind} option ${fmt(a.opt.salary)}${a.opt.buyout?` (${fmt(a.opt.buyout)} buyout in the AAV)`:''}`);
+  return p.join(' · ');
+}
 function allItems(){
   const items = SEED.map(s=>({...s}));
+  // Anyone on the live 40-man that FanGraphs doesn't itemize still gets a row (counted at the minimum, which is what the roster fill was already doing).
+  { const have = new Set(items.map(i=>norm(i.name)));
+    PENDING_FA.forEach(x=>have.add(norm(x.name))); S.added.forEach(x=>have.add(norm(x.name))); Object.keys(S.walked||{}).forEach(n=>have.add(norm(n))); (S.extraOrg||[]).forEach(e=>have.add(norm(e.name)));
+    if(typeof players!=='undefined' && typeof currentTeamId!=='undefined' && currentTeamId===TEAM_ID){
+      realP().filter(x=>x.pid && x.via!=='payroll').forEach(x=>{ const n = norm(x.name); if(have.has(n)) return; have.add(n);
+        items.push({id:'r'+x.pid, name:x.name, cat:'pre', kind:'seed', pos:x.pos||'', type:'', lvl:{2027:'Pre'}, base:{}, note:'On the 40-man — FanGraphs doesn’t list him separately, so he’s counted at the minimum'}); }); } }
   (S.extraOrg||[]).forEach(e=>items.push({id:e.id, name:e.name, cat:'org', kind:'org', pos:e.pos||'', type:'', base:{}}));
   S.customOther.forEach(c=>items.push({id:c.id, name:c.name, cat:'other', kind:'custom', pos:'', type:'', base:{...c.base}, note:c.note||''}));
   S.added.forEach(a=>items.push({id:a.id, name:a.name, pos:a.pos||'', type:a.type, kind:a.kind, cat:a.kind==='fa'?'fa':'trade',
-    contract:a.promo ? `${a.lvl?'Promoted from '+a.lvl+' · ':''}${fmt(a.aav,2)} · ${a.years} yr from ${a.start}` : a.kind==='fa' ? `${a.years} yr, ${fmt(a.aav*a.years)} · ${fmt(a.aav)} AAV · from ${a.start}` : `via trade${a.from?' from '+a.from:''} · ${a.sched?`${a.start} ${fmt(a.sched[a.start]!=null?a.sched[a.start]:a.aav)}${a.through>a.start?` … ${a.through} ${fmt(a.sched[a.through]!=null?a.sched[a.through]:a.aav)}`:''}`:`${fmt(a.aav)} AAV through ${a.through}`}${a.eat?` · other team pays ${fmt(a.eat)}/yr`:''}`,
+    contract:a.promo ? `${a.lvl?'Promoted from '+a.lvl+' · ':''}${fmt(a.aav,2)} · ${a.years} yr from ${a.start}` : a.kind==='fa' ? `${a.years} yr, ${fmt(nomAav(a)*a.years)} · ${fmt(a.aav)} ${Math.abs(nomAav(a)-a.aav)>1e-9?'CBT ':''}AAV · from ${a.start}${structText(a)?' · '+structText(a):''}` : `via trade${a.from?' from '+a.from:''} · ${a.sched?`${a.start} ${fmt(a.sched[a.start]!=null?a.sched[a.start]:a.aav)}${a.through>a.start?` … ${a.through} ${fmt(a.sched[a.through]!=null?a.sched[a.through]:a.aav)}`:''}`:`${fmt(a.aav)} AAV through ${a.through}`}${a.eat?` · other team pays ${fmt(a.eat)}/yr`:''}`,
     note:a.info||a.notes||'', added:a}));
   return items;
 }
 // Charge before trade/release status (what the player's own cells show).
 const optYear = (it, y) => it.option && (it.option.years ? it.option.years.includes(y) : y===it.option.year);
 function rawCharge(it, y){
-  if(it.added) return addedBase(it.added, y);
+  if(it.added){
+    const a = it.added;
+    if(a.kind==='fa'){
+      if(a.out && y>a.out.after && S.options[a.id+':out']==='out') return null;
+      if(a.opt && y===a.start+a.years){ return (S.options[a.id]||'undecided')==='exercise' ? a.opt.salary : null; }
+    }
+    return addedBase(a, y);
+  }
   const ov = S.overrides[it.id];
   if(ov && ov[y]!=null) return ov[y];
   if(it.option && optYear(it, y)){
@@ -3170,11 +3217,12 @@ function charge(it, y){
   let c = rawCharge(it, y);
   if(c==null) return 0;
   const st = S.status[it.id];
-  if(st && st.mode==='nontender') return 0;
+  if(st && (st.mode==='nontender' || st.mode==='claimed')) return 0;
+  if(st && st.mode==='outright' && it.cat!=='guaranteed') return 0;
   if(st && st.mode==='traded') c = (st.pay!=null) ? Math.min(c, st.pay) : c * (st.frac||0);
   return c;
 }
-function isActive(it){ const st=S.status[it.id]; return !(st && (st.mode==='traded' || st.mode==='released' || st.mode==='nontender')); }
+function isActive(it){ const st=S.status[it.id]; return !(st && (st.mode==='traded' || st.mode==='released' || st.mode==='nontender' || st.mode==='claimed' || st.mode==='outright')); }
 function hasOverride(it){ return !!(S.overrides[it.id] && Object.keys(S.overrides[it.id]).length) || !!S.status[it.id] || (S.options[it.id] && S.options[it.id]!=='undecided'); }
 
 /* ---------- tax math ---------- */
@@ -3271,7 +3319,7 @@ function rosterRemove(id){
 /* ---------- depth chart: a separate copy of the roster board that follows your moves ---------- */
 function goneNames(){
   const gone = new Set(); const items = calcAll().items;
-  items.forEach(it=>{ const st = S.status[it.id]; if(st && !st.assumed && ['traded','released','nontender'].includes(st.mode)) gone.add(norm(it.name)); });
+  items.forEach(it=>{ const st = S.status[it.id]; if(st && !st.assumed && ['traded','released','nontender','claimed','outright'].includes(st.mode)) gone.add(norm(it.name)); });
   items.forEach(it=>{ if(it.option && it.option.year===2027 && S.options[it.id]==='decline') gone.add(norm(it.name)); }); // a declined 2027 option / opt-out means he's gone
   Object.keys(S.walked||{}).forEach(nm=>gone.add(norm(nm)));
   const signed = new Set(S.added.map(a=>norm(a.name)));
@@ -3349,11 +3397,13 @@ function renderAll(){
   const rmap = rosterNameMap();
   root.innerHTML = `<div class="pay-wrap">
     <div class="pay-banner"><b>The CBA expires this December.</b> Nothing is set for 2027 yet — the $${S.rules.threshold[2027]}M line and the tax rates below carry the 2026 rules forward as an assumption, and a new deal (or a salary cap) could change all of it. Everything is editable under <b>Assumptions & tax rules</b>.</div>
+    ${sharedBanner()}
     ${topline()}
     ${hero(yr, calc)}
     ${logCard(calc)}
     <div class="pay-two">${breakdownCard(yr)}${outlookCard(calc)}</div>
     ${tablesHTML(calc, rmap)}
+    ${r5Card()}
     ${assumptionsHTML()}
     <div class="pay-plan-head"><h2>Depth chart &amp; lineups</h2><p>Your 2027 roster as you’ve built it — traded, released, non-tendered and unsigned free agents are gone; signings and trade pickups are in the pool. Drag players around exactly like the Roster Builder. This is its own copy: nothing here changes your Roster Builder board. <button class="pay-btn tiny${UI.armed==='plan'?' armed':''}" data-act="planReset">${UI.armed==='plan'?'Click again to confirm':'Reset to my Roster Builder board'}</button></p><div class="pay-key"><b>*</b> = still has a minor-league option, so he can start 2027 in the minors. No asterisk means out of options, can’t be optioned, or no data (FanGraphs, through 2026). Not included in the downloaded image.</div></div><div id="planSlot"></div>
     <div class="pay-foot">Contract data: <a href="https://www.fangraphs.com/roster-resource/payroll/${teamObj().slug}" target="_blank" rel="noopener">FanGraphs RosterResource</a> (export dated ${SOURCE_DATE}). Tax bands/rates checked against <a href="https://www.spotrac.com/mlb/tax" target="_blank" rel="noopener">Spotrac&rsquo;s</a> 2026 table. Free-agent names: <a href="https://www.mlbtraderumors.com/2026-27-mlb-free-agents" target="_blank" rel="noopener">MLB Trade Rumors</a>. 2027 arbitration figures are <a href="https://www.mlbtraderumors.com/2026/10/projected-arbitration-salaries-for-2027.html" target="_blank" rel="noopener">MLB Trade Rumors&rsquo; projections</a> (Matt Swartz&rsquo;s model, Oct 2, 2026); later arbitration years are my own estimates, and CBT payroll counts average annual value plus benefits, not cash paid. Deferred money counts at present value, so enter the CBT AAV directly for heavily deferred deals.</div>
@@ -3373,6 +3423,7 @@ function topline(){
       <button class="pay-btn primary" data-act="addTrade">+ Acquire via trade</button>
       <button class="pay-btn primary" data-act="addPromo">+ Add to 40-man</button>
       <button class="pay-btn" data-act="addOther">+ Other payment</button>
+      <button class="pay-btn" data-act="share">Share</button>
       <button class="pay-btn danger tiny${armed('all')?' armed':''}" data-act="resetAll">${armed('all')?'Click again to confirm':'Reset everything'}</button>
     </div>
   </div>`;
@@ -3383,7 +3434,7 @@ function fortyMan(calc){
   const real = realP().filter(p=>p.pid && p.ilLabel!=='60-Day IL');
   const byName = new Set(real.map(p=>norm(p.name)));
   let n = real.length; const gone = new Set();
-  calc.items.forEach(it=>{ const st = S.status[it.id]; if(st && !st.assumed && ['traded','released','nontender'].includes(st.mode)) gone.add(norm(it.name)); });
+  calc.items.forEach(it=>{ const st = S.status[it.id]; if(st && !st.assumed && ['traded','released','nontender','claimed','outright'].includes(st.mode)) gone.add(norm(it.name)); });
   calc.items.forEach(it=>{ if(it.option && it.option.year===2027 && S.options[it.id]==='decline') gone.add(norm(it.name)); });
   Object.keys(S.walked||{}).forEach(nm=>gone.add(norm(nm)));
   gone.forEach(nm=>{ if(byName.has(nm)) n--; });
@@ -3457,7 +3508,7 @@ function logEntries(calc){
   S.added.forEach(a=>{
     const it = byId[a.id]; const eff = it ? (rawCharge(it,y)||0) : 0;
     if(a.kind==='fa'){
-      L.push({kind:'add', acts:[['editAdded','Edit',{id:a.id}],['removeAdded','Undo',{id:a.id}]], at:a.at||0, eff, text: a.promo ? `Added ${a.name} to the 40-man${a.lvl?' (from '+a.lvl+')':''}` : a.qo ? `Signed ${a.name} to the qualifying offer` : `Signed ${a.name}`, sub:a.promo ? `${fmt(a.aav,2)} in ${a.start}${a.years>1?' · '+a.years+' yr':''}` : `${a.years} yr, ${fmt(a.aav*a.years)} (${fmt(a.aav,2)} AAV) from ${a.start}`});
+      L.push({kind:'add', acts:[['editAdded','Edit',{id:a.id}],['removeAdded','Undo',{id:a.id}]], at:a.at||0, eff, text: a.promo ? `Added ${a.name} to the 40-man${a.lvl?' (from '+a.lvl+')':''}` : a.qo ? `Signed ${a.name} to the qualifying offer` : `Signed ${a.name}`, sub:a.promo ? `${fmt(a.aav,2)} in ${a.start}${a.years>1?' · '+a.years+' yr':''}` : `${a.years} yr, ${fmt(nomAav(a)*a.years)} (${fmt(a.aav,2)} ${Math.abs(nomAav(a)-a.aav)>1e-9?'CBT ':''}AAV) from ${a.start}${structText(a)?' · '+structText(a):''}${!a.qo&&qoDecl(a.name)?' · declined the QO — draft pick compensation attached':''}`});
     } else {
       const pkg = a.pkg||a.id; if(seenPkg.has(pkg)) return; seenPkg.add(pkg);
       const grp = S.added.filter(x=>x.kind==='trade' && (x.pkg||x.id)===pkg);
@@ -3466,7 +3517,10 @@ function logEntries(calc){
       const inc = grp.reduce((s,x)=>s+(byId[x.id]?(rawCharge(byId[x.id],y)||0):0),0);
       const sentEff = sentKeys.reduce((s,k)=>s-(byId[k]?rawCharge(byId[k],y)-charge(byId[k],y):0),0);
       const teams = [...new Set(grp.map(x=>x.from).filter(Boolean))];
-      L.push({kind: sent.length?'swap':'add', acts:[['editAdded','Edit',{id:a.id}],['removePkg','Undo',{id:pkg}]], at:a.at||0, eff:inc+sentEff, text:`Traded for ${grp.map(x=>x.name).join(', ')}${teams.length?' ('+teams.join(', ')+')':''}${sent.length?` — sending ${sent.join(', ')}`:''}`,
+      const stS = sentKeys.map(k=>S.status[k]), payTot = stS.reduce((t,x)=>t+(x.pay||0),0);
+      const fracs = stS.filter(x=>x.pay==null && x.frac>0).map(x=>Math.round(x.frac*100)), multi = sentKeys.some(k=>byId[k] && YEARS.filter(yy=>(rawCharge(byId[k],yy)||0)>0).length>1);
+      const cash = payTot>0 ? ` + ${fmt(payTot,payTot%1?2:1)}${multi?'/yr':''}` : (fracs.length ? ` + ${[...new Set(fracs)].join('/')}% of salary` : '');
+      L.push({kind: sent.length?'swap':'add', acts:[['editAdded','Edit',{id:a.id}],['removePkg','Undo',{id:pkg}]], at:a.at||0, eff:inc+sentEff, text:`Traded for ${grp.map(x=>x.name).join(', ')}${teams.length?' ('+teams.join(', ')+')':''}${sent.length?` — sending ${sent.join(', ')}${cash}`:''}`,
         sub: grp.map(x=>`${x.name}: ${x.sched?'arbitration schedule':fmt(x.aav,2)+' AAV'} through ${x.through}${x.eat?` (other team pays ${fmt(x.eat,2)}/yr)`:''}`).join(' · ')});
     }
   });
@@ -3475,6 +3529,9 @@ function logEntries(calc){
     if(st.mode==='traded'){
       const kept = st.pay!=null ? `still paying ${fmt(st.pay,2)}/yr` : st.frac ? `still paying ${Math.round(st.frac*100)}%` : 'no money retained';
       L.push({kind:'remove', acts:[['tradeAway','Edit',{id:k}],['undoStatus','Undo',{id:k}]], at:st.at||0, eff:-(rawCharge(it,y)-charge(it,y)), text:`Traded away ${it.name}`, sub:kept});
+    } else if(st.mode==='claimed' || st.mode==='outright'){
+      const cl = st.mode==='claimed', still = !cl && it.cat==='guaranteed';
+      L.push({kind:'remove', acts:[['undoStatus','Undo',{id:k}]], at:st.at||0, eff: still?0:-(rawCharge(it,y)||0), text:`Designated ${it.name} for assignment`, sub: cl ? 'claimed on waivers — his salary comes off the books' : (still ? 'outrighted to the minors — his guaranteed salary still counts' : 'outrighted to the minors — off the 40-man')});
     } else if(st.mode==='nontender'){
       L.push({kind:'remove', grp:'nt', who:it.name, acts:[['undoStatus','Undo',{id:k}]], at:st.at||0, eff:-(rawCharge(it,y)||0), text:`Non-tendered ${it.name}`, sub:'salary comes off the books'});
     } else L.push({kind:'remove', acts:[['undoStatus','Undo',{id:k}]], at:st.at||0, eff:0, text:`Released ${it.name}`, sub:'salary still counts against the tax'});
@@ -3482,6 +3539,13 @@ function logEntries(calc){
   Object.keys(S.options).forEach(k=>{
     const v = S.options[k]; const it = byId[k]; if(!it || !it.option || v==='undecided') return;
     L.push({kind:'other', acts:[['optReset','Undo',{id:k}]], at:(S.optAt&&S.optAt[k])||0, eff: optYear(it,y) ? (rawCharge(it,y)||0) : 0, text:(()=>{ const ol = optLabels(it), pl = (it.option.kind||'club')==='player'; return pl ? `${it.name} ${v==='exercise'?'stays':'opts out'} (${optYears(it)} player option)` : `${v==='exercise'?'Exercised':'Declined'} ${optYears(it)} ${(it.option.kind||'club')==='mutual'?'mutual':'club'} option on ${it.name}`; })(), sub:v==='exercise'?`${fmt(it.option.salary,2)}${it.option.years&&it.option.years.length>1?'/yr':''}`:(it.option.buyout?`${fmt(it.option.buyout,2)} buyout`:'no buyout')});
+  });
+  S.added.forEach(a=>{
+    if(a.kind!=='fa') return;
+    const vo = S.options[a.id+':out'];
+    if(a.out && vo==='out') L.push({kind:'other', acts:[['optReset','Undo',{id:a.id+':out'}]], at:(S.optAt&&S.optAt[a.id+':out'])||0, eff: y>a.out.after ? -(a.aav) : 0, text:`${a.name} opts out after ${a.out.after}`, sub:'later years come off the books'});
+    const v = S.options[a.id];
+    if(a.opt && (v==='exercise'||v==='decline')){ const kp = a.opt.kind==='player'; L.push({kind:'other', acts:[['optReset','Undo',{id:a.id}]], at:(S.optAt&&S.optAt[a.id])||0, eff: y===a.start+a.years && v==='exercise' ? a.opt.salary : 0, text: kp ? `${a.name} ${v==='exercise'?'picks up':'declines'} his ${a.start+a.years} player option` : `${v==='exercise'?'Exercised':'Declined'} ${a.start+a.years} ${a.opt.kind} option on ${a.name}`, sub: v==='exercise'?fmt(a.opt.salary,2):(a.opt.buyout?`${fmt(a.opt.buyout,2)} buyout already counted in the AAV`:'no further money')}); }
   });
   Object.keys(S.walked||{}).forEach(n=>{ if(S.added.some(a=>norm(a.name)===norm(n))) return; L.push({kind:'remove', grp:'walk', who:n, acts:[['unwalk','Undo',{name:n}]], at:S.walked[n]===true?0:S.walked[n], eff:0, text:`Let ${n} walk`, sub:'no offer made'}); });
   S.customOther.forEach(c=>{ L.push({kind:'other', acts:[['removeOther','Undo',{id:c.id}]], at:c.at||0, eff:(c.base&&c.base[y])||0, text:c.name, sub:'other payment / cash'}); });
@@ -3565,15 +3629,18 @@ function cellHTML(it, y){
 }
 function rowHTML(it, rmap){
   const st = S.status[it.id];
-  const cls = [st&&(st.mode==='traded'||st.mode==='nontender')?'gone':'', st&&st.mode==='released'?'dead':''].join(' ').trim();
+  const cls = [st&&(st.mode==='traded'||st.mode==='nontender'||st.mode==='claimed'||(st.mode==='outright'&&it.cat!=='guaranteed'))?'gone':'', st&&(st.mode==='released'||(st.mode==='outright'&&it.cat==='guaranteed'))?'dead':''].join(' ').trim();
   const rp = rmap.get(norm(it.name));
   const tradedFor = st && st.tradeId ? S.added.filter(a=>(a.pkg||a.id)===st.tradeId).map(a=>a.name).join(', ') : '';
   const tags = [];
   if(it.lvl){ const l = lvlOf(it, S.season); if(l) tags.push(`<span class="pay-tag est">${esc(l)}${(l==='Pre'||!isEst()||(it.mlbtr&&it.mlbtr[S.season]!=null)||(it.base&&it.base[S.season]!=null))?'':' · est'}</span>`); }
   if(it.kind==='fa'||it.kind==='trade') tags.push(`<span class="pay-tag new">${it.kind==='fa'?(it.added&&it.added.promo?'Added to 40-man':it.added&&it.added.qo?'Qualifying offer':'Signed'):'Trade'}</span>`);
+  if(it.added && it.added.kind==='fa' && !it.added.qo && qoDecl(it.name)) tags.push(qoTag(it.name));
   if(rp && rp.placed==='roster') tags.push(`<span class="pay-tag roster" title="Placed on your Final 26-Man Roster in the roster builder">On 26-man</span>`);
   if(st && st.mode==='traded') tags.push(`<span class="pay-tag warn">${st.assumed?'Assumed gone (MLBTR)':tradedFor?'Traded for '+esc(tradedFor):'Traded'}${st.assumed?'':st.pay!=null?` · pays ${fmt(st.pay,2)}/yr`:st.frac?` · pays ${Math.round(st.frac*100)}%`:''}</span>`);
   if(st && st.mode==='nontender') tags.push(`<span class="pay-tag warn">Non-tendered</span>`);
+  if(st && st.mode==='claimed') tags.push(`<span class="pay-tag warn">DFA · claimed on waivers</span>`);
+  if(st && st.mode==='outright') tags.push(`<span class="pay-tag warn">DFA · outrighted${it.cat==='guaranteed'?' · still counts':''}</span>`);
   if(st && st.mode==='released') tags.push(`<span class="pay-tag warn">Released · still counts</span>`);
   let opt = '';
   if(it.option){
@@ -3581,6 +3648,15 @@ function rowHTML(it, rmap){
     const ol = optLabels(it);
     opt = `<div class="pay-opt">${ol.head}:
       <select data-act="option" data-id="${esc(it.id)}"><option value="undecided"${v==='undecided'?' selected':''}>Undecided (not counted)</option><option value="exercise"${v==='exercise'?' selected':''}>${ol.yes}</option><option value="decline"${v==='decline'?' selected':''}>${ol.no}</option></select></div>`;
+  }
+  if(it.added && it.added.kind==='fa'){
+    const a = it.added;
+    if(a.out){ const v = S.options[a.id+':out']||'stay';
+      opt += `<div class="pay-opt">${a.out.after+1}+ player opt-out (after ${a.out.after}):
+      <select data-act="option" data-id="${esc(a.id+':out')}"><option value="stay"${v!=='out'?' selected':''}>Stays — all years count</option><option value="out"${v==='out'?' selected':''}>Opts out — later years drop</option></select></div>`; }
+    if(a.opt){ const v = S.options[a.id]||'undecided', ol = optLabels({option:{...a.opt, year:a.start+a.years}});
+      opt += `<div class="pay-opt">${ol.head}:
+      <select data-act="option" data-id="${esc(a.id)}"><option value="undecided"${v==='undecided'?' selected':''}>Undecided (not counted)</option><option value="exercise"${v==='exercise'?' selected':''}>${ol.yes}</option><option value="decline"${v==='decline'?' selected':''}>${ol.no}</option></select></div>`; }
   }
   const info = [it.contract, it.note].filter(Boolean).join(' — ');
   const yrs = YEARS.filter(y=>y!==S.season).map(y=>{ const r = rawCharge(it,y); return r==null||r===0 ? '' : `<span>${y}: ${fmt(r,2)}</span>`; }).filter(Boolean).join('');
@@ -3592,7 +3668,7 @@ function rowHTML(it, rmap){
       : it.cat==='other' ? ''
       : (st
           ? `<button class="pay-btn tiny" data-act="undoStatus" data-id="${esc(it.id)}">Undo</button>`
-          : `<button class="pay-btn tiny" data-act="tradeAway" data-id="${esc(it.id)}">Trade</button> ${it.cat==='guaranteed'?`<button class="pay-btn tiny ghost" data-act="release" data-id="${esc(it.id)}" title="Released players' salaries still count toward the tax">Release</button>`:`<button class="pay-btn tiny ghost" data-act="nontender" data-id="${esc(it.id)}" title="Let him go before the tender deadline — his salary comes off the books">Non-tender</button>`}`)
+          : `<button class="pay-btn tiny" data-act="tradeAway" data-id="${esc(it.id)}">Trade</button> ${it.cat==='guaranteed'?`<button class="pay-btn tiny ghost" data-act="release" data-id="${esc(it.id)}" title="Released players' salaries still count toward the tax">Release</button>`:`<button class="pay-btn tiny ghost" data-act="nontender" data-id="${esc(it.id)}" title="Let him go before the tender deadline — his salary comes off the books">Non-tender</button>`} <button class="pay-btn tiny ghost" data-act="dfa" data-id="${esc(it.id)}" title="Designate for assignment — clears a 40-man spot">DFA</button>`)
         + (hasOverride(it) ? ` <button class="pay-btn tiny ghost" data-act="resetRow" data-id="${esc(it.id)}" title="Undo your edits to this player">↺</button>` : '');
   return `<tr class="${cls}"><td class="pname-cell"><div class="pname">${it.added&&it.added.from?teamLogo(it.added.from):''}${esc(it.name)}${it.pos?` <span style="color:var(--grey);font-weight:600;font-size:11px">${esc(it.pos)}</span>`:''}${tags.join('')}</div>${info?`<div class="pinfo">${esc(info)}</div>`:''}${opt}${pyrs}</td>
     ${YEARS.map(y=>cellHTML(it,y)).join('')}<td class="acts">${acts}</td></tr>`;
@@ -3611,7 +3687,7 @@ function tablesHTML(calc, rmap){
   const pend = PENDING_FA.map(p=>{
     const done = reSigned.has(norm(p.name));
     const gone = !done && S.walked && S.walked[p.name];
-    return `<tr${gone?' class="gone"':''}><td class="pname-cell"><div class="pname">${esc(p.name)} <span style="color:var(--grey);font-weight:600;font-size:11px">${esc(p.pos)}</span>${done?'<span class="pay-tag roster">Re-signed</span>':''}${gone?'<span class="pay-tag warn">Walked</span>':''}</div><div class="pinfo">2026 salary ${fmt(p.s26, p.s26<1?2:1)}${p.note?' — '+esc(p.note):''}</div></td>
+    return `<tr${gone?' class="gone"':''}><td class="pname-cell"><div class="pname">${esc(p.name)} <span style="color:var(--grey);font-weight:600;font-size:11px">${esc(p.pos)}</span>${qoTag(p.name)}${done?'<span class="pay-tag roster">Re-signed</span>':''}${gone?'<span class="pay-tag warn">Walked</span>':''}</div><div class="pinfo">2026 salary ${fmt(p.s26, p.s26<1?2:1)}${p.note?' — '+esc(p.note):''}</div></td>
       <td class="acts" colspan="2">${done?'':gone?`<button class="pay-btn tiny" data-act="unwalk" data-name="${esc(p.name)}">Undo</button>`:`<button class="pay-btn tiny ghost" data-act="walk" data-name="${esc(p.name)}" title="Let him go — no offer, no payroll hit">Let walk</button> ${p.qoBlock ? `<span class="pay-qo-off" title="Ineligible for the qualifying offer — ${esc(p.qoBlock)}"><button class="pay-btn tiny" disabled aria-disabled="true">Extend qualifying offer</button></span>` : `<button class="pay-btn tiny" data-act="qo" data-name="${esc(p.name)}" title="One year at ${fmt(S.rules.qo,2)}">Extend qualifying offer</button>`} <button class="pay-btn tiny" data-act="resign" data-name="${esc(p.name)}">Re-sign…</button>`}</td></tr>`;
   }).join('');
   return [
@@ -3650,6 +3726,7 @@ function assumptionsHTML(){
       ${one('Roster-fill floor (players)','rosterFloor',R.rosterFloor)}
       ${one('Arb raise per year (×)','arbGrowth',R.arbGrowth)}
       ${one('First-year arb estimate ($M)','arbOneEstimate',R.arbOneEstimate)}
+      ${one('Deferral discount rate (%)','deferPct',R.deferPct)}
       ${one('Qualifying offer ($M)','qo',R.qo)}
     </div>
     <div><button class="pay-btn danger tiny${UI.armed==='rules'?' armed':''}" data-act="resetRules">${UI.armed==='rules'?'Click again to confirm':'Reset assumptions to defaults'}</button></div>
@@ -3684,7 +3761,7 @@ function paint(){
   const old = document.getElementById('mBrowse'); const bst = old ? old.scrollTop : 0; const ost = el.scrollTop; const olds = document.getElementById('mSendSugg'); const sst = olds ? olds.scrollTop : 0; const oldf = document.getElementById('mFaBrowse'); const fst = oldf ? oldf.scrollTop : 0;
   el.innerHTML = M.html(); el.classList.add('open'); updateCalc();
   if(M.type==='fa' && !M.editing){ updateFaBrowse(); const nf = document.getElementById('mFaBrowse'); if(nf) nf.scrollTop = fst; el.scrollTop = ost; if(M.picked){ const p = faPool().find(x=>norm(x.name)===norm(M.picked.name)); if(p) faApply(p,false); } }
-  if(M.type==='promo'){ updateFarm(); ensureFarm(); }
+  if(M.type==='promo'){ updateFarm(); updateMulti(); ensureFarm(); }
   if(M.type==='pkg'){ updateBrowse(); const nb = document.getElementById('mBrowse'); if(nb) nb.scrollTop = bst; el.scrollTop = ost; ensurePositions(); updateSendSugg(); const ns = document.getElementById('mSendSugg'); if(ns) ns.scrollTop = sst; }
 }
 function readFields(){ // snapshot inputs into M.f before re-painting
@@ -3704,6 +3781,7 @@ function onModalInput(e){
   if(t.id==='mTeam'){ M.f.team = t.value; updateBrowse(); }
   if(t.id==='mFaLik'){ M.f.falik = t.value; updateFaBrowse(); }
   if(t.id==='mFaSort'){ M.f.fasort = t.value; updateFaBrowse(); }
+  if(t.id==='mSk'){ readFields(); M.f.sx = true; paint(); return; }
   if(t.id==='mLvl'){ M.f.lvlf = t.value; updateFarm(); }
   updateCalc();
 }
@@ -3823,14 +3901,51 @@ function faHTML(){
         <label class="pay-field">Years<input data-f="years" id="mYears" value="${esc(f.years)}" inputmode="numeric"></label>
         <label class="pay-field">Total value ($M)<input data-f="total" id="mTotal" value="${esc(f.total)}" inputmode="decimal" placeholder="e.g. 180"></label>
         <label class="pay-field">First season<select data-f="start" id="mStart">${yearOpts(+f.start,2027,2032)}</select></label></div>
-        <div class="pay-hint">Include signing bonuses in the total. For deferred money, enter the AAV directly instead.</div>`
+        <div class="pay-hint">Include any signing bonus in the total — it doesn't change the tax number.</div>`
       : `<div class="pay-row3">
         <label class="pay-field">AAV ($M)<input data-f="aav" id="mAav" value="${esc(f.aav)}" inputmode="decimal" placeholder="e.g. 30"></label>
         <label class="pay-field">Years<input data-f="years" id="mYears" value="${esc(f.years)}" inputmode="numeric"></label>
         <label class="pay-field">First season<select data-f="start" id="mStart">${yearOpts(+f.start,2027,2032)}</select></label></div>`}
+    ${sxHTML(f)}
     <div class="pay-calc"><span>CBT hit per year</span><b id="mCalc">—</b></div>
+    <div class="pay-hint" id="mSxNote" style="display:none"></div>
     <label style="font-size:12.5px;display:flex;gap:7px;align-items:center"><input type="checkbox" id="mRoster" ${f.roster?'checked':''}> Also add to the roster builder’s player pool</label>`,
     `<button class="pay-btn" data-m="close">Cancel</button><button class="pay-btn primary" data-m="saveFA">${M.editing?'Save':'Add contract'}</button>`);
+}
+function hasSx(f){ return !!(f.sbonus||f.sdef||f.sout||f.sok); }
+function sxHTML(f){
+  if(!(f.sx || hasSx(f))) return `<button class="pay-eat-link" data-m="sxopen" style="text-decoration:none;font-weight:700;align-self:flex-start">Structure this deal (bonus, deferral, opt-out, option) — flat by default</button>`;
+  const ysel = YEARS.map(y=>`<option value="${y}"${String(f.sout)===String(y)?' selected':''}>after ${y}</option>`).join('');
+  return `<div class="pay-sec"><div class="pay-sec-h">Deal structure</div>
+    <div class="pay-hint">The tax counts the average annual value, so a signing bonus or back-loading doesn't move it. Deferred money (counted at present value), option buyouts and exercised options do.</div>
+    <div class="pay-row3">
+      <label class="pay-field">Bonus ($M)<input data-f="sbonus" id="mSb" value="${esc(f.sbonus||'')}" inputmode="decimal" placeholder="optional"></label>
+      <label class="pay-field">Deferred ($M)<input data-f="sdef" id="mSd" value="${esc(f.sdef||'')}" inputmode="decimal" placeholder="optional"></label>
+      <label class="pay-field">Yrs until paid<input data-f="sdefyrs" id="mSdy" value="${esc(f.sdefyrs||'')}" inputmode="decimal" placeholder="e.g. 8"></label></div>
+    <div class="pay-row3">
+      <label class="pay-field">Player opt-out<select data-f="sout" id="mSo"><option value="">None</option>${ysel}</select></label>
+      <label class="pay-field">Option year<select data-f="sok" id="mSk"><option value="">None</option><option value="club"${f.sok==='club'?' selected':''}>Club option</option><option value="player"${f.sok==='player'?' selected':''}>Player option</option><option value="mutual"${f.sok==='mutual'?' selected':''}>Mutual option</option></select></label>
+      ${f.sok ? `<label class="pay-field">Option salary ($M)<input data-f="ssal" id="mSs" value="${esc(f.ssal||'')}" inputmode="decimal"></label>` : '<span></span>'}</div>
+    ${f.sok ? `<div class="pay-row3"><label class="pay-field">Buyout ($M)<input data-f="sobuy" id="mSbu" value="${esc(f.sobuy||'')}" inputmode="decimal" placeholder="0"></label><span></span><span></span></div>` : ''}</div>`;
+}
+// Turns the entered terms + structure into the tax AAV. Deferred money counts at present value; an option buyout is added to the guaranteed money.
+function structCalc(r){
+  const f = M.f, T = r.aav*r.years, rate = (S.rules.deferPct||0)/100;
+  const bonus = num('mSb')||0, D = Math.min(num('mSd')||0, T), n = num('mSdy')||0;
+  const deferPV = D>0 ? D/Math.pow(1+rate, n) : 0;
+  const okind = (document.getElementById('mSk')||{}).value||'', osal = num('mSs'), obuy = okind ? (num('mSbu')||0) : 0;
+  const oAfter = +((document.getElementById('mSo')||{}).value||0);
+  let tot = T - (D - deferPV) + obuy;
+  const out = {aav: tot/r.years, nominal: r.aav, notes:[], struct:null, out:null, opt:null};
+  const st = {};
+  if(bonus>0) st.bonus = Math.round(bonus*100)/100;
+  if(D>0){ st.defer = Math.round(D*100)/100; st.deferYrs = n; st.deferPV = Math.round(deferPV*100)/100; out.notes.push(`${fmt(D)} deferred counts as ${fmt(deferPV,1)} at a ${S.rules.deferPct}% discount rate`); }
+  if(obuy>0) out.notes.push(`${fmt(obuy)} buyout is included in the AAV`);
+  if(okind && osal!=null){ out.opt = {kind:okind, salary:Math.round(osal*100)/100, buyout:Math.round(obuy*100)/100}; out.notes.push(`${M.f.start && (+M.f.start+r.years)} option counts only if exercised`); }
+  else if(okind) out.notes.push('Enter the option salary to include it');
+  if(oAfter){ if(oAfter>=+M.f.start && oAfter<+M.f.start+r.years-1){ out.out = {after:oAfter, kind:'player'}; out.notes.push(`opt-out after ${oAfter} — flip it on the row once he decides`); } else out.notes.push('Opt-out year must fall inside the contract (not its last season)'); }
+  if(Object.keys(st).length) out.struct = st;
+  return out;
 }
 function faAav(){
   const years = Math.round(num('mYears')||0);
@@ -3857,7 +3972,7 @@ function updateFaBrowse(){
   const box = document.getElementById('mFaBrowse'); if(!box || !M || M.type!=='fa') return;
   const rows = faRows(), cur = M.picked ? norm(M.picked.name) : '', total = rows.length, show = rows.slice(0,150);
   box.innerHTML = show.length ? show.map(([p,i,s])=>{ const on = norm(p.name)===cur;
-    const meta = [p.pos2||p.pos, p.age?'age '+p.age:'', p.w!=null?p.w.toFixed(1)+' WAR':'', p.jp?'NPB':(p.o?'2026: '+p.o:''), (p.l&&p.l!=='F')?FA_LIKE[p.l]:''].filter(Boolean).join(' · ');
+    const meta = [p.pos2||p.pos, p.age?'age '+p.age:'', p.w!=null?p.w.toFixed(1)+' WAR':'', p.jp?'NPB':(p.o?'2026: '+p.o:''), (p.l&&p.l!=='F')?FA_LIKE[p.l]:'', qoDecl(p.name)?'Declined QO · pick attached':''].filter(Boolean).join(' · ');
     return `<button type="button" class="pay-sugg-item${on?' added':''}" data-m="fapick" data-i="${i}">${on?'<i class="chk">✓</i>':''}${p.team?teamLogo(p.team):''}<b>${esc(p.name)}</b><em class="fa-sug">${s.years} yr · ${fmt(s.total)}</em><span>${esc(meta)}</span></button>`; }).join('') + (total>150?`<div class="pay-hint" style="padding:8px 12px">Showing 150 of ${total} — filter or search to narrow.</div>`:'')
     : '<div class="pay-hint" style="padding:10px 12px">No free agents match — you can still type any name below and enter the terms yourself.</div>';
 }
@@ -3866,7 +3981,7 @@ function faApply(p, force){
   const s = suggestDeal(p);
   if(force){ const r2 = Math.round(s.aav*100)/100; Object.assign(M.f,{years:String(s.years), total:String(s.total), aav:String(r2), qo:false}); setVal('mYears',String(s.years)); setVal('mTotal',String(s.total)); setVal('mAav',String(r2)); }
   const bio = [p.pos2||p.pos, p.age?'age '+p.age:'', p.bats&&p.thr?`bats ${p.bats}, throws ${p.thr}`:'', p.w!=null?'2026 WAR '+p.w.toFixed(1):'', p.jp?'from NPB':(p.team?'2026 with '+p.team:'')].filter(Boolean).join(' · ');
-  setInfo(`${p.team?teamLogo(p.team):''}<b>${esc(p.name)}</b> · ${esc(bio)}<br><b>Suggested starting point: ${s.years} yr / ${fmt(s.total)}</b> (~${fmt(s.aav,1)} AAV) — ${esc(s.why)}. Adjust freely.${p.l&&p.l!=='F'?`<br>FanGraphs: ${esc(FA_LIKE[p.l])}.`:''}${p.jp?'<br>Posting fee (paid to his Japanese club) is not included in the payroll figures here.':''}${p.note?'<br>'+esc(p.note):''}${p.c?'<br>'+esc(p.c):''}`);
+  setInfo(`${p.team?teamLogo(p.team):''}<b>${esc(p.name)}</b> · ${esc(bio)}<br><b>Suggested starting point: ${s.years} yr / ${fmt(s.total)}</b> (~${fmt(s.aav,1)} AAV) — ${esc(s.why)}. Adjust freely.${p.l&&p.l!=='F'?`<br>FanGraphs: ${esc(FA_LIKE[p.l])}.`:''}${qoDecl(p.name)?`<br><b>${esc(QO_NOTE)}.</b>`:''}${p.jp?'<br>Posting fee (paid to his Japanese club) is not included in the payroll figures here.':''}${p.note?'<br>'+esc(p.note):''}${p.c?'<br>'+esc(p.c):''}`);
   matchFA(); updateCalc(); updateFaBrowse();
 }
 function openFA(opts={}){
@@ -3890,6 +4005,12 @@ function ensureFarm(){
     FARMSTATE = FARM.length ? 2 : 3; if(M && M.type==='promo') updateFarm(); }).catch(()=>{ if(tid===TEAM_ID){ FARMSTATE = 3; if(M && M.type==='promo') updateFarm(); } });
 }
 function farmOn40(){ const s = new Set(); if(typeof players!=='undefined' && currentTeamId===TEAM_ID) realP().filter(p=>p.pid).forEach(p=>s.add(norm(p.name))); S.added.forEach(a=>{ if(!M || a.id!==M.editing) s.add(norm(a.name)); }); return s; }
+function updateMulti(){
+  const box = document.getElementById('mMulti'), btn = document.getElementById('mSavePromo'); if(!M || M.type!=='promo' || M.editing) return;
+  const L = M.multi||[];
+  if(box) box.innerHTML = L.map(p=>`<span class="pay-pill">${esc(p.name)} <em>${esc(p.pos)} · ${esc(p.lvl)}</em><button type="button" data-m="multirm" data-id="${p.id}" aria-label="Remove">×</button></span>`).join('');
+  if(btn) btn.textContent = L.length>1 ? `Add ${L.length} to 40-man` : 'Add to 40-man';
+}
 function updateFarm(){
   const box = document.getElementById('mFarm'); if(!box || !M || M.type!=='promo') return;
   if(FARMSTATE<2){ box.innerHTML = `<div class="pay-hint" style="padding:10px 12px">${FARMSTATE===3?'Couldn’t load the minor-league rosters — type the name and enter the details below.':'Loading the '+teamNick()+'’ minor-league rosters…'}</div>`; return; }
@@ -3898,8 +4019,8 @@ function updateFarm(){
   FARM.forEach((p,i)=>{ if(on40.has(norm(p.name))) return; if(lv && p.lvl!==lv) return; if(pg==='P' && p.type!=='P') return; if(pg==='H' && p.type==='P') return;
     if(toks.length){ const n = norm(p.name); if(!toks.every(t=>n.includes(t))) return; } list.push([p,i]); });
   const total = list.length; list = list.slice(0,150);
-  const cur = M.picked ? norm(M.picked.name) : '';
-  box.innerHTML = list.length ? list.map(([p,i])=>`<button type="button" class="pay-sugg-item${norm(p.name)===cur?' added':''}" data-m="farmpick" data-i="${i}">${norm(p.name)===cur?'<i class="chk">✓</i>':''}<b>${esc(p.name)}</b><span>${esc(p.pos)} · ${p.age?'age '+p.age+' · ':''}${esc(p.lvl)}</span></button>`).join('') + (total>150?`<div class="pay-hint" style="padding:8px 12px">Showing 150 of ${total} — filter or search to narrow.</div>`:'') : '<div class="pay-hint" style="padding:10px 12px">No one matches — you can still type any name below.</div>';
+  const cur = M.picked ? norm(M.picked.name) : '', sel = new Set((M.multi||[]).map(x=>x.id)), isOn = p => sel.has(p.id) || (M.editing && norm(p.name)===cur);
+  box.innerHTML = list.length ? list.map(([p,i])=>`<button type="button" class="pay-sugg-item${isOn(p)?' added':''}" data-m="farmpick" data-i="${i}">${isOn(p)?'<i class="chk">✓</i>':''}<b>${esc(p.name)}</b><span>${esc(p.pos)} · ${p.age?'age '+p.age+' · ':''}${esc(p.lvl)}</span></button>`).join('') + (total>150?`<div class="pay-hint" style="padding:8px 12px">Showing 150 of ${total} — filter or search to narrow.</div>`:'') : '<div class="pay-hint" style="padding:10px 12px">No one matches — you can still type any name below.</div>';
 }
 function promoHTML(){
   const f = M.f; const lvls = ['AAA','AA','High-A','A','FCL','DSL'];
@@ -3908,6 +4029,7 @@ function promoHTML(){
     <div class="pay-filters"><select id="mLvl"><option value="">All levels</option>${lvls.map(l=>`<option value="${l}"${f.lvlf===l?' selected':''}>${l}</option>`).join('')}</select>
       <span class="pay-posf">${[['','All'],['P','Pitchers'],['H','Hitters']].map(([v,l])=>`<button type="button" class="pay-chip${(f.posf||'')===v?' active':''}" data-m="promoposf" data-v="${v}">${l}</button>`).join('')}</span></div>
     <div class="pay-browse" id="mFarm"></div><div class="pay-pickinfo" id="mPickInfo" style="display:none"></div>
+    ${M.editing ? '' : `<div class="pay-pills" id="mMulti"></div><div class="pay-hint" id="mMultiHint">Tap as many players as you like — they all get the salary, years and first season below. You can change any one of them afterward with Edit.</div>`}
     <div class="pay-row3">
       <label class="pay-field">Salary ($M)<input data-f="aav" id="mAav" value="${esc(f.aav)}" inputmode="decimal"></label>
       <label class="pay-field">Years<input data-f="years" id="mYears" value="${esc(f.years)}" inputmode="numeric"></label>
@@ -3915,12 +4037,125 @@ function promoHTML(){
     <div class="pay-hint">Defaults to the league-minimum salary. In 2027 on the FanGraphs basis this takes over a roster-fill slot, so at the minimum payroll barely moves — but your 40-man count goes up by one. Enter a higher salary for a real contract.</div>
     <div class="pay-calc"><span>Salary</span><b id="mCalc">—</b></div>
     <label style="font-size:12.5px;display:flex;gap:7px;align-items:center"><input type="checkbox" id="mRoster" ${f.roster?'checked':''}> Also add to the roster builder’s player pool</label>`,
-    `<button class="pay-btn" data-m="close">Cancel</button><button class="pay-btn primary" data-m="savePromo">${M.editing?'Save':'Add to 40-man'}</button>`);
+    `<button class="pay-btn" data-m="close">Cancel</button><button class="pay-btn primary" data-m="savePromo" id="mSavePromo">${M.editing?'Save':'Add to 40-man'}</button>`);
+}
+/* ---------- sharing: link + summary card ---------- */
+function toB64u(u8){ let b = ''; for(let i=0;i<u8.length;i+=8192) b += String.fromCharCode.apply(null, u8.subarray(i,i+8192)); return btoa(b).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function fromB64u(t){ t = t.replace(/-/g,'+').replace(/_/g,'/'); while(t.length%4) t += '='; const b = atob(t), u = new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i] = b.charCodeAt(i); return u; }
+async function streamBytes(u8, Ctor){ const st = new Blob([u8]).stream().pipeThrough(new Ctor('deflate-raw')); return new Uint8Array(await new Response(st).arrayBuffer()); }
+async function packPlan(){
+  const diff = {}; Object.keys(S.rules).forEach(k=>{ if(JSON.stringify(S.rules[k])!==JSON.stringify(DEFAULT_RULES[k])) diff[k] = S.rules[k]; });
+  const o = {v:1, t:TEAM_ID, s:S.season, tg:S.target.on?S.target.value:null, r:diff, ov:S.overrides, op:S.options, a:S.added, c:S.customOther, w:S.walked, x:S.extraOrg, st:S.status, om:S.optManual};
+  const bytes = new TextEncoder().encode(JSON.stringify(o));
+  if(typeof CompressionStream!=='undefined'){ try{ return 'z'+toB64u(await streamBytes(bytes, CompressionStream)); }catch(e){} }
+  return 'u'+toB64u(bytes);
+}
+async function unpackPlan(str){
+  let bytes = fromB64u(str.slice(1));
+  if(str[0]==='z') bytes = await streamBytes(bytes, DecompressionStream);
+  const o = JSON.parse(new TextDecoder().decode(bytes));
+  if(!o || o.v!==1 || o.t!==TEAM_ID) throw new Error('wrong team or version');
+  return o;
+}
+async function importPlan(str){
+  try{
+    const o = await unpackPlan(str);
+    let had = false;
+    try{ const prev = localStorage.getItem(STORE_KEY(TEAM_ID)); if(prev){ localStorage.setItem(STORE_KEY(TEAM_ID)+'_prev', prev); had = true; } }catch(e){}
+    S = {...defaultState(), season:o.s||2027, target:(o.tg!=null?{on:true,value:o.tg}:{on:false,value:300}), rules:{...clone(DEFAULT_RULES), ...(o.r||{})},
+      overrides:o.ov||{}, options:o.op||{}, added:o.a||[], customOther:o.c||[], walked:o.w||{}, extraOrg:o.x||[], status:o.st||{}, optManual:o.om||{}};
+    saveState(); S.added.forEach(a=>rosterAdd(a)); UI.shared = {had}; renderAll();
+  }catch(e){ console.warn('Could not read the shared plan', e); UI.shared = {bad:true}; renderAll(); }
+}
+function sharedBanner(){
+  const u = UI.shared; if(!u) return '';
+  if(u.bad) return `<div class="pay-banner">That shared link couldn’t be opened — it may be for a different team or cut off when it was copied. <button class="pay-btn tiny" data-act="sharedKeep">Dismiss</button></div>`;
+  return `<div class="pay-banner"><b>You’re looking at a shared plan.</b> It’s now your working copy — edit it however you like. ${u.had?`Your previous plan is kept: <button class="pay-btn tiny" data-act="sharedRestore">Switch back to my plan</button> `:''}<button class="pay-btn tiny" data-act="sharedKeep">Got it</button></div>`;
+}
+function summaryCardHTML(){
+  const calc = calcAll(), y = S.season, yr = calc.years[y], T = S.rules.threshold[y], over = yr.total - T, L = logEntries(calc);
+  const stat = (l,v,cls='')=>`<div class="sc-stat"><div class="sc-v ${cls}">${v}</div><div class="sc-l">${l}</div></div>`;
+  const rows = L.slice(0,9).map(e=>`<li><span>${esc(e.text)}${e.group?': '+esc(e.group.map(x=>x.who).join(', ')):''}${e.sub?`<em>${esc(e.sub)}</em>`:''}</span><b>${e.eff?fmtEff(e.eff):''}</b></li>`).join('');
+  const more = L.length>9 ? `<li class="sc-more">+ ${L.length-9} more move${L.length-9===1?'':'s'}</li>` : '';
+  return `<div class="sc" id="shareCard">
+    <div class="sc-h"><img class="sc-logo" src="${logoURL(TEAM_ID)}" alt=""><div><div class="sc-t">${esc(teamNick())} offseason plan</div><div class="sc-s">${y} payroll for the luxury tax</div></div></div>
+    <div class="sc-stats">${stat(y+' CBT payroll', fmt(yr.total))}${stat(over>0?'over the tax line':'under the tax line', fmt(Math.abs(over)), over>0?'bad':'ok')}${stat('Estimated tax', fmt(yr.tax,1))}${stat('Payroll + tax', fmt(yr.totalCost))}</div>
+    <div class="sc-m"><div class="sc-mh">${L.length?`${L.length} move${L.length===1?'':'s'}`:'No moves yet'}</div>${L.length?`<ul>${rows}${more}</ul>`:''}</div>
+    <div class="sc-f">mlbrostertool.com/${esc(teamObj().slug)}/offseason</div></div>`;
+}
+function shareHTML(){
+  return shell('Share your plan', `<div class="pay-hint">Anyone who opens the link sees these exact moves as their own editable copy. It carries your payroll moves, not your depth chart.</div>
+    <label class="pay-field">Link<input id="mShareLink" readonly value="${esc(M.link||'Building link…')}" onfocus="this.select()"></label>
+    <div class="pay-hint" id="mShareNote"></div>
+    <div class="sc-wrap">${summaryCardHTML()}</div>`,
+    `<button class="pay-btn" data-m="close">Close</button><button class="pay-btn" data-m="shareImg">Download image</button><button class="pay-btn primary" data-m="shareCopy">Copy link</button>`);
+}
+async function openShare(){
+  M = {type:'share', link:'', html:shareHTML}; paint();
+  const str = await packPlan(); if(!M || M.type!=='share') return;
+  M.link = `${/^https?:/.test(location.origin)?location.origin:'https://mlbrostertool.com'}/${teamObj().slug}/offseason#plan=${str}`;
+  const el = document.getElementById('mShareLink'); if(el) el.value = M.link;
+  const nt = document.getElementById('mShareNote'); if(nt && M.link.length>6000) nt.textContent = 'This is a long link — it works in a browser, but some apps may cut it off. The image is the safer thing to post.';
+}
+async function shareImage(){
+  const el = document.getElementById('shareCard'); if(!el || typeof html2canvas==='undefined') return;
+  const img = el.querySelector('.sc-logo');
+  try{ const d = await fetchLogoDataUri(logoURL(TEAM_ID)); if(d) img.src = d; else img.style.visibility='hidden'; }catch(e){}
+  const w0 = el.style.width; el.style.width = '640px';
+  let canvas; try{ canvas = await html2canvas(el, {backgroundColor:'#ffffff', scale:2}); } finally { el.style.width = w0; }
+  const a = document.createElement('a'); a.download = `${teamObj().slug}-offseason-plan.png`; a.href = canvas.toDataURL('image/png'); a.click();
+}
+function dfaHTML(){
+  const g = M.cat==='guaranteed';
+  const opt = (v,t,d)=>`<button type="button" class="pay-btn dfa-opt" data-m="dfaPick" data-v="${v}"><b>${t}</b><span>${d}</span></button>`;
+  return shell(`Designate ${esc(M.name)} for assignment`, `<div class="pay-hint">He comes off the 40-man right away. A team has about a week to decide what happens next — pick the outcome.</div>
+    ${opt('claimed','Claimed on waivers','Another club takes him and his contract. His salary comes off your books.')}
+    ${opt('outright','Outrighted to the minors','He clears waivers and stays in your system. '+(g?'His guaranteed salary still counts toward the tax.':'He leaves the 40-man payroll.'))}
+    ${opt('released','Released','You eat the remaining money — it still counts toward the tax.')}`,
+    `<button class="pay-btn" data-m="close">Cancel</button>`);
+}
+// Rule 5: minors who look draft-eligible (by draft year and age) and are not on the 40-man yet
+let R5 = {state:0, cands:[], tid:0};
+function loadR5(){
+  if(R5.state===1) return; R5 = {state:1, cands:[], tid:TEAM_ID}; renderAll(); ensureFarm();
+  const t0 = Date.now();
+  const tick = ()=>{
+    if(R5.tid!==TEAM_ID) return;
+    if(FARMSTATE<2 && Date.now()-t0<30000) return void setTimeout(tick, 300);
+    if(FARMSTATE!==2){ R5.state = 3; renderAll(); return; }
+    const ids = FARM.map(p=>p.id), chunks = [];
+    for(let i=0;i<ids.length;i+=100) chunks.push(ids.slice(i,i+100));
+    Promise.all(chunks.map(c=>fetch(`https://statsapi.mlb.com/api/v1/people?personIds=${c.join(',')}&fields=people,id,birthDate,draftYear`).then(r=>r.json()).then(j=>j.people||[]))).then(rs=>{
+      const m = {}; rs.flat().forEach(x=>{ m[x.id] = x; });
+      R5.cands = FARM.map(p=>{ const x = m[p.id]; if(!x || !x.draftYear || !x.birthDate) return null;
+        const by = +x.birthDate.slice(0,4), late = x.birthDate.slice(5) > '08-01';
+        const ageAtDraft = x.draftYear - by - (late?1:0);
+        const elig = ageAtDraft<=18 ? x.draftYear<=2022 : x.draftYear<=2023;
+        return elig ? {...p, draftYear:x.draftYear, ageAtDraft} : null; }).filter(Boolean);
+      const rank = {AAA:0,AA:1,'High-A':2,A:3};
+      R5.cands.sort((a,b)=>(rank[a.lvl]??9)-(rank[b.lvl]??9) || (a.age||99)-(b.age||99));
+      R5.state = 2; renderAll();
+    }).catch(()=>{ R5.state = 3; renderAll(); });
+  };
+  tick();
+}
+function r5Card(){
+  const h = `<div class="pay-card-h"><h3>Rule 5 protection</h3><span class="sub">prospects a club could draft in December if they aren't on the 40-man</span></div>`;
+  let body;
+  if(R5.state===0 || R5.tid!==TEAM_ID) body = `<div class="pay-empty" style="text-align:left">Find ${esc(teamNick())} prospects who look Rule 5-eligible and aren't on the 40-man yet. <button class="pay-btn tiny" data-act="r5load">Find candidates</button></div>`;
+  else if(R5.state===1) body = `<div class="pay-empty" style="text-align:left">Loading the minor-league rosters…</div>`;
+  else if(R5.state===3) body = `<div class="pay-empty" style="text-align:left">Couldn’t load the minor-league rosters. <button class="pay-btn tiny" data-act="r5load">Try again</button></div>`;
+  else {
+    const on40 = farmOn40(), rows = R5.cands.map((p,i)=>[p,i]).filter(([p])=>!on40.has(norm(p.name)));
+    body = (rows.length ? `<ul class="pay-r5">${rows.map(([p,i])=>`<li><span class="r5n"><b>${esc(p.name)}</b> <em>${esc(p.pos)} · ${esc(p.lvl)}${p.age?' · age '+p.age:''} · drafted ${p.draftYear}</em></span><button class="pay-btn tiny" data-act="r5add" data-i="${i}">Add to 40-man</button></li>`).join('')}</ul>` : `<div class="pay-empty" style="text-align:left">No eligible, unprotected prospects found.</div>`)
+      + `<div class="pay-hint" style="padding:8px 14px">An estimate from draft year and age at signing — international signees aren’t included. Anyone you leave off can be taken in the Rule 5 draft.</div>`;
+  }
+  return `<div class="pay-card">${h}${body}</div>`;
 }
 function openPromo(opts={}){
-  const base = {name:opts.name||'', aav:String(S.rules.minSalary), years:'1', start:String(S.season), roster:true, lvlf:'', posf:''};
-  M = {type:'promo', f:{...base, ...(opts.f||{})}, editing:opts.editing||null, pick:opts.pick||null, html:promoHTML};
-  paint(); if(M.pick && M.pick.lvl) setInfo(`<b>${esc(M.f.name)}</b> · ${esc(M.pick.pos||'')} · ${esc(M.pick.lvl)}`);
+  const base = {name:(!opts.editing && opts.pick) ? '' : (opts.name||''), aav:String(S.rules.minSalary), years:'1', start:String(S.season), roster:true, lvlf:'', posf:''};
+  M = {type:'promo', f:{...base, ...(opts.f||{})}, editing:opts.editing||null, pick:opts.pick||null, multi:(!opts.editing && opts.pick) ? [opts.pick] : [], html:promoHTML};
+  paint(); if(M.editing && M.pick && M.pick.lvl) setInfo(`<b>${esc(M.f.name)}</b> · ${esc(M.pick.pos||'')} · ${esc(M.pick.lvl)}`);
 }
 
 /* --- trade package: players you send / players you get back --- */
@@ -4036,7 +4271,10 @@ function pkgHTML(){
         <label class="pay-field">${f.retHow==='usd'?'Total you still pay ($M per year, across everyone you send)':'Share of salary you still pay (%)'}<input id="mRet" value="${esc(f.ret)}" inputmode="decimal" placeholder="0"></label>
         ${f.retHow==='usd'?'':`<div class="row">${[0,25,50,75].map(p=>`<button class="pay-chip small" data-m="retpct" data-v="${p}">${p===0?'None':p+'%'}</button>`).join(' ')}</div>`}</div>`
     : `<button class="pay-eat-link" data-m="retopen">You’re paying part of their salary?</button>`;
-  const sendSec = `<div class="pay-sec"><div class="pay-sec-h">${f.getFirst?'You give up':'You send'} <span>(optional)</span></div>
+  const sendCollapsed = f.sendCollapsed && f.send.length && !f.sendOpen;
+  const sendSec = sendCollapsed ? `<div class="pay-sec"><div class="pay-sec-h">You send</div>
+      <div class="pay-pills">${pills}</div>
+      <button class="pay-eat-link" data-m="sendopen">Add another player to this trade…</button>${ret}</div>` : `<div class="pay-sec"><div class="pay-sec-h">${f.getFirst?'You give up':'You send'} <span>(optional)</span></div>
       <div class="pay-filters"><input class="pay-in" id="mSendQ" placeholder="Search your players…" autocomplete="off">
         <div class="pay-seg pay-posf">${[['','All'],['P','Pitchers'],['H','Hitters'],['C','C'],['IF','IF'],['OF','OF']].map(([v,l])=>`<button type="button" data-m="sposf" data-v="${v}" class="${(f.sposf||'')===v?'active':''}">${l}</button>`).join('')}</div></div>
       <div class="pay-browse" id="mSendSugg"></div>
@@ -4055,7 +4293,7 @@ function pkgHTML(){
     `<button class="pay-btn" data-m="close">Cancel</button><button class="pay-btn primary" data-m="savePkg">${M.editing?'Save':'Complete trade'}</button>`);
 }
 function openPackage(opts={}){
-  const f = {send:[], get:[], retOpen:false, retHow:'pct', ret:'', roster:true, getFirst: !opts.send && !opts.edit};
+  const f = {send:[], get:[], retOpen:false, retHow:'pct', ret:'', roster:true, getFirst: !opts.send && !opts.edit, sendCollapsed: !!opts.send && !opts.edit};
   if(opts.send){ f.send = [...opts.send];
     const st0 = opts.send.length===1 ? S.status[opts.send[0]] : null;
     if(st0 && st0.mode==='traded' && !st0.tradeId){
@@ -4152,7 +4390,9 @@ function openOther(){ M = {type:'other', f:{name:'',amt:'',start:String(S.season
 function updateCalc(){
   const c = document.getElementById('mCalc'); if(!c || !M) return;
   if(M.type==='promo'){ const a = num('mAav'), y = Math.round(num('mYears')||0); c.textContent = (a!=null&&y>0) ? `${fmt(a,2)} × ${y} yr` : '—'; }
-  else if(M.type==='fa'){ const r = faAav(); c.textContent = r ? `${fmt(r.aav,2)} × ${r.years} yr = ${fmt(r.aav*r.years)}` : '—'; }
+  else if(M.type==='fa'){ const r = faAav(); const nt = document.getElementById('mSxNote');
+    if(!r){ c.textContent = '—'; if(nt) nt.style.display='none'; }
+    else { const s = structCalc(r); c.textContent = `${fmt(s.aav,2)} × ${r.years} yr = ${fmt(s.aav*r.years)}`; if(nt){ nt.innerHTML = s.notes.length ? esc(s.notes.join(' · ')) : ''; nt.style.display = s.notes.length ? '' : 'none'; } } }
   else if(M.type==='pkg'){ c.textContent = fmtEff(pkgNet()); }
 }
 
@@ -4165,12 +4405,30 @@ function onModalClick(e){
   if(m==='pick'){ pickRow(b.dataset.s, +b.dataset.i); return; }
   if(m==='qo'){ readFields(); if(qoBlockOf(M.f.name)) return; Object.assign(M.f,{mode:'aav', aav:String(S.rules.qo), years:'1', qo:true}); paint(); return; }
   if(m==='mode'){ readFields(); M.f.mode = v; paint(); return; }
+  if(m==='shareCopy'){ const txt = M.link; if(!txt) return; const done = ()=>{ b.textContent = 'Copied ✓'; setTimeout(()=>{ b.textContent = 'Copy link'; }, 1500); };
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, ()=>{ const i = document.getElementById('mShareLink'); if(i){ i.select(); } }); else { const i = document.getElementById('mShareLink'); if(i){ i.select(); try{ document.execCommand('copy'); done(); }catch(e){} } } return; }
+  if(m==='shareImg'){ b.textContent = 'Preparing…'; shareImage().finally(()=>{ b.textContent = 'Download image'; }); return; }
+  if(m==='dfaPick'){ S.status[M.id] = {mode:v, at:Date.now()}; saveState(); closeModal(); renderAll(); return; }
+  if(m==='sendopen'){ readFields(); M.f.sendOpen = true; paint(); return; }
+  if(m==='sxopen'){ readFields(); M.f.sx = true; paint(); return; }
   if(m==='fapick'){ const p = faPool()[+b.dataset.i]; if(p){ readFields(); faApply(p, true); } return; }
   if(m==='faposf'){ readFields(); M.f.faposf = v; paint(); return; }
-  if(m==='farmpick'){ const p = FARM[+b.dataset.i]; if(!p) return; readFields(); M.picked = p; M.f.name = p.name; setVal('mName', p.name);
+  if(m==='multirm'){ M.multi = (M.multi||[]).filter(x=>String(x.id)!==b.dataset.id); updateFarm(); updateMulti(); return; }
+  if(m==='farmpick'){ const p = FARM[+b.dataset.i]; if(!p) return; readFields();
+    if(!M.editing){ M.multi = M.multi||[]; const at = M.multi.findIndex(x=>x.id===p.id); if(at>=0) M.multi.splice(at,1); else M.multi.push(p); updateFarm(); updateMulti(); return; }
+    M.picked = p; M.f.name = p.name; setVal('mName', p.name);
     setInfo(`<b>${esc(p.name)}</b> · ${esc(p.pos)}${p.age?' · age '+p.age:''} · ${esc(p.lvl)}`); updateFarm(); return; }
   if(m==='savePromo'){
-    readFields(); const name = M.f.name.trim(); const aav = num('mAav'), years = Math.round(num('mYears')||0);
+    readFields();
+    if(!M.editing && M.multi && M.multi.length){
+      const aav = num('mAav'), years = Math.round(num('mYears')||0);
+      if(aav==null){ document.getElementById('mAav').focus(); return; }
+      if(!(years>0)){ document.getElementById('mYears').focus(); return; }
+      const wr = document.getElementById('mRoster').checked;
+      M.multi.forEach(pk=>commitAdded({id:uid('fa'), kind:'fa', promo:true, name:pk.name, pos:pk.pos||'', type:pk.type||'H', age:pk.age||null, lvl:pk.lvl||'', aav:Math.round(aav*1000)/1000, years, start:+M.f.start}, wr));
+      closeModal(); return;
+    }
+    const name = M.f.name.trim(); const aav = num('mAav'), years = Math.round(num('mYears')||0);
     if(!name){ document.getElementById('mName').focus(); return; }
     if(aav==null){ document.getElementById('mAav').focus(); return; }
     if(!(years>0)){ document.getElementById('mYears').focus(); return; }
@@ -4187,6 +4445,9 @@ function onModalClick(e){
     const rec = {id: M.editing || uid('fa'), kind:'fa', name, pos: M.fa?M.fa.pos:'', type: M.fa?(M.fa.type||((M.fa.pos==='SP'||M.fa.pos==='RP')?'P':'H')):'H',
       aav: Math.round(r.aav*1000)/1000, years:r.years, start:+M.f.start};
     if(M.f.qo && !qoBlockOf(name) && r.years===1 && Math.abs(r.aav-S.rules.qo)<1e-9) rec.qo = true;
+    { const sc = structCalc(r); rec.aavNom = Math.round(r.aav*1000)/1000; rec.aav = Math.round(sc.aav*1000)/1000;
+      if(sc.struct) rec.struct = sc.struct; if(sc.out) rec.out = sc.out; if(sc.opt) rec.opt = sc.opt;
+      if(M.editing){ const old = S.added.find(x=>x.id===M.editing); if(old && old.out && rec.out && old.out.after!==rec.out.after) delete S.options[rec.id+':out']; if(old && old.opt && !rec.opt) delete S.options[rec.id]; if(old && !rec.out) delete S.options[rec.id+':out']; } }
     const wantRoster = document.getElementById('mRoster').checked;
     commitAdded(rec, wantRoster); closeModal(); return;
   }
@@ -4250,7 +4511,7 @@ function onClick(e){
     case 'qo': if(qoBlockOf(b.dataset.name)) break; openFA({name:b.dataset.name, f:{mode:'aav', aav:String(S.rules.qo), years:'1', qo:true}}); break;
     case 'editAdded': { const a = S.added.find(x=>x.id===id); if(!a) break;
       if(a.promo) openPromo({editing:a.id, name:a.name, f:{aav:String(a.aav), years:String(a.years), start:String(a.start)}, pick:{pos:a.pos, type:a.type, age:a.age, lvl:a.lvl}});
-      else if(a.kind==='fa') openFA({editing:a.id, name:a.name, f:{mode:'aav', aav:String(a.aav), years:String(a.years), start:String(a.start), qo:!!a.qo}});
+      else if(a.kind==='fa') openFA({editing:a.id, name:a.name, f:{mode:'aav', aav:String(nomAav(a)), years:String(a.years), start:String(a.start), qo:!!a.qo, sbonus:a.struct&&a.struct.bonus?String(a.struct.bonus):'', sdef:a.struct&&a.struct.defer?String(a.struct.defer):'', sdefyrs:a.struct&&a.struct.deferYrs?String(a.struct.deferYrs):'', sout:a.out?String(a.out.after):'', sok:a.opt?a.opt.kind:'', ssal:a.opt?String(a.opt.salary):'', sobuy:a.opt&&a.opt.buyout?String(a.opt.buyout):''}});
       else openPackage({edit:a.pkg||a.id}); break; }
     case 'removeAdded': { const a0 = S.added.find(x=>x.id===id); const pkg = a0 && (a0.pkg||a0.id); S.added = S.added.filter(a=>a.id!==id); rosterRemove(id);
       if(pkg && !S.added.some(x=>x.kind==='trade' && (x.pkg||x.id)===pkg)) Object.keys(S.status).forEach(k=>{ if(S.status[k].tradeId===pkg) delete S.status[k]; });
@@ -4260,6 +4521,12 @@ function onClick(e){
     case 'removePkg': { const pk = b.dataset.id; S.added.filter(a=>a.kind==='trade' && (a.pkg||a.id)===pk).forEach(a=>rosterRemove(a.id)); S.added = S.added.filter(a=>!(a.kind==='trade' && (a.pkg||a.id)===pk)); Object.keys(S.status).forEach(k=>{ if(S.status[k].tradeId===pk) delete S.status[k]; }); saveState(); renderAll(); break; }
     case 'optReset': S.options[id] = 'undecided'; saveState(); renderAll(); break;
     case 'nontender': S.status[id] = {mode:'nontender', at:Date.now()}; saveState(); renderAll(); break;
+    case 'share': openShare(); break;
+    case 'sharedKeep': UI.shared = null; renderAll(); break;
+    case 'sharedRestore': try{ localStorage.setItem(STORE_KEY(TEAM_ID), localStorage.getItem(STORE_KEY(TEAM_ID)+'_prev')); }catch(e){} loadState(); S.added.forEach(a=>rosterAdd(a)); UI.shared = null; renderAll(); break;
+    case 'dfa': { const it = calcAll().items.find(x=>x.id===id); if(it){ M = {type:'dfa', id, name:it.name, cat:it.cat, html:dfaHTML}; paint(); } break; }
+    case 'r5load': loadR5(); break;
+    case 'r5add': { const p = R5.cands[+b.dataset.i]; if(p) openPromo({name:p.name, pick:p}); break; }
     case 'release': S.status[id] = {mode:'released', at:Date.now()}; saveState(); renderAll(); break;
     case 'undoStatus': delete S.status[id]; saveState(); renderAll(); break;
     case 'resetRow': delete S.overrides[id]; delete S.status[id]; delete S.options[id]; saveState(); renderAll(); break;
@@ -4319,6 +4586,7 @@ function open(){
   useTeam(currentTeamId);
   loadState();
   S.added.forEach(a=>rosterAdd(a)); // keep the roster builder pool in step with saved signings
+  if(window.__bootPlan){ const raw = window.__bootPlan; window.__bootPlan = null; try{ history.replaceState(null,'',location.pathname); }catch(e){} importPlan(raw); }
   document.body.classList.add('view-payroll');
   $('payrollView').hidden = false;
   setHeader(true); syncTabs(true); renderAll();
