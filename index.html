@@ -3344,7 +3344,8 @@ function saveRoster(){ try{ if(REAL){ withReal(()=>window.saveState()); } else {
 function rosterAdd(a){
   if(typeof players === 'undefined' || currentTeamId!==TEAM_ID) return;
   const arr = realP();
-  if(arr.some(p=>p.payId===a.id || norm(p.name)===norm(a.name))) return;
+  const ex = arr.find(p=>p.payId===a.id || norm(p.name)===norm(a.name));
+  if(ex){ if(ex.custom && ex.via!=='payroll' && !ex.pid){ ex.via = 'payroll'; ex.payId = a.id; saveRoster(); } return; } // a tile you'd already added by hand becomes the sim's add
   const maxOrder = arr.reduce((m,p)=>Math.max(m,p.order||0), 0);
   arr.push({id:'pay_'+a.id, pid:null, name:a.name, num:'', bt:'', type:a.type||'H', group:null, placed:'pool',
     status:null, hurt:false, order:maxOrder+10, custom:true, via:'payroll', payId:a.id});
@@ -4235,6 +4236,13 @@ function ownEligible(all){
       list.push({id, name:p.name, type:p.type, org:true, pos:p.group||'', sub:`${p.group||(p.type==='P'?'P':'')} · 40-man · no payroll line (covered by roster fill)`});
     });
   }
+  // your own farm: prospects who aren't on the 40-man yet can still be traded
+  const taken = new Set(list.map(x=>norm(x.name))); have.forEach(n=>taken.add(n));
+  if(typeof players!=='undefined' && currentTeamId===TEAM_ID) realP().forEach(p=>taken.add(norm(p.name)));
+  PROS_POOL.filter(x=>x.t===teamNick() && !taken.has(norm(x.n))).forEach(x=>{
+    const id = 'x:'+norm(x.n); if(sel.has(id)) return; taken.add(norm(x.n));
+    list.push({id, name:x.n, type:/P$/.test(x.pos||'')?'P':'H', org:true, pos:x.pos||'', prospect:true, sub:`${x.pos||''} · ${x.lv||'minors'}${x.g?' · age '+x.g:''} · minor leaguer`});
+  });
   return list;
 }
 function newGetRow(p){
@@ -4330,7 +4338,7 @@ function teamOpts(sel){
 }
 function pkgHTML(){
   const f = M.f, byId = {}; ownItems().forEach(it=>{ byId[it.id]=it; });
-  const pills = f.send.map(id=>{ const it = byId[id] || (f.meta && f.meta[id]); return it ? `<span class="pay-pill">${esc(it.name)} <em>${byId[id]?fmt(rawCharge(byId[id],S.season)||0):'40-man'}</em><button type="button" data-m="unsend" data-id="${esc(id)}" aria-label="Remove">×</button></span>` : ''; }).join('');
+  const pills = f.send.map(id=>{ const it = byId[id] || (f.meta && f.meta[id]); return it ? `<span class="pay-pill">${esc(it.name)} <em>${byId[id]?fmt(rawCharge(byId[id],S.season)||0):(String(id).startsWith('x:')?'minors':'40-man')}</em><button type="button" data-m="unsend" data-id="${esc(id)}" aria-label="Remove">×</button></span>` : ''; }).join('');
   const ret = !f.send.length ? '' : f.retOpen
     ? `<div class="pay-eat-box"><div class="pay-seg"><button data-m="rethow" data-v="pct" class="${f.retHow==='usd'?'':'active'}">% of salary</button><button data-m="rethow" data-v="usd" class="${f.retHow==='usd'?'active':''}">$ per year</button></div>
         <label class="pay-field">${f.retHow==='usd'?'Total you still pay ($M per year, across everyone you send)':'Share of salary you still pay (%)'}<input id="mRet" value="${esc(f.ret)}" inputmode="decimal" placeholder="0"></label>
@@ -4389,7 +4397,9 @@ function updateSendSugg(){
     if(!g){ const a = String(it.pos||'').toUpperCase(); g = (it.type==='P'||a==='SP'||a==='RP'||a==='P') ? 'P' : a==='C' ? 'C' : ['1B','2B','3B','SS','IF'].includes(a) ? 'IF' : ['LF','CF','RF','OF'].includes(a) ? 'OF' : 'H'; }
     return pf==='H' ? g!=='P' : g===pf; });
   M.f.meta = M.f.meta || {}; list.forEach(it=>{ M.f.meta[it.id] = {name:it.name, pos:it.pos||'', org:!!it.org}; });
-  box.innerHTML = idxs.length ? idxs.map(i=>{ const it = list[i], on = sel.has(it.id); return `<button type="button" class="pay-sugg-item${on?' added':''}" data-m="send" data-id="${esc(it.id)}">${on?'<i class="chk">✓</i>':''}${teamLogo(teamObj().name)}<b>${esc(it.name)}</b><span>${esc(it.sub||'')}</span></button>`; }).join('') : '<div class="pay-hint" style="padding:10px 12px">No one matches.</div>';
+  box.innerHTML = idxs.length ? idxs.map(i=>{ const it = list[i], on = sel.has(it.id); return `<button type="button" class="pay-sugg-item${on?' added':''}" data-m="send" data-id="${esc(it.id)}">${on?'<i class="chk">✓</i>':''}${teamLogo(teamObj().name)}<b>${esc(it.name)}</b>${it.prospect?prosBadge({n:it.name,t:teamNick()}):''}<span>${esc(it.sub||'')}</span></button>`; }).join('') : '<div class="pay-hint" style="padding:10px 12px">No one matches.</div>';
+  const qv = inp.value.trim();
+  if(qv.length>2 && !list.some(it=>norm(it.name)===norm(qv))) box.innerHTML = `<button type="button" class="pay-addnew" data-m="sendmanual"><i>+</i> Add “${esc(qv)}” — not in the list</button>` + box.innerHTML;
 }
 function retainedFor(items){ // -> {id: {frac|pay}}
   const out = {}; const f = M.f; const v = f.retOpen ? (parseM(f.ret)||0) : 0;
