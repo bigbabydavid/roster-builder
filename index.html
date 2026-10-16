@@ -1035,7 +1035,12 @@
     align-items:flex-start; justify-content:center; padding:5vh 12px; overflow-y:auto;
   }
   .pay-modal-overlay.open{ display:flex; }
-  .pay-modal{ background:#fff; width:100%; max-width:560px; border-radius:14px; box-shadow:0 18px 50px rgba(0,0,0,0.35); overflow:hidden; }
+  .pay-modal{ background:#fff; width:100%; max-width:560px; border-radius:14px; box-shadow:0 18px 50px rgba(0,0,0,0.35); overflow:hidden; display:flex; flex-direction:column; max-height:92vh; }
+  .pay-modal-h,.pay-modal-f{ flex:none; }
+  .pay-modal-b{ overflow-y:auto; min-height:0; }
+  .pay-linkrow{ display:flex; gap:8px; align-items:stretch; }
+  .pay-linkrow input{ flex:1; min-width:0; text-overflow:ellipsis; }
+  .pay-linkrow .pay-btn{ flex:none; white-space:nowrap; }
   .pay-modal-h{ background:var(--navy); color:#fff; padding:12px 16px; font-weight:800; font-size:14px; display:flex; justify-content:space-between; align-items:center; }
   .pay-modal-h button{ background:none; border:none; color:#fff; font-size:18px; cursor:pointer; }
   .pay-modal-b{ padding:14px 16px; display:flex; flex-direction:column; gap:12px; color:var(--navy); }
@@ -4185,7 +4190,7 @@ function summaryCardHTML(){
 }
 function shareHTML(){
   return shell('Share your plan', `<div class="pay-hint">Anyone who opens the link sees these exact moves as their own editable copy. It carries your payroll moves, not your depth chart.</div>
-    <label class="pay-field">Link<input id="mShareLink" readonly value="${esc(M.link||'Building link…')}" onfocus="this.select()"></label>
+    <div class="pay-field">Link<div class="pay-linkrow"><input id="mShareLink" readonly value="${esc(M.link||'Building link…')}" onfocus="this.select()"><button class="pay-btn primary" data-m="shareCopy">Copy link</button></div></div>
     <div class="pay-hint" id="mShareNote"></div>
     <div class="sc-wrap">${summaryCardHTML()}</div>`,
     `<button class="pay-btn" data-m="close">Close</button><button class="pay-btn" data-m="shareImg">Download image</button><button class="pay-btn primary" data-m="shareCopy">Copy link</button>`);
