@@ -16,23 +16,19 @@ jobs:
       - name: Fetch FanGraphs payroll pages
         run: |
           python3 - <<'PY'
-          import json, os, re, time, urllib.request, urllib.error
-          TEAMS = {'angels':'angels','diamondbacks':'diamondbacks','orioles':'orioles','red-sox':'red-sox','cubs':'cubs','reds':'reds',
-                   'guardians':'guardians','rockies':'rockies','tigers':'tigers','astros':'astros','royals':'royals','dodgers':'dodgers',
-                   'nationals':'nationals','mets':'mets','athletics':'athletics','pirates':'pirates','padres':'padres','mariners':'mariners',
-                   'giants':'giants','cardinals':'cardinals','rays':'rays','rangers':'rangers','blue-jays':'blue-jays','twins':'twins',
-                   'phillies':'phillies','braves':'braves','white-sox':'white-sox','marlins':'marlins','brewers':'brewers','yankees':'yankees'}
+          import json, os, re, time, urllib.request
+          SLUGS = ['angels','diamondbacks','orioles','red-sox','cubs','reds','guardians','rockies','tigers','astros','royals','dodgers','nationals','mets','athletics','pirates','padres','mariners','giants','cardinals','rays','rangers','blue-jays','twins','phillies','braves','white-sox','marlins','brewers','yankees']
           UA = 'Mozilla/5.0 (compatible; mlbrostertool-data-sync; once-daily)'
           os.makedirs('data/fg/raw', exist_ok=True)
           ok = bad = 0
-          for slug in TEAMS:
+          for slug in SLUGS:
               for season in (2026, 2027):
                   url = f'https://www.fangraphs.com/roster-resource/payroll/{slug}?season={season}'
                   try:
                       html = urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': UA}), timeout=60).read().decode('utf8')
                       m = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', html, re.S)
                       q = json.loads(m.group(1))['props']['pageProps']['dehydratedState']['queries'][0]
-                      if q['queryKey'][1].get('season') != season: raise ValueError('wrong season in page: %r' % q['queryKey'])
+                      if q['queryKey'][1].get('season') != season: raise ValueError('wrong season')
                       data = q['state']['data']
                       if not data.get('dataContract'): raise ValueError('no contracts')
                       with open(f'data/fg/raw/{slug}-{season}.json', 'w') as f:
@@ -42,11 +38,13 @@ jobs:
                       bad += 1; print('FAILED', slug, season, repr(e)[:200])
                   time.sleep(2)
           print('fetched', ok, 'failed', bad)
-          if ok < 50: raise SystemExit('too many failures - not committing')
+          if ok < 60: raise SystemExit('some pages failed - keeping yesterday\'s data')
           PY
+      - name: Build fg.json
+        run: python3 -I build_fg.py
       - name: Commit if changed
         run: |
           git config user.name "fg-sync-bot"
           git config user.email "fg-sync-bot@users.noreply.github.com"
-          git add data/fg
-          if git diff --cached --quiet; then echo "No changes."; else git commit -m "Update FanGraphs payroll data" && git push; fi
+          git add fg.json
+          if git diff --cached --quiet; then echo "No changes."; else git commit -m "Update FanGraphs data" && git pull --rebase && git push; fi
