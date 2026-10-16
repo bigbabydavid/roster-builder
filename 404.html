@@ -3232,7 +3232,7 @@ function allItems(){
   (S.extraOrg||[]).forEach(e=>items.push({id:e.id, name:e.name, cat:'org', kind:'org', pos:e.pos||'', type:'', base:{}}));
   S.customOther.forEach(c=>items.push({id:c.id, name:c.name, cat:'other', kind:'custom', pos:'', type:'', base:{...c.base}, note:c.note||''}));
   S.added.forEach(a=>items.push({id:a.id, name:a.name, pos:a.pos||'', type:a.type, kind:a.kind, cat:a.kind==='fa'?'fa':'trade',
-    contract:a.promo ? `${a.lvl?'Promoted from '+a.lvl+' · ':''}${fmt(a.aav,2)} · ${a.years} yr from ${a.start}` : a.kind==='fa' ? `${a.years} yr, ${fmt(nomAav(a)*a.years)} · ${fmt(a.aav)} ${Math.abs(nomAav(a)-a.aav)>1e-9?'CBT ':''}AAV · from ${a.start}${structText(a)?' · '+structText(a):''}` : `via trade${a.from?' from '+a.from:''} · ${a.sched?`${a.start} ${fmt(a.sched[a.start]!=null?a.sched[a.start]:a.aav)}${a.through>a.start?` … ${a.through} ${fmt(a.sched[a.through]!=null?a.sched[a.through]:a.aav)}`:''}`:`${fmt(a.aav)} AAV through ${a.through}`}${a.eat?` · other team pays ${fmt(a.eat)}/yr`:''}`,
+    contract:a.mil ? `Minor-league deal · non-roster${nomAav(a)?' · '+fmt(nomAav(a),2)+' in the minors':''}` : a.promo ? `${a.lvl?'Promoted from '+a.lvl+' · ':''}${fmt(a.aav,2)} · ${a.years} yr from ${a.start}` : a.kind==='fa' ? `${a.years} yr, ${fmt(nomAav(a)*a.years)} · ${fmt(a.aav)} ${Math.abs(nomAav(a)-a.aav)>1e-9?'CBT ':''}AAV · from ${a.start}${structText(a)?' · '+structText(a):''}` : `via trade${a.from?' from '+a.from:''} · ${a.sched?`${a.start} ${fmt(a.sched[a.start]!=null?a.sched[a.start]:a.aav)}${a.through>a.start?` … ${a.through} ${fmt(a.sched[a.through]!=null?a.sched[a.through]:a.aav)}`:''}`:`${fmt(a.aav)} AAV through ${a.through}`}${a.eat?` · other team pays ${fmt(a.eat)}/yr`:''}`,
     note:a.info||a.notes||'', added:a}));
   return items;
 }
@@ -3495,7 +3495,7 @@ function fortyMan(calc){
   calc.items.forEach(it=>{ if(it.option && it.option.year===2027 && S.options[it.id]==='decline') gone.add(norm(it.name)); });
   Object.keys(S.walked||{}).forEach(nm=>gone.add(norm(nm)));
   gone.forEach(nm=>{ if(byName.has(nm)) n--; });
-  S.added.forEach(a=>{ if(!byName.has(norm(a.name))) n++; });
+  S.added.forEach(a=>{ if(!a.mil && !byName.has(norm(a.name))) n++; });
   return n;
 }
 function hero(yr, calc){
@@ -3566,7 +3566,7 @@ function logEntries(calc){
   S.added.forEach(a=>{
     const it = byId[a.id]; const eff = it ? (rawCharge(it,y)||0) : 0;
     if(a.kind==='fa'){
-      L.push({kind:'add', acts:[['editAdded','Edit',{id:a.id}],['removeAdded','Undo',{id:a.id}]], at:a.at||0, eff, text: a.promo ? `Added ${a.name} to the 40-man${a.lvl?' (from '+a.lvl+')':''}` : a.qo ? `${isResign(a)?'Re-signed':'Signed'} ${a.name} to the qualifying offer` : `${isResign(a)?'Re-signed':'Signed'} ${a.name}`, sub:a.promo ? `${fmt(a.aav,2)} in ${a.start}${a.years>1?' · '+a.years+' yr':''}` : `${a.years} yr, ${fmt(nomAav(a)*a.years)} (${fmt(a.aav,2)} ${Math.abs(nomAav(a)-a.aav)>1e-9?'CBT ':''}AAV) from ${a.start}${structText(a)?' · '+structText(a):''}${!a.qo&&qoDecl(a.name)?' · declined the QO — draft pick compensation attached':''}`});
+      L.push({kind:'add', acts:[['editAdded','Edit',{id:a.id}],['removeAdded','Undo',{id:a.id}]], at:a.at||0, eff, text: a.mil ? `Signed ${a.name} to a minor-league deal` : a.promo ? `Added ${a.name} to the 40-man${a.lvl?' (from '+a.lvl+')':''}` : a.qo ? `${isResign(a)?'Re-signed':'Signed'} ${a.name} to the qualifying offer` : `${isResign(a)?'Re-signed':'Signed'} ${a.name}`, sub:a.mil ? `No 40-man spot · not in the ${a.start} tax number unless added to the 40-man` : a.promo ? `${fmt(a.aav,2)} in ${a.start}${a.years>1?' · '+a.years+' yr':''}` : `${a.years} yr, ${fmt(nomAav(a)*a.years)} (${fmt(a.aav,2)} ${Math.abs(nomAav(a)-a.aav)>1e-9?'CBT ':''}AAV) from ${a.start}${structText(a)?' · '+structText(a):''}${!a.qo&&qoDecl(a.name)?' · declined the QO — draft pick compensation attached':''}`});
     } else {
       const pkg = a.pkg||a.id; if(seenPkg.has(pkg)) return; seenPkg.add(pkg);
       const grp = S.added.filter(x=>x.kind==='trade' && (x.pkg||x.id)===pkg);
@@ -3692,7 +3692,7 @@ function rowHTML(it, rmap){
   const tradedFor = st && st.tradeId ? S.added.filter(a=>(a.pkg||a.id)===st.tradeId).map(a=>a.name).join(', ') : '';
   const tags = [];
   if(it.lvl){ const l = lvlOf(it, S.season); if(l) tags.push(`<span class="pay-tag est">${esc(l)}${(l==='Pre'||!isEst()||(it.mlbtr&&it.mlbtr[S.season]!=null)||(it.base&&it.base[S.season]!=null))?'':' · est'}</span>`); }
-  if(it.kind==='fa'||it.kind==='trade') tags.push(`<span class="pay-tag new">${it.kind==='fa'?(it.added&&it.added.promo?'Added to 40-man':it.added&&it.added.qo?'Qualifying offer':isResign(it.added)?'Re-signed':'Signed'):'Trade'}</span>`);
+  if(it.kind==='fa'||it.kind==='trade') tags.push(`<span class="pay-tag new">${it.kind==='fa'?(it.added&&it.added.mil?'Minor-league deal':it.added&&it.added.promo?'Added to 40-man':it.added&&it.added.qo?'Qualifying offer':isResign(it.added)?'Re-signed':'Signed'):'Trade'}</span>`);
   if(it.added && it.added.kind==='fa' && !it.added.qo && qoDecl(it.name)) tags.push(qoTag(it.name));
   if(rp && rp.placed==='roster') tags.push(`<span class="pay-tag roster" title="Placed on your Final 26-Man Roster in the roster builder">On 26-man</span>`);
   if(st && st.mode==='traded') tags.push(`<span class="pay-tag warn">${st.assumed?'Assumed gone (MLBTR)':tradedFor?'Traded for '+esc(tradedFor):'Traded'}${st.assumed?'':st.pay!=null?` · pays ${fmt(st.pay,2)}/yr`:st.frac?` · pays ${Math.round(st.frac*100)}%`:''}</span>`);
@@ -3957,6 +3957,11 @@ function faHTML(){
     <div class="pay-seg pay-posf" style="margin-bottom:8px">${[['','All'],['SP','SP'],['RP','RP'],['C','C'],['IF','IF'],['OF','OF'],['JP','Japan']].map(([v,l])=>`<button type="button" data-m="faposf" data-v="${v}" class="${(f.faposf||'')===v?'active':''}">${l}</button>`).join('')}</div>
     <div class="pay-browse" id="mFaBrowse"></div>`}
     <div class="pay-pickinfo" id="mPickInfo" style="display:none"></div>
+    <div class="pay-seg"><button data-m="dealtype" data-v="" class="${f.mil?'':'active'}">Major-league contract</button><button data-m="dealtype" data-v="mil" class="${f.mil?'active':''}">Minor-league deal</button></div>
+    ${f.mil ? `<div class="pay-hint">A minor-league deal takes no 40-man spot and doesn’t count toward the tax unless he’s added to the 40-man later (edit the signing to turn it into a 40-man contract).</div>
+      <div class="pay-row3">
+        <label class="pay-field">Minor-league salary ($M, optional)<input data-f="aav" id="mAav" value="${esc(f.aav)}" inputmode="decimal" placeholder="for reference"></label>
+        <label class="pay-field">Season<select data-f="start" id="mStart">${yearOpts(+f.start,2027,2032)}</select></label><span></span></div>` : `
     <div class="pay-seg"><button data-m="mode" data-v="terms" class="${terms?'active':''}">Enter full terms</button><button data-m="mode" data-v="aav" class="${terms?'':'active'}">I know the AAV</button></div>
     ${qoBlockOf(f.name) ? `<span class="pay-qo-off" title="Ineligible for the qualifying offer — ${esc(qoBlockOf(f.name))}"><button class="pay-eat-link" disabled style="text-decoration:none;font-weight:700">⚑ Make a qualifying offer</button></span>` : `<button class="pay-eat-link" data-m="qo" style="text-decoration:none;font-weight:700">⚑ Make a qualifying offer (1 yr, ${fmt(S.rules.qo,2)})</button>`}
     ${terms ? `<div class="pay-row3">
@@ -3970,9 +3975,9 @@ function faHTML(){
         <label class="pay-field">First season<select data-f="start" id="mStart">${yearOpts(+f.start,2027,2032)}</select></label></div>`}
     ${sxHTML(f)}
     <div class="pay-calc"><span>CBT hit per year</span><b id="mCalc">—</b></div>
-    <div class="pay-hint" id="mSxNote" style="display:none"></div>
+    <div class="pay-hint" id="mSxNote" style="display:none"></div>`}
     <label style="font-size:12.5px;display:flex;gap:7px;align-items:center"><input type="checkbox" id="mRoster" ${f.roster?'checked':''}> Also add to the roster builder’s player pool</label>`,
-    `<button class="pay-btn" data-m="close">Cancel</button><button class="pay-btn primary" data-m="saveFA">${M.editing?'Save':'Add contract'}</button>`);
+    `<button class="pay-btn" data-m="close">Cancel</button><button class="pay-btn primary" data-m="saveFA">${M.editing?'Save':(f.mil?'Add minor-league deal':'Add contract')}</button>`);
 }
 function hasSx(f){ return !!(f.sbonus||f.sdef||f.sout||f.sok); }
 function sxHTML(f){
@@ -4537,6 +4542,11 @@ function onModalClick(e){
   if(m==='saveFA'){
     readFields(); const r = faAav(); const name = M.f.name.trim();
     if(!name){ document.getElementById('mName').focus(); return; }
+    if(M.f.mil){ matchFA();
+      const sal = num('mAav')||0;
+      const rm = {id: M.editing || uid('fa'), kind:'fa', mil:true, name, pos: M.fa?M.fa.pos:'', type: M.fa?(M.fa.type||((M.fa.pos==='SP'||M.fa.pos==='RP')?'P':'H')):'H', aav:0, aavNom:Math.round(sal*1000)/1000, years:1, start:+M.f.start};
+      if(M.editing){ const old = S.added.find(x=>x.id===M.editing); if(old){ delete S.options[rm.id+':out']; delete S.options[rm.id]; } }
+      commitAdded(rm, document.getElementById('mRoster').checked); closeModal(); return; }
     if(!r){ (document.getElementById(M.f.mode==='terms'?'mTotal':'mAav')).focus(); return; }
     matchFA();
     const rec = {id: M.editing || uid('fa'), kind:'fa', name, pos: M.fa?M.fa.pos:'', type: M.fa?(M.fa.type||((M.fa.pos==='SP'||M.fa.pos==='RP')?'P':'H')):'H',
@@ -4548,6 +4558,7 @@ function onModalClick(e){
     const wantRoster = document.getElementById('mRoster').checked;
     commitAdded(rec, wantRoster); closeModal(); return;
   }
+  if(m==='dealtype'){ readFields(); M.f.mil = !!v; paint(); return; }
   if(m==='promoposf'){ readFields(); M.f.posf = v; paint(); if(M.picked) setInfo(`<b>${esc(M.picked.name)}</b> · ${esc(M.picked.pos)}${M.picked.age?' · age '+M.picked.age:''} · ${esc(M.picked.lvl)}`); return; }
   if(m==='savePkg'){ savePackage(); return; }
   if(m==='sendmanual'){ const q=(document.getElementById('mSendQ')||{}).value||''; const nm=q.trim(); if(!nm){ const el=document.getElementById('mSendQ'); if(el){ el.focus(); el.placeholder='Type the player’s name first, then click this link'; } return; } const id='x:'+norm(nm); M.f.meta=M.f.meta||{}; M.f.meta[id]={name:nm,pos:'',org:true}; if(!M.f.send.includes(id)) M.f.send.push(id); paint(); return; }
@@ -4608,7 +4619,7 @@ function onClick(e){
     case 'qo': if(qoBlockOf(b.dataset.name)) break; openFA({name:b.dataset.name, f:{mode:'aav', aav:String(S.rules.qo), years:'1', qo:true}}); break;
     case 'editAdded': { const a = S.added.find(x=>x.id===id); if(!a) break;
       if(a.promo) openPromo({editing:a.id, name:a.name, f:{aav:String(a.aav), years:String(a.years), start:String(a.start)}, pick:{pos:a.pos, type:a.type, age:a.age, lvl:a.lvl}});
-      else if(a.kind==='fa') openFA({editing:a.id, name:a.name, f:{mode:'aav', aav:String(nomAav(a)), years:String(a.years), start:String(a.start), qo:!!a.qo, sbonus:a.struct&&a.struct.bonus?String(a.struct.bonus):'', sdef:a.struct&&a.struct.defer?String(a.struct.defer):'', sdefyrs:a.struct&&a.struct.deferYrs?String(a.struct.deferYrs):'', sout:a.out?String(a.out.after):'', sok:a.opt?a.opt.kind:'', ssal:a.opt?String(a.opt.salary):'', sobuy:a.opt&&a.opt.buyout?String(a.opt.buyout):''}});
+      else if(a.kind==='fa') openFA({editing:a.id, name:a.name, f:{mil:!!a.mil, mode:'aav', aav:a.mil&&!nomAav(a)?'':String(nomAav(a)), years:String(a.years), start:String(a.start), qo:!!a.qo, sbonus:a.struct&&a.struct.bonus?String(a.struct.bonus):'', sdef:a.struct&&a.struct.defer?String(a.struct.defer):'', sdefyrs:a.struct&&a.struct.deferYrs?String(a.struct.deferYrs):'', sout:a.out?String(a.out.after):'', sok:a.opt?a.opt.kind:'', ssal:a.opt?String(a.opt.salary):'', sobuy:a.opt&&a.opt.buyout?String(a.opt.buyout):''}});
       else openPackage({edit:a.pkg||a.id}); break; }
     case 'removeAdded': { const a0 = S.added.find(x=>x.id===id); const pkg = a0 && (a0.pkg||a0.id); S.added = S.added.filter(a=>a.id!==id); rosterRemove(id);
       if(pkg && !S.added.some(x=>x.kind==='trade' && (x.pkg||x.id)===pkg)) Object.keys(S.status).forEach(k=>{ if(S.status[k].tradeId===pkg) delete S.status[k]; });
