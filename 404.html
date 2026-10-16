@@ -4733,7 +4733,7 @@ return {applyFG, open, close, isOpen, useTeam, optBadge, optCycle, paintAlert, p
 // Pull the latest FanGraphs data (refreshed once a day by the GitHub Action). Best effort: any failure keeps the baked-in data.
 (function loadFG(){
   window.__fgReady = Promise.race([
-    fetch('/data/fg.json', {cache:'no-cache'}).then(r=>r.ok?r.json():null).then(d=>{
+    fetch('/fg.json', {cache:'no-cache'}).then(r=>r.ok?r.json():null).then(d=>{
       // never swap the numbers under a simulator that's already open
       if(d && !PayrollPlanner.isOpen()) PayrollPlanner.applyFG(d);
     }).catch(()=>{}),
