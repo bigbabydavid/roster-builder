@@ -1626,7 +1626,7 @@ async function switchTeam(teamId, {updateUrl=true}={}){
   await loadState();
   render();
   syncRosterFromAPI();
-  if(simWas) PayrollPlanner.open();
+  if(simWas){ try{ await window.__fgReady; }catch(e){} PayrollPlanner.open(); }
 }
 
 // The back/forward buttons change the URL without calling switchTeam(), so
@@ -3550,6 +3550,7 @@ function hero(yr, calc){
         <div class="row"><span style="font-size:12px;opacity:.85">Custom $M</span>
           <input class="pay-num-in" id="payTargetIn" inputmode="decimal" value="${S.target.on?Math.round(S.target.value*100)/100:''}" placeholder="e.g. 300" data-act="targetIn"></div>
         <div class="pay-sub" style="margin-top:8px">Different years, different limits — set the number you won't cross and watch the room (or the overage) update as you add and remove players.</div>
+        <div class="pay-sub" style="margin-top:6px;opacity:.65">Contract data from FanGraphs · ${dataStamp()}</div>
       </div>
     </div>
     <div class="pay-meter-wrap"><div class="pay-meter">
@@ -3851,6 +3852,21 @@ function teamLogo(name){
   return t ? `<img class="pay-logo" src="${logoSrc(t.id)}" alt="" onerror="this.remove()">` : '';
 }
 let POOL = {};
+// Daily FanGraphs feed (data/fg.json, built by the fg-sync GitHub Action). When it loads, it replaces the contract
+// data baked into this page; if it can't be fetched, the baked-in copy (dated above) keeps working.
+let FG_UPDATED = null;
+function applyFG(d){
+  if(!d || !d.teamSim || !d.leagueDb || !d.lastYear || Object.keys(d.teamSim).length<25 || d.leagueDb.length<500) return false;
+  Object.keys(TEAM_SIM).forEach(k=>delete TEAM_SIM[k]); Object.assign(TEAM_SIM, d.teamSim);
+  LEAGUE_DB.length = 0; d.leagueDb.forEach(r=>LEAGUE_DB.push(r));
+  Object.keys(LAST_YEAR).forEach(k=>delete LAST_YEAR[k]); Object.assign(LAST_YEAR, d.lastYear);
+  POOL = {}; FG_UPDATED = d.updated || null; return true;
+}
+function dataStamp(){
+  const t = FG_UPDATED ? new Date(FG_UPDATED) : null;
+  if(t && !isNaN(t)) return 'updated ' + t.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  return 'as of ' + LEAGUE_DB_DATE;
+}
 function tradePool(){ return POOL.trade || (POOL.trade = LEAGUE_DB.concat(PROS_POOL).filter(r=>r.k!=='f' && r.t!==teamNick())); }
 function prosBadge(p){ const q = prosRank(p.n||p.name, p.t||p.team); if(!q) return ''; const nick = p.t||p.team;
   return (q.h?`<em class="pro-b t100" title="MLB.com Top 100">MLB #${q.h}</em>`:'')+`<em class="pro-b" title="MLB.com ${esc(nick)} Top 30">Org #${q.r}</em>`; }
@@ -4710,9 +4726,20 @@ function close(){
   setHeader(false); syncTabs(false);
 }
 function isOpen(){ return document.body.classList.contains('view-payroll'); }
-return {open, close, isOpen, useTeam, optBadge, optCycle, paintAlert, planActive:()=>!!REAL, refresh:()=>{ if(isOpen() && !M) renderAll(); }, _debug:()=>({S, calcAll, taxFor, SEED, FG:FG_TOTALS, TEAM_SIM})};
+return {applyFG, open, close, isOpen, useTeam, optBadge, optCycle, paintAlert, planActive:()=>!!REAL, refresh:()=>{ if(isOpen() && !M) renderAll(); }, _debug:()=>({S, calcAll, taxFor, SEED, FG:FG_TOTALS, TEAM_SIM})};
 })();
 
+
+// Pull the latest FanGraphs data (refreshed once a day by the GitHub Action). Best effort: any failure keeps the baked-in data.
+(function loadFG(){
+  window.__fgReady = Promise.race([
+    fetch('/data/fg.json', {cache:'no-cache'}).then(r=>r.ok?r.json():null).then(d=>{
+      // never swap the numbers under a simulator that's already open
+      if(d && !PayrollPlanner.isOpen()) PayrollPlanner.applyFG(d);
+    }).catch(()=>{}),
+    new Promise(res=>setTimeout(res, 2500))
+  ]);
+})();
 
 (async function init(){
   // A direct link to a team's own URL (mlbrostertool.com/yankees) wins over
@@ -4775,7 +4802,7 @@ return {open, close, isOpen, useTeam, optBadge, optCycle, paintAlert, planActive
   }catch(e){}
   await loadState();
   render();
-  if(simPath) PayrollPlanner.open();
+  if(simPath){ try{ await window.__fgReady; }catch(e){} PayrollPlanner.open(); }
   updateStickyOffsets();
   syncRosterFromAPI();
   setInterval(syncRosterFromAPI, 60 * 60 * 1000); // every hour
