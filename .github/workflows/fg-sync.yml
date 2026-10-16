@@ -47,4 +47,4 @@ jobs:
           git config user.name "fg-sync-bot"
           git config user.email "fg-sync-bot@users.noreply.github.com"
           git add fg.json
-          if git diff --cached --quiet; then echo "No changes."; else git commit -m "Update FanGraphs data" && git pull --rebase && git push; fi
+          if git diff --cached --quiet; then echo "No changes."; else git commit -m "Update FanGraphs data" && git pull --rebase --autostash && git push; fi
