@@ -1,0 +1,12 @@
+name: FanGraphs access test
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch one public payroll page
+        run: |
+          code=$(curl -s -o page.html -w "%{http_code}" -A "Mozilla/5.0 (compatible; roster-tool-probe)" https://www.fangraphs.com/roster-resource/payroll/yankees)
+          echo "HTTP status: $code"
+          echo "Bytes: $(wc -c < page.html)"
+          if grep -q '__NEXT_DATA__' page.html; then echo "Payroll data present: YES"; else echo "Payroll data present: NO"; head -c 400 page.html; fi
