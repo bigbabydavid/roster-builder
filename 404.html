@@ -3573,6 +3573,7 @@ function logEntries(calc){
     const it = byId[a.id]; const eff = it ? (rawCharge(it,y)||0) : 0;
     if(a.kind==='fa'){
       L.push({kind:'add', acts:[['editAdded','Edit',{id:a.id}],['removeAdded','Undo',{id:a.id}]], at:a.at||0, eff, text: a.mil ? `Signed ${a.name} to a minor-league deal` : a.promo ? `Added ${a.name} to the 40-man${a.lvl?' (from '+a.lvl+')':''}` : a.qo ? `${isResign(a)?'Re-signed':'Signed'} ${a.name} to the qualifying offer` : `${isResign(a)?'Re-signed':'Signed'} ${a.name}`, sub:a.mil ? `No 40-man spot · not in the ${a.start} tax number unless added to the 40-man` : a.promo ? `${fmt(a.aav,2)} in ${a.start}${a.years>1?' · '+a.years+' yr':''}` : `${a.years} yr, ${fmt(nomAav(a)*a.years)} (${fmt(a.aav,2)} ${Math.abs(nomAav(a)-a.aav)>1e-9?'CBT ':''}AAV) from ${a.start}${structText(a)?' · '+structText(a):''}${!a.qo&&qoDecl(a.name)?' · declined the QO — draft pick compensation attached':''}`});
+      if(a.promo && !a.mil){ const last = L[L.length-1]; last.grp = 'promo'; last.who = a.name + (a.lvl ? ' ('+a.lvl+')' : ''); }
     } else {
       const pkg = a.pkg||a.id; if(seenPkg.has(pkg)) return; seenPkg.add(pkg);
       const grp = S.added.filter(x=>x.kind==='trade' && (x.pkg||x.id)===pkg);
@@ -3614,10 +3615,10 @@ function logEntries(calc){
   Object.keys(S.walked||{}).forEach(n=>{ if(S.added.some(a=>norm(a.name)===norm(n))) return; L.push({kind:'remove', grp:'walk', who:n, acts:[['unwalk','Undo',{name:n}]], at:S.walked[n]===true?0:S.walked[n], eff:0, text:`Let ${n} walk`, sub:'no offer made'}); });
   S.customOther.forEach(c=>{ L.push({kind:'other', acts:[['removeOther','Undo',{id:c.id}]], at:c.at||0, eff:(c.base&&c.base[y])||0, text:c.name, sub:'other payment / cash'}); });
   const out = [];
-  [['walk',(n)=>`Let ${n} player${n===1?'':'s'} leave in free agency`],['nt',(n)=>`Non-tendered ${n} player${n===1?'':'s'}`]].forEach(([g,label])=>{
+  [['walk',(n)=>`Let ${n} player${n===1?'':'s'} leave in free agency`],['nt',(n)=>`Non-tendered ${n} player${n===1?'':'s'}`],['promo',(n)=>`Added ${n} players to the 40-man`]].forEach(([g,label])=>{
     const m = L.filter(e=>e.grp===g);
     if(m.length<2) return;
-    out.push({kind:'remove', group:m, at:Math.min(...m.map(e=>e.at||0)), eff:m.reduce((s,e)=>s+(e.eff||0),0), text:label(m.length), sub: g==='walk'?'no offers made':'salary comes off the books', acts:[]});
+    out.push({kind: g==='promo'?'add':'remove', group:m, at:Math.min(...m.map(e=>e.at||0)), eff:m.reduce((s,e)=>s+(e.eff||0),0), text:label(m.length), sub: g==='walk'?'no offers made':g==='promo'?'promoted from the minors':'salary comes off the books', acts:[]});
     m.forEach(e=>{ e.drop = true; });
   });
   return L.filter(e=>!e.drop).concat(out).sort((a,b)=>a.at-b.at);
@@ -4148,17 +4149,62 @@ function promoHTML(){
 function toB64u(u8){ let b = ''; for(let i=0;i<u8.length;i+=8192) b += String.fromCharCode.apply(null, u8.subarray(i,i+8192)); return btoa(b).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
 function fromB64u(t){ t = t.replace(/-/g,'+').replace(/_/g,'/'); while(t.length%4) t += '='; const b = atob(t), u = new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i] = b.charCodeAt(i); return u; }
 async function streamBytes(u8, Ctor){ const st = new Blob([u8]).stream().pipeThrough(new Ctor('deflate-raw')); return new Uint8Array(await new Response(st).arrayBuffer()); }
+// --- Compact share links (v2): drop empty fields, abbreviate field names, shorten generated ids and timestamps, then deflate.
+const PK_KEYS = ['kind','name','pos','type','aav','aavNom','years','start','age','lvl','from','eat','through','pkg','promo','mil','qo','struct','bonus','defer','deferYrs','out','after','opt','salary','buyout','released','exercise','decline','note','base','pid','id','at','cat'];
+const PK_ENC = {}, PK_DEC = {}; PK_KEYS.forEach((k,i)=>{ const c = '~'+i.toString(36); PK_ENC[k]=c; PK_DEC[c]=k; });
+const PK_BOOL = {qo:1, promo:1, mil:1};
+function pkStrip(o, top){
+  if(Array.isArray(o)) return o.map(x=>pkStrip(x,false));
+  if(o && typeof o==='object'){
+    const r = {};
+    Object.keys(o).forEach(k=>{
+      const v = pkStrip(o[k], false);
+      if(v===null || v===undefined) return;
+      if(v===false && PK_BOOL[k]) return;
+      if(top && ((Array.isArray(v) && !v.length) || (v && typeof v==='object' && !Array.isArray(v) && !Object.keys(v).length))) return;
+      r[k] = v;
+    });
+    return r;
+  }
+  return o;
+}
+function pkRename(o, map){
+  if(Array.isArray(o)) return o.map(x=>pkRename(x,map));
+  if(o && typeof o==='object'){ const r = {}; Object.keys(o).forEach(k=>{ r[map[k]||k] = pkRename(o[k], map); }); return r; }
+  return o;
+}
 async function packPlan(){
   const diff = {}; Object.keys(S.rules).forEach(k=>{ if(JSON.stringify(S.rules[k])!==JSON.stringify(DEFAULT_RULES[k])) diff[k] = S.rules[k]; });
-  const o = {v:1, t:TEAM_ID, s:S.season, tg:S.target.on?S.target.value:null, r:diff, ov:S.overrides, op:S.options, a:S.added, c:S.customOther, w:S.walked, x:S.extraOrg, st:S.status, om:S.optManual};
-  const bytes = new TextEncoder().encode(JSON.stringify(o));
-  if(typeof CompressionStream!=='undefined'){ try{ return 'z'+toB64u(await streamBytes(bytes, CompressionStream)); }catch(e){} }
-  return 'u'+toB64u(bytes);
+  const o = {v:2, t:TEAM_ID, s:S.season, tg:S.target.on?S.target.value:null, r:diff, ov:S.overrides, op:S.options, a:S.added, c:S.customOther, w:S.walked, x:S.extraOrg, st:S.status, om:S.optManual};
+  let json = JSON.stringify(pkRename(pkStrip(o,true), PK_ENC));
+  // timestamps -> seconds since the earliest one
+  const atk = PK_ENC.at, atRe = new RegExp('"'+atk+'":(\\d{9,14})\\b','g');
+  const ats = [...json.matchAll(atRe)].map(m=>+m[1]);
+  let base = 0;
+  if(ats.length){ base = Math.min(...ats); json = json.replace(atRe, (m,n)=>'"'+atk+'":'+(Math.round((+n-base)/1000)+1)); }
+  // generated ids (fa_lx3k9q2abc) -> fa_0, fa_1, ...
+  const seen = {}; let n = 0;
+  json = json.replace(/\b(fa|ot|pk|tr)_[0-9a-z]{8,14}\b/g, (m,pre)=>{ if(!(m in seen)) seen[m] = pre+'_'+(n++).toString(36); return seen[m]; });
+  const head = ats.length ? '@'+Math.round(base/1000).toString(36)+'|' : '';
+  const bytes = new TextEncoder().encode(head+json);
+  if(typeof CompressionStream!=='undefined'){ try{ return 'd'+toB64u(await streamBytes(bytes, CompressionStream)); }catch(e){} }
+  return 'v'+toB64u(bytes);
 }
 async function unpackPlan(str){
   let bytes = fromB64u(str.slice(1));
-  if(str[0]==='z') bytes = await streamBytes(bytes, DecompressionStream);
-  const o = JSON.parse(new TextDecoder().decode(bytes));
+  const f = str[0];
+  if(f==='z' || f==='d') bytes = await streamBytes(bytes, DecompressionStream);
+  let txt = new TextDecoder().decode(bytes);
+  if(f==='d' || f==='v'){
+    let base = 0;
+    if(txt[0]==='@'){ const i = txt.indexOf('|'); base = parseInt(txt.slice(1,i),36)*1000; txt = txt.slice(i+1); }
+    let o = JSON.parse(txt);
+    if(base){ const fix = x=>{ if(Array.isArray(x)) x.forEach(fix); else if(x && typeof x==='object') Object.keys(x).forEach(k=>{ if(k===PK_ENC.at && typeof x[k]==='number') x[k] = x[k] ? (x[k]-1)*1000 + base : 0; else fix(x[k]); }); }; fix(o); }
+    o = pkRename(o, PK_DEC);
+    if(!o || o.v!==2 || o.t!==TEAM_ID) throw new Error('wrong team or version');
+    return o;
+  }
+  const o = JSON.parse(txt);
   if(!o || o.v!==1 || o.t!==TEAM_ID) throw new Error('wrong team or version');
   return o;
 }
