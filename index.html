@@ -3904,6 +3904,16 @@ function dbThrough(r){
   let last = null; (r.y||[]).forEach((v,i)=>{ if(typeof v==='number') last = YEARS[i]; });
   return end ? Math.min(last||end, end) : last;
 }
+// When a player is traded, the club that gets him is charged a fresh AAV: the guaranteed money still owed divided by the
+// guaranteed years still left — not the original contract's average. (Ryan McMahon's $16M/yr is $16M to a new club, not $11.7M.)
+function remDeal(r){
+  if(!r || r.k!=='g') return null;
+  const thr = dbThrough(r); if(!thr) return null; let money = 0, n = 0;
+  (r.y||[]).forEach((v,i)=>{ const yy = YEARS[i]; if(typeof v==='number' && yy>=S.season && yy<=thr){ money += v; n++; } });
+  return n ? {aav:money/n, money, years:n} : null;
+}
+const remTxt = d => `${fmt(d.money, d.money%1?2:1)} still owed over ${d.years} yr${d.years===1?'':'s'}`;
+function ownDbRow(name){ const k = norm(name), t = teamNick(); return LEAGUE_DB.find(r=>r.t===t && norm(r.n)===k) || null; }
 // Arbitration/pre-arb deals have no fixed AAV: build a season-by-season schedule.
 function dbSchedule(r){
   const sched = {}; let prev = null, through = null; const R = S.rules;
@@ -3926,7 +3936,7 @@ function suggHTML(kind, idxs){
     const p = pool[i];
     if(kind==='trade'){
       const meta = p.k==='m' ? `${esc(p.t)} · ${[p.pos,p.lv,p.g?'age '+p.g:'',p.eta?'ETA '+p.eta:''].filter(Boolean).join(' · ')} · minor leaguer`
-        : p.k==='g' ? `${esc(p.t)} · age ${p.g||'?'} · ${fmt(p.v,2)} AAV through ${dbThrough(p)||'?'}`
+        : p.k==='g' ? `${esc(p.t)} · age ${p.g||'?'} · ${fmt((remDeal(p)||{aav:p.v}).aav,2)} AAV through ${dbThrough(p)||'?'}`
         : `${esc(p.t)} · age ${p.g||'?'} · ${p.k==='p'?'pre-arbitration':'arbitration-eligible'}${p.m!=null?` (proj. ${fmt(p.m)} in 2027)`:''}`;
       return `<button type="button" class="pay-sugg-item" data-m="pick" data-s="trade" data-i="${i}">${teamLogo(p.t)}<b>${esc(p.n)}</b>${prosBadge(p)}<span>${meta}</span></button>`;
     }
@@ -4335,7 +4345,9 @@ function ownEligible(all){
 }
 function newGetRow(p){
   const start = S.season; let aav, through, sched = null, info;
-  if(p.k==='g'){ aav = p.v; through = dbThrough(p) || start; info = p.c||''; }
+  let reset = null;
+  if(p.k==='g'){ aav = p.v; through = dbThrough(p) || start; info = p.c||'';
+    const rd = remDeal(p); if(rd && Math.abs(rd.aav-p.v)>0.005){ aav = Math.round(rd.aav*10000)/10000; reset = `His contract’s AAV was ${fmt(p.v,2)}, but on a trade it resets to what’s still owed — ${remTxt(rd)} = ${fmt(rd.aav,2)} a year on your books.`; } }
   else if(p.k==='m'){ aav = S.rules.minSalary; through = start; const q = prosRank(p.n,p.t);
     info = ['Prospect', p.lv, q&&q.h?'MLB Top 100 #'+q.h:'', q?p.t+' Top 30 #'+q.r:''].filter(Boolean).join(' · '); }
   else {
@@ -4343,7 +4355,7 @@ function newGetRow(p){
     aav = sched[start]!=null ? sched[start] : (sched[Object.keys(sched)[0]]||0);
     info = (p.k==='p'?'Pre-arbitration':'Arbitration-eligible') + (p.m!=null?` · projected ${fmt(p.m)} for 2027`:'');
   }
-  return {key:'g'+(++GK), id:null, name:p.n, from:p.t, pos:p.pos&&p.k==='m'?p.pos.split('/')[0]:'', ptype:p.k==='m'&&/P$/.test(p.pos||'')?'P':'H', aav:String(aav), start:String(start), through:String(Math.max(start,through)), eat:'', eatOpen:false, sched, info, pid:p.i};
+  return {key:'g'+(++GK), id:null, name:p.n, from:p.t, pos:p.pos&&p.k==='m'?p.pos.split('/')[0]:'', ptype:p.k==='m'&&/P$/.test(p.pos||'')?'P':'H', aav:String(aav), start:String(start), through:String(Math.max(start,through)), eat:'', eatOpen:false, sched, info, pid:p.i, reset};
 }
 function addIncoming(i, tok){
   const p = tradePool()[i];
@@ -4399,7 +4411,7 @@ function updateBrowse(){
   const total = list.length; list = list.slice(0,120);
   box.innerHTML = note + (list.length ? list.map(([p,i])=>{
     const pi = posOf(p); const on = added.has(p.i+'|'+p.n);
-    const meta = [pi?pi.abbr:(p.pos||''), f.team?'':p.t, p.k==='m'&&p.lv?p.lv:'', p.g?'age '+p.g:'', p.k==='m' ? 'minors' : p.k==='g' ? `${fmt(p.v,2)} AAV through ${dbThrough(p)||'?'}` : (p.k==='p'?'pre-arb':'arb-eligible'+(p.m!=null?` (proj. ${fmt(p.m)})`:''))].filter(Boolean).join(' · ');
+    const meta = [pi?pi.abbr:(p.pos||''), f.team?'':p.t, p.k==='m'&&p.lv?p.lv:'', p.g?'age '+p.g:'', p.k==='m' ? 'minors' : p.k==='g' ? `${fmt((remDeal(p)||{aav:p.v}).aav,2)} AAV through ${dbThrough(p)||'?'}` : (p.k==='p'?'pre-arb':'arb-eligible'+(p.m!=null?` (proj. ${fmt(p.m)})`:''))].filter(Boolean).join(' · ');
     return `<button type="button" class="pay-sugg-item${on?' added':''}" data-m="getpick" data-i="${i}">${on?'<i class="chk">✓</i>':''}${teamLogo(p.t)}<b>${esc(p.n)}</b>${prosBadge(p)}<span>${esc(meta)}</span></button>`;
   }).join('') + (total>120?`<div class="pay-hint" style="padding:8px 12px">Showing 120 of ${total} — narrow it with a team or name.</div>`:'') : (POSSTATE<2 && f.posf ? '' : '<div class="pay-hint" style="padding:10px 12px">No players match.</div>'));
   if(q.length>2 && !pool.some(p=>norm(p.n)===norm(q))) box.innerHTML = `<button type="button" class="pay-addnew" data-m="addmanual"><i>+</i> Add “${esc(q)}” — not in the list</button>` + box.innerHTML;
@@ -4416,6 +4428,7 @@ function getRowHTML(g, i){
     <div class="pay-row3"><label class="pay-field">Position<input data-g="pos" data-k="${g.key}" value="${esc(g.pos)}" placeholder="SP, CF…"></label>
       <label class="pay-field">Type<select data-g="ptype" data-k="${g.key}"><option value="H"${g.ptype==='H'?' selected':''}>Hitter</option><option value="P"${g.ptype==='P'?' selected':''}>Pitcher</option></select></label>
       ${g.manual?`<label class="pay-field">From<input data-g="from" data-k="${g.key}" value="${esc(g.from)}" placeholder="optional"></label>`:'<div></div>'}</div>
+    ${g.reset?`<div class="pay-hint">${esc(g.reset)}</div>`:''}
     ${g.sched?`<div class="pay-hint">Arbitration schedule: ${Object.keys(g.sched).map(y=>`${y} ${fmt(g.sched[y])}`).join(' · ')}. Typing a salary replaces it with a flat number.</div>`:''}
     ${eat}</div>`;
 }
@@ -4423,6 +4436,14 @@ function teamOpts(sel){
   const names = [...new Set(tradePool().map(p=>p.t))];
   const full = n => (TEAMS.find(t=>t.name===n||t.name.endsWith(' '+n))||{name:n}).name;
   return names.map(n=>[n, full(n)]).sort((a,b)=>a[1].localeCompare(b[1])).map(([n,l])=>`<option value="${esc(n)}"${n===sel?' selected':''}>${esc(l)}</option>`).join('');
+}
+function sentAavNote(){
+  if(!M || !M.f) return '';
+  const byId = {}; ownItems().forEach(it=>{ byId[it.id]=it; });
+  const rows = M.f.send.map(id=>{ const it = byId[id]; if(!it) return ''; const d = remDeal(ownDbRow(it.name)); if(!d) return '';
+    const mine = rawCharge(it, S.season)||0, diff = Math.abs(d.aav-mine)>0.005;
+    return `<div>${esc(it.name)}: ${diff?'counts as ':''}<b>${fmt(d.aav,2)} AAV</b> to the new club (${remTxt(d)})${diff?` — vs ${fmt(mine,2)} on your books`:''}</div>`; }).filter(Boolean);
+  return rows.length ? `<div class="pay-hint" style="margin-top:6px">${rows.join('')}<div style="margin-top:3px;opacity:.8">A traded player’s tax value resets to the guaranteed money still owed ÷ the guaranteed years left.</div></div>` : '';
 }
 function pkgHTML(){
   const f = M.f, byId = {}; ownItems().forEach(it=>{ byId[it.id]=it; });
@@ -4434,12 +4455,12 @@ function pkgHTML(){
     : `<button class="pay-eat-link" data-m="retopen">You’re paying part of their salary?</button>`;
   const sendCollapsed = f.sendCollapsed && f.send.length && !f.sendOpen;
   const sendSec = sendCollapsed ? `<div class="pay-sec"><div class="pay-sec-h">You send</div>
-      <div class="pay-pills">${pills}</div>
+      <div class="pay-pills">${pills}</div>${sentAavNote()}
       <button class="pay-eat-link" data-m="sendopen">Add another player to this trade…</button>${ret}</div>` : `<div class="pay-sec"><div class="pay-sec-h">${f.getFirst?'You give up':'You send'} <span>(optional)</span></div>
       <div class="pay-filters"><input class="pay-in" id="mSendQ" placeholder="Search your players…" autocomplete="off">
         <div class="pay-seg pay-posf">${[['','All'],['P','Pitchers'],['H','Hitters'],['C','C'],['IF','IF'],['OF','OF']].map(([v,l])=>`<button type="button" data-m="sposf" data-v="${v}" class="${(f.sposf||'')===v?'active':''}">${l}</button>`).join('')}</div></div>
       <div class="pay-browse" id="mSendSugg"></div>
-      <div class="pay-pills">${pills || '<span class="pay-hint">Nobody yet — leave empty if you’re only taking on a player.</span>'}</div>
+      <div class="pay-pills">${pills || '<span class="pay-hint">Nobody yet — leave empty if you’re only taking on a player.</span>'}</div>${sentAavNote()}
       <button class="pay-eat-link" data-m="sendmanual">Add someone not in the list (prospect, minor leaguer…)</button>${ret}</div>`;
   const getSec = `<div class="pay-sec"><div class="pay-sec-h">${f.getFirst?'You get':'You get back'} <span>(optional)</span></div>
       <div class="pay-filters"><select class="pay-in" id="mTeam"><option value="">All teams</option>${teamOpts(f.team)}</select>
