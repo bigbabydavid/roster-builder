@@ -1050,6 +1050,7 @@
   .pay-seg{ display:flex; border:1px solid #cfd5dc; border-radius:8px; overflow:hidden; }
   .pay-seg button{ flex:1; appearance:none; border:none; background:#fff; font:inherit; font-size:12.5px; font-weight:700; padding:7px 8px; cursor:pointer; color:var(--grey); }
   .pay-seg button.active{ background:var(--navy); color:#fff; }
+  .pay-posrow{ margin-top:8px; overflow-x:auto; max-width:100%; } .pay-posrow button{ flex:1 0 auto; padding:7px 10px; white-space:nowrap; }
   .pay-calc{ background:#f3f5f8; border-radius:9px; padding:9px 12px; font-size:13px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
   .pay-calc b{ font-family:Georgia,serif; font-size:16px; }
   .pay-hint{ font-size:11.5px; color:var(--grey); line-height:1.45; }
@@ -4005,9 +4006,8 @@ function faHTML(){
     <label class="pay-field">Player<input data-f="name" id="mName" value="${esc(f.name)}" placeholder="${M.editing?'Player name':'Search free agents by name…'}" autocomplete="off"></label>
     ${M.editing ? '' : `<div class="pay-filters"><select class="pay-in" id="mFaLik"><option value="likely"${(f.falik||'likely')==='likely'?' selected':''}>Likely free agents</option><option value="shots"${f.falik==='shots'?' selected':''}>+ long shots</option><option value="all"${f.falik==='all'?' selected':''}>Everyone on the tracker</option></select>
       <select class="pay-in" id="mFaSort"><option value="aav"${(f.fasort||'aav')==='aav'?' selected':''}>Sort: suggested AAV</option><option value="war"${f.fasort==='war'?' selected':''}>Sort: 2026 WAR</option><option value="age"${f.fasort==='age'?' selected':''}>Sort: youngest</option><option value="name"${f.fasort==='name'?' selected':''}>Sort: name</option></select></div>
-    <div class="pay-seg pay-posf" style="margin-bottom:8px">${[['','All'],['SP','SP'],['RP','RP'],['C','C'],['IF','IF'],['OF','OF'],['JP','Japan']].map(([v,l])=>`<button type="button" data-m="faposf" data-v="${v}" class="${(f.faposf||'')===v?'active':''}">${l}</button>`).join('')}</div>
-    <div class="pay-seg pay-posf" style="margin-bottom:8px">${SPEC_BTNS.map(([v,l])=>`<button type="button" data-m="faposf" data-v="${v}" class="${(f.faposf||'')===v?'active':''}">${l}</button>`).join('')}</div>
-    <div class="pay-seg pay-posf" id="mFaHand" style="margin-bottom:8px"><button type="button" data-m="fahand" data-v="" class="${(f.fahand||'')===''?'active':''}">Any hand</button>${faHandOpts(f.faposf||'').map(([v,l])=>`<button type="button" data-m="fahand" data-v="${v}" class="${f.fahand===v?'active':''}">${l}</button>`).join('')}</div>
+    <div class="pay-seg pay-posf pay-posrow" id="mFaPos">${segBtns(POS_ROW_FA,'faposf',f.faposf||'')}</div>
+    <div class="pay-seg pay-posf pay-posrow" id="mFaHand">${handRow('fahand', f.faposf||'', f.fahand||'')}</div>
     <div class="pay-browse" id="mFaBrowse"></div>`}
     <div class="pay-pickinfo" id="mPickInfo" style="display:none"></div>
     <div class="pay-seg"><button data-m="dealtype" data-v="" class="${f.mil?'':'active'}">Major-league contract</button><button data-m="dealtype" data-v="mil" class="${f.mil?'active':''}">Minor-league deal</button></div>
@@ -4079,6 +4079,13 @@ const POS_GENERIC = {OF:['LF','CF','RF'], IF:['1B','2B','3B','SS'], H:['DH']};
 function posHas(tokens, v){ return tokens.some(t=>t===v || (POS_GENERIC[t]||[]).includes(v)); }
 const histOf = name => (POSHIST[norm(name)] || []).filter((x,i)=>x!=='DH' || i===0); // DH only counts if it's his main spot
 const SPEC_BTNS = SPEC_POS.map(x=>[x,x]);
+const POS_ROW_T = [['','All'],['P','Pitchers'],['H','Hitters'],['C','C']].concat(SPEC_BTNS);
+const POS_ROW_FA = [['','All'],['SP','SP'],['RP','RP'],['C','C']].concat(SPEC_BTNS, [['JP','Japan']]);
+const segBtns = (list, m, cur) => list.map(([v,l])=>`<button type="button" data-m="${m}" data-v="${v}" class="${cur===v?'active':''}">${l}</button>`).join('');
+const handRow = (m, pf, cur) => segBtns([['','Any hand']].concat(faHandOpts(pf)), m, cur||'');
+function tradeIsP(name, pos, type){ const pi = posOf({n:name}); if(pi) return pi.type==='Pitcher'; return type==='P' || /P$/.test(String(pos||'').toUpperCase()); }
+const tradeHandOk = (name, pos, type, hf) => !hf || faHandOk({name, type: tradeIsP(name,pos,type)?'P':'H'}, hf);
+const tradeHasHand = (name, pos, type) => !!faHand({name, type: tradeIsP(name,pos,type)?'P':'H'});
 function faGroup(p){ const a = p.pos; if(a==='SP'||a==='RP'||a==='C') return a; if(['1B','2B','3B','SS'].includes(a)) return 'IF'; if(['LF','CF','RF'].includes(a)) return 'OF'; return 'H'; }
 const faIsP = p => p.type==='P' || (!p.type && (POSMAP[norm(p.name)]||{}).type==='Pitcher');
 function faHand(p){ const h = HANDS[norm(p.name)] || {}; const pit = faIsP(p);
@@ -4090,7 +4097,7 @@ function faHandOk(p, hf){
 }
 function faHandOpts(pf){
   const P = [['RHP','RHP'],['LHP','LHP']], H = [['R','Bats R'],['L','Bats L'],['S','Switch']];
-  return pf==='SP'||pf==='RP' ? P : (pf==='C'||pf==='IF'||pf==='OF'||SPEC_POS.includes(pf)) ? H : P.concat(H);
+  return (pf==='SP'||pf==='RP'||pf==='P') ? P : (pf==='C'||pf==='IF'||pf==='OF'||pf==='H'||SPEC_POS.includes(pf)) ? H : P.concat(H);
 }
 function faRows(){
   const pool = faPool(), f = M.f, lk = f.falik||'likely', pf = f.faposf||'';
@@ -4441,12 +4448,13 @@ function posMatches(p, f){
 function updateBrowse(){
   const box = document.getElementById('mBrowse'); if(!box || !M || M.type!=='pkg') return;
   const f = M.f, q = ((document.getElementById('mName')||{}).value||'').trim();
-  if(!f.team && !f.posf && !q){ box.innerHTML = '<div class="pay-hint" style="padding:10px 12px">Pick a team and/or a position group — or search a name — to browse players.</div>'; return; }
+  if(!f.team && !f.posf && !f.handf && !q){ box.innerHTML = '<div class="pay-hint" style="padding:10px 12px">Pick a team and/or a position group — or search a name — to browse players.</div>'; return; }
   const toks = norm(q).split(' ').filter(Boolean);
-  const pool = tradePool(); let list = [];
+  const pool = tradePool(); let list = []; let nohand = 0;
   pool.forEach((p,i)=>{
     if(f.team && p.t!==f.team) return;
     if(f.posf && !posMatches(p, f.posf)) return;
+    if(f.handf && !tradeHandOk(p.n, p.pos, '', f.handf)){ if(!tradeHasHand(p.n, p.pos, '')) nohand++; return; }
     if(toks.length){ const n = norm(p.n); if(!toks.every(t=>n.includes(t))) return; }
     list.push([p,i]);
   });
@@ -4459,7 +4467,7 @@ function updateBrowse(){
     const pi = posOf(p); const on = added.has(p.i+'|'+p.n);
     const meta = [pi?pi.abbr:(p.pos||''), f.team?'':p.t, p.k==='m'&&p.lv?p.lv:'', p.g?'age '+p.g:'', p.k==='m' ? 'minors' : p.k==='r' ? '40-man' : p.k==='g' ? `${fmt((remDeal(p)||{aav:p.v}).aav,2)} AAV through ${dbThrough(p)||'?'}` : (p.k==='p'?'pre-arb':'arb-eligible'+(p.m!=null?` (proj. ${fmt(p.m)})`:''))].filter(Boolean).join(' · ');
     return `<button type="button" class="pay-sugg-item${on?' added':''}" data-m="getpick" data-i="${i}">${on?'<i class="chk">✓</i>':''}${teamLogo(p.t)}<b>${esc(p.n)}</b>${prosBadge(p)}<span>${esc(meta)}</span></button>`;
-  }).join('') + (total>120?`<div class="pay-hint" style="padding:8px 12px">Showing 120 of ${total} — narrow it with a team or name.</div>`:'') : (POSSTATE<2 && f.posf ? '' : '<div class="pay-hint" style="padding:10px 12px">No players match.</div>'));
+  }).join('') + (total>120?`<div class="pay-hint" style="padding:8px 12px">Showing 120 of ${total} — narrow it with a team or name.</div>`:'') + (nohand?`<div class="pay-hint" style="padding:8px 12px">${nohand} player${nohand===1?'':'s'} with no handedness on file ${POSSTATE>=2?'':'yet '}hidden by this filter.</div>`:'') : (POSSTATE<2 && f.posf ? '' : '<div class="pay-hint" style="padding:10px 12px">No players match.</div>'));
   if(q.length>2 && !pool.some(p=>norm(p.n)===norm(q))) box.innerHTML = `<button type="button" class="pay-addnew" data-m="addmanual"><i>+</i> Add “${esc(q)}” — not in the list</button>` + box.innerHTML;
 }
 function getRowHTML(g, i){
@@ -4503,16 +4511,16 @@ function pkgHTML(){
   const sendSec = sendCollapsed ? `<div class="pay-sec"><div class="pay-sec-h">You send</div>
       <div class="pay-pills">${pills}</div>${sentAavNote()}
       <button class="pay-eat-link" data-m="sendopen">Add another player to this trade…</button>${ret}</div>` : `<div class="pay-sec"><div class="pay-sec-h">${f.getFirst?'You give up':'You send'} <span>(optional)</span></div>
-      <div class="pay-filters"><input class="pay-in" id="mSendQ" placeholder="Search your players…" autocomplete="off">
-        <div class="pay-seg pay-posf">${[['','All'],['P','Pitchers'],['H','Hitters'],['C','C'],['IF','IF'],['OF','OF']].map(([v,l])=>`<button type="button" data-m="sposf" data-v="${v}" class="${(f.sposf||'')===v?'active':''}">${l}</button>`).join('')}</div>
-        <div class="pay-seg pay-posf" style="margin-top:6px">${SPEC_BTNS.map(([v,l])=>`<button type="button" data-m="sposf" data-v="${v}" class="${(f.sposf||'')===v?'active':''}">${l}</button>`).join('')}</div></div>
+      <div class="pay-filters"><input class="pay-in" id="mSendQ" placeholder="Search your players…" autocomplete="off"></div>
+      <div class="pay-seg pay-posf pay-posrow">${segBtns(POS_ROW_T,'sposf',f.sposf||'')}</div>
+      <div class="pay-seg pay-posf pay-posrow">${handRow('shandf', f.sposf||'', f.shandf||'')}</div>
       <div class="pay-browse" id="mSendSugg"></div>
       <div class="pay-pills">${pills || '<span class="pay-hint">Nobody yet — leave empty if you’re only taking on a player.</span>'}</div>${sentAavNote()}
       <button class="pay-eat-link" data-m="sendmanual">Add someone not in the list (prospect, minor leaguer…)</button>${ret}</div>`;
   const getSec = `<div class="pay-sec"><div class="pay-sec-h">${f.getFirst?'You get':'You get back'} <span>(optional)</span></div>
-      <div class="pay-filters"><select class="pay-in" id="mTeam"><option value="">All teams</option>${teamOpts(f.team)}</select>
-        <div class="pay-seg pay-posf">${[['','All'],['P','Pitchers'],['H','Hitters'],['C','C'],['IF','IF'],['OF','OF']].map(([v,l])=>`<button type="button" data-m="posf" data-v="${v}" class="${(f.posf||'')===v?'active':''}">${l}</button>`).join('')}</div>
-        <div class="pay-seg pay-posf" style="margin-top:6px">${SPEC_BTNS.map(([v,l])=>`<button type="button" data-m="posf" data-v="${v}" class="${(f.posf||'')===v?'active':''}">${l}</button>`).join('')}</div></div>
+      <div class="pay-filters"><select class="pay-in" id="mTeam"><option value="">All teams</option>${teamOpts(f.team)}</select></div>
+      <div class="pay-seg pay-posf pay-posrow" id="mPosRow">${segBtns(POS_ROW_T,'posf',f.posf||'')}</div>
+      <div class="pay-seg pay-posf pay-posrow" id="mHandRow">${handRow('handf', f.posf||'', f.handf||'')}</div>
       <input class="pay-in" id="mName" placeholder="Search by name (filters apply)…" autocomplete="off" value="${esc(f.q||'')}">
       <div class="pay-browse" id="mBrowse"></div>
       <div id="mGetRows">${f.get.map(getRowHTML).join('')}</div>
@@ -4549,7 +4557,7 @@ function updateSendSugg(){
   const box = document.getElementById('mSendSugg'), inp = document.getElementById('mSendQ'); if(!box||!inp||!M) return;
   const list = ownEligible(true); const sel = new Set(M.f.send), pf = M.f.sposf||'';
   const toks = norm(inp.value).split(' ').filter(Boolean);
-  const idxs = list.map((_,i)=>i).filter(i=>{ const it = list[i]; if(toks.length){ const n = norm(it.name); if(!toks.every(t=>n.includes(t))) return false; } if(!pf) return true;
+  const idxs = list.map((_,i)=>i).filter(i=>{ const it = list[i]; if(toks.length){ const n = norm(it.name); if(!toks.every(t=>n.includes(t))) return false; } if(M.f.shandf && !tradeHandOk(it.name, it.pos, it.type, M.f.shandf)) return false; if(!pf) return true;
     if(SPEC_POS.includes(pf)){ const pi = posOf({n:it.name}); const tk = []; if(pi){ if(pi.type==='Pitcher') return false; tk.push(pi.abbr); } String(it.pos||'').split('/').forEach(x=>tk.push(x.trim().toUpperCase())); histOf(it.name).forEach(x=>tk.push(x)); return posHas(tk, pf); }
     let g = posGroup({n:it.name});
     if(!g){ const a = String(it.pos||'').toUpperCase(); g = (it.type==='P'||a==='SP'||a==='RP'||a==='P') ? 'P' : a==='C' ? 'C' : ['1B','2B','3B','SS','IF'].includes(a) ? 'IF' : ['LF','CF','RF','OF'].includes(a) ? 'OF' : 'H'; }
@@ -4634,7 +4642,11 @@ function onModalClick(e){
   const m = b.dataset.m, v = b.dataset.v;
   if(m==='close'){ closeModal(); return; }
   if(m==='getpick'){ M.token = (M.token||0)+1; addIncoming(+b.dataset.i, M.token); return; }
-  if(m==='posf'){ M.f.posf = v; document.querySelectorAll('.pay-posf button').forEach(x=>x.classList.toggle('active', x.dataset.v===v)); updateBrowse(); return; }
+  if(m==='posf'){ M.f.posf = v; document.querySelectorAll('#mPosRow button').forEach(x=>x.classList.toggle('active', x.dataset.v===v));
+    if(M.f.handf && !faHandOpts(v).some(o=>o[0]===M.f.handf)) M.f.handf = '';
+    const hr = document.getElementById('mHandRow'); if(hr) hr.innerHTML = handRow('handf', v, M.f.handf||''); updateBrowse(); return; }
+  if(m==='handf'){ M.f.handf = v; document.querySelectorAll('#mHandRow button').forEach(x=>x.classList.toggle('active', x.dataset.v===v)); updateBrowse(); return; }
+  if(m==='shandf'){ M.f.shandf = v; const q = (document.getElementById('mSendQ')||{}).value||''; paint(); setVal('mSendQ', q); updateSendSugg(); return; }
   if(m==='pick'){ pickRow(b.dataset.s, +b.dataset.i); return; }
   if(m==='qo'){ readFields(); if(qoBlockOf(M.f.name)) return; Object.assign(M.f,{mode:'aav', aav:String(S.rules.qo), years:'1', qo:true}); paint(); return; }
   if(m==='mode'){ readFields(); M.f.mode = v; paint(); return; }
@@ -4701,7 +4713,7 @@ function onModalClick(e){
   if(m==='savePkg'){ savePackage(); return; }
   if(m==='sendmanual'){ const q=(document.getElementById('mSendQ')||{}).value||''; const nm=q.trim(); if(!nm){ const el=document.getElementById('mSendQ'); if(el){ el.focus(); el.placeholder='Type the player’s name first, then click this link'; } return; } const id='x:'+norm(nm); M.f.meta=M.f.meta||{}; M.f.meta[id]={name:nm,pos:'',org:true}; if(!M.f.send.includes(id)) M.f.send.push(id); paint(); return; }
   if(m==='send'){ const id = b.dataset.id; if(M.f.send.includes(id)) M.f.send = M.f.send.filter(x=>x!==id); else M.f.send.push(id); const q = (document.getElementById('mSendQ')||{}).value||''; paint(); setVal('mSendQ', q); updateSendSugg(); return; }
-  if(m==='sposf'){ M.f.sposf = v; const q = (document.getElementById('mSendQ')||{}).value||''; paint(); setVal('mSendQ', q); updateSendSugg(); return; }
+  if(m==='sposf'){ M.f.sposf = v; if(M.f.shandf && !faHandOpts(v).some(o=>o[0]===M.f.shandf)) M.f.shandf = ''; const q = (document.getElementById('mSendQ')||{}).value||''; paint(); setVal('mSendQ', q); updateSendSugg(); return; }
   if(m==='unsend'){ M.f.send = M.f.send.filter(x=>x!==b.dataset.id); paint(); return; }
   if(m==='getdel'){ M.f.get = M.f.get.filter(g=>g.key!==b.dataset.k); paint(); return; }
   if(m==='geatopen'){ const g = M.f.get.find(x=>x.key===b.dataset.k); if(g){ g.eatOpen = true; paint(); } return; }
