@@ -2032,7 +2032,9 @@ function render(){
   // 60-day IL players are still returned by that roster feed but, under MLB's
   // rules, don't take up a 40-man spot while they're on it — so they're left
   // out of the count (Boston reads 47 in the raw feed but really has 40).
-  const fortyManCount = players.filter(p=>p.pid && p.ilLabel !== '60-Day IL').length;
+  let fortyManCount = players.filter(p=>p.pid && p.ilLabel !== '60-Day IL').length;
+  // the Offseason Simulator's depth chart is a copy of the board: use the simulator's own count (signings and trade pickups included) so both agree
+  if(window.__planActive && typeof window.__planForty==='function'){ const v = window.__planForty(); if(v!=null) fortyManCount = v; }
   const fortyManEl = document.getElementById('fortyManTotal');
   if(fortyManEl){
     fortyManEl.textContent = `${fortyManCount}/40`;
@@ -3155,7 +3157,7 @@ function useTeam(tid){
     PLAN_OPTIONS = teamOptions(tid);
     DEFAULT_RULES.priorConsecutive = X.prior;
   }
-  SEED = resolveSeed(); POOL = {}; FARM = []; FARMSTATE = 0; R5 = {state:0, cands:[], tid:0};
+  SEED = resolveSeed(); POOL = {}; FARM = []; FARMSTATE = 0;
 }
 
 /* ---------- seed resolution ---------- */
@@ -3472,7 +3474,6 @@ function renderAll(){
     ${logCard(calc)}
     <div class="pay-two">${breakdownCard(yr)}${outlookCard(calc)}</div>
     ${tablesHTML(calc, rmap)}
-    ${r5Card()}
     ${assumptionsHTML()}
     <div class="pay-plan-head"><h2>Depth chart &amp; lineups</h2><p>Your 2027 roster as you’ve built it — traded, released, non-tendered and unsigned free agents are gone; signings and trade pickups are in the pool. Drag players around exactly like the Roster Builder. This is its own copy: nothing here changes your Roster Builder board. <button class="pay-btn tiny${UI.armed==='plan'?' armed':''}" data-act="planReset">${UI.armed==='plan'?'Click again to confirm':'Reset to my Roster Builder board'}</button></p><div class="pay-key"><b>*</b> = still has a minor-league option, so he can start 2027 in the minors. No asterisk means out of options, can’t be optioned, or no data (FanGraphs, through 2026). Not included in the downloaded image.</div></div><div id="planSlot"></div>
     <div class="pay-foot">Contract data: <a href="https://www.fangraphs.com/roster-resource/payroll/${teamObj().slug}" target="_blank" rel="noopener">FanGraphs RosterResource</a> (export dated ${SOURCE_DATE}). Tax bands/rates checked against <a href="https://www.spotrac.com/mlb/tax" target="_blank" rel="noopener">Spotrac&rsquo;s</a> 2026 table. Free-agent names: <a href="https://www.mlbtraderumors.com/2026-27-mlb-free-agents" target="_blank" rel="noopener">MLB Trade Rumors</a>. 2027 arbitration figures are <a href="https://www.mlbtraderumors.com/2026/10/projected-arbitration-salaries-for-2027.html" target="_blank" rel="noopener">MLB Trade Rumors&rsquo; projections</a> (Matt Swartz&rsquo;s model, Oct 2, 2026); later arbitration years are my own estimates, and CBT payroll counts average annual value plus benefits, not cash paid. Deferred money counts at present value, so enter the CBT AAV directly for heavily deferred deals.</div>
@@ -3510,6 +3511,7 @@ function fortyMan(calc){
   S.added.forEach(a=>{ if(!a.mil && !byName.has(norm(a.name))) n++; });
   return n;
 }
+window.__planForty = function(){ try{ return fortyMan(calcAll()); }catch(e){ return null; } };
 function hero(yr, calc){
   const R = S.rules, T = yr.T, P = yr.total, W = R.bandWidth; const fm = fortyMan(calc);
   const tgt = S.target.on ? S.target.value : null;
@@ -4324,44 +4326,6 @@ function dfaHTML(){
     ${opt('released','Released','You eat the remaining money — it still counts toward the tax.')}`,
     `<button class="pay-btn" data-m="close">Cancel</button>`);
 }
-// Rule 5: minors who look draft-eligible (by draft year and age) and are not on the 40-man yet
-let R5 = {state:0, cands:[], tid:0};
-function loadR5(){
-  if(R5.state===1) return; R5 = {state:1, cands:[], tid:TEAM_ID}; renderAll(); ensureFarm();
-  const t0 = Date.now();
-  const tick = ()=>{
-    if(R5.tid!==TEAM_ID) return;
-    if(FARMSTATE<2 && Date.now()-t0<30000) return void setTimeout(tick, 300);
-    if(FARMSTATE!==2){ R5.state = 3; renderAll(); return; }
-    const ids = FARM.map(p=>p.id), chunks = [];
-    for(let i=0;i<ids.length;i+=100) chunks.push(ids.slice(i,i+100));
-    Promise.all(chunks.map(c=>fetch(`https://statsapi.mlb.com/api/v1/people?personIds=${c.join(',')}&fields=people,id,birthDate,draftYear`).then(r=>r.json()).then(j=>j.people||[]))).then(rs=>{
-      const m = {}; rs.flat().forEach(x=>{ m[x.id] = x; });
-      R5.cands = FARM.map(p=>{ const x = m[p.id]; if(!x || !x.draftYear || !x.birthDate) return null;
-        const by = +x.birthDate.slice(0,4), late = x.birthDate.slice(5) > '08-01';
-        const ageAtDraft = x.draftYear - by - (late?1:0);
-        const elig = ageAtDraft<=18 ? x.draftYear<=2022 : x.draftYear<=2023;
-        return elig ? {...p, draftYear:x.draftYear, ageAtDraft} : null; }).filter(Boolean);
-      const rank = {AAA:0,AA:1,'High-A':2,A:3};
-      R5.cands.sort((a,b)=>(rank[a.lvl]??9)-(rank[b.lvl]??9) || (a.age||99)-(b.age||99));
-      R5.state = 2; renderAll();
-    }).catch(()=>{ R5.state = 3; renderAll(); });
-  };
-  tick();
-}
-function r5Card(){
-  const h = `<div class="pay-card-h"><h3>Rule 5 protection</h3><span class="sub">prospects a club could draft in December if they aren't on the 40-man</span></div>`;
-  let body;
-  if(R5.state===0 || R5.tid!==TEAM_ID) body = `<div class="pay-empty" style="text-align:left">Find ${esc(teamNick())} prospects who look Rule 5-eligible and aren't on the 40-man yet. <button class="pay-btn tiny" data-act="r5load">Find candidates</button></div>`;
-  else if(R5.state===1) body = `<div class="pay-empty" style="text-align:left">Loading the minor-league rosters…</div>`;
-  else if(R5.state===3) body = `<div class="pay-empty" style="text-align:left">Couldn’t load the minor-league rosters. <button class="pay-btn tiny" data-act="r5load">Try again</button></div>`;
-  else {
-    const on40 = farmOn40(), rows = R5.cands.map((p,i)=>[p,i]).filter(([p])=>!on40.has(norm(p.name)));
-    body = (rows.length ? `<ul class="pay-r5">${rows.map(([p,i])=>`<li><span class="r5n"><b>${esc(p.name)}</b> <em>${esc(p.pos)} · ${esc(p.lvl)}${p.age?' · age '+p.age:''} · drafted ${p.draftYear}</em></span><button class="pay-btn tiny" data-act="r5add" data-i="${i}">Add to 40-man</button></li>`).join('')}</ul>` : `<div class="pay-empty" style="text-align:left">No eligible, unprotected prospects found.</div>`)
-      + `<div class="pay-hint" style="padding:8px 14px">An estimate from draft year and age at signing — international signees aren’t included. Anyone you leave off can be taken in the Rule 5 draft.</div>`;
-  }
-  return `<div class="pay-card">${h}${body}</div>`;
-}
 function openPromo(opts={}){
   const base = {name:(!opts.editing && opts.pick) ? '' : (opts.name||''), aav:String(S.rules.minSalary), years:'1', start:String(S.season), roster:true, lvlf:'', posf:''};
   M = {type:'promo', f:{...base, ...(opts.f||{})}, editing:opts.editing||null, pick:opts.pick||null, multi:(!opts.editing && opts.pick) ? [opts.pick] : [], html:promoHTML};
@@ -4785,8 +4749,6 @@ function onClick(e){
     case 'sharedKeep': UI.shared = null; renderAll(); break;
     case 'sharedRestore': try{ localStorage.setItem(STORE_KEY(TEAM_ID), localStorage.getItem(STORE_KEY(TEAM_ID)+'_prev')); }catch(e){} loadState(); S.added.forEach(a=>rosterAdd(a)); UI.shared = null; renderAll(); break;
     case 'dfa': { const it = calcAll().items.find(x=>x.id===id); if(it){ M = {type:'dfa', id, name:it.name, cat:it.cat, html:dfaHTML}; paint(); } break; }
-    case 'r5load': loadR5(); break;
-    case 'r5add': { const p = R5.cands[+b.dataset.i]; if(p) openPromo({name:p.name, pick:p}); break; }
     case 'release': S.status[id] = {mode:'released', at:Date.now()}; saveState(); renderAll(); break;
     case 'undoStatus': delete S.status[id]; saveState(); renderAll(); break;
     case 'resetRow': delete S.overrides[id]; delete S.status[id]; delete S.options[id]; saveState(); renderAll(); break;
