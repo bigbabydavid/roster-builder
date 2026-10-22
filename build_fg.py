@@ -15,6 +15,16 @@ for t,(tid,slug) in TEAMS.items():
     o=[x for x in d['dataOverall'] if x['Season']==2026]
     if o and o[0].get('estLuxuryTaxPayroll'): last[t.replace('_',' ')]=round(o[0]['estLuxuryTaxPayroll']/1e6,2)
 sim=json.load(open(TMP+'/team_sim.json'))
+# Spotrac-verified corrections where FanGraphs' trade-cash treatment differs (Arenado: ARI pays $5M/$6M, COL still carries $5M in 2027)
+def adjust(sim):
+    for tid,t in sim.items():
+        if t.get('nick')=='Diamondbacks':
+            for g in t['g']:
+                if g['n']=='Nolan Arenado' and g['b'].get('2027')==21.0:
+                    g['b']['2027']=15.0; t['adj']={'note':'Arenado at $6M (his $15M salary less the Cardinals’ $9M cash), per Spotrac','d':{'2027':-6.0}}
+        if t.get('nick')=='Rockies' and not any('Arenado' in o['n'] for o in t['oth']):
+            t['oth'].append({'n':'Nolan Arenado retained salary (per Spotrac)','b':{'2027':5.0}}); t['adj']={'note':'includes $5M still owed on Arenado, per Spotrac','d':{'2027':5.0}}
+adjust(sim)
 assert len(sim)==29 and len(league)>600 and len(last)==30, (len(sim),len(league),len(last))
 # 40-man players FanGraphs doesn't list + team corrections from the live 40-man rosters (keeps the last good copy if MLB's API is down)
 extra=None
