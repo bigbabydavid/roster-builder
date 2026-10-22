@@ -44,6 +44,20 @@ def poshist(ids,min_games=10):
                     a=(sp.get('position') or {}).get('abbreviation'); n=sp['stat'].get('games') or 0
                     if a and a not in ('P','TWP') and n>=min_games: g[a]=g.get(a,0)+n
             if g: out[' '.join(w for w in norm(p['fullName']).split() if w not in ('jr','sr','ii','iii'))]=[a for a,_ in sorted(g.items(),key=lambda x:-x[1])]
+    # pitchers: starter or reliever, from this season's (else career) games started vs. games pitched
+    for i in range(0,len(items),50):
+        chunk=items[i:i+50]
+        d=get('https://statsapi.mlb.com/api/v1/people?personIds='+','.join(str(v) for _,v in chunk)+'&hydrate=stats(group=%5Bpitching%5D,type=%5Bseason,career%5D,season=2026)')
+        for p in d.get('people',[]):
+            by={}
+            for st in p.get('stats',[]):
+                t=(st.get('type') or {}).get('displayName')
+                for sp in st.get('splits',[]):
+                    if t in ('season','career') and t not in by: by[t]=sp['stat']
+            st=by.get('season') if (by.get('season') or {}).get('gamesPitched',0) else by.get('career')
+            if not st or (st.get('gamesPitched') or 0)<5: continue
+            k=' '.join(w for w in norm(p['fullName']).split() if w not in ('jr','sr','ii','iii'))
+            out.setdefault(k,[]).append('SP' if (st.get('gamesStarted') or 0)*2>=(st.get('gamesPitched') or 1) else 'RP')
     return out
 
 def lookup_ids(names,ids):
