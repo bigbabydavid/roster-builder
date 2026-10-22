@@ -21,12 +21,41 @@ def build(teams,index_html,league,sim):
         i=src.index('const '+key+' = ')+len('const '+key+' = '); j=src.index('\n',i)
         arr=json.loads(src[i:j].rstrip(';'))
         for x in arr: known.add(norm(x[0] if isinstance(x,list) else x['n']))
-    extra=[]; live={}
+    extra=[]; live={}; ids={}
     for nick,tid in teams.items():
         r=get(f'https://statsapi.mlb.com/api/v1/teams/{tid}/roster?rosterType=40Man&hydrate=person')['roster']
         if len(r)<35: raise RuntimeError('short roster '+nick)
         for x in r:
-            p=x['person']; k=norm(p['fullName']); live.setdefault(k,nick)
+            p=x['person']; k=norm(p['fullName']); live.setdefault(k,nick); ids[k]=p['id']
             if k not in known:
                 extra.append([p['fullName'],nick,p.get('currentAge'),x['position']['abbreviation'],x['status']['code'],p['id']])
-    return sorted(extra,key=lambda r:(r[1],r[0])),live
+    return sorted(extra,key=lambda r:(r[1],r[0])),live,ids
+
+def poshist(ids,min_games=10):
+    """Positions each player has actually played in MLB (career fielding games >= min_games, pitchers/DH aside from DH itself)."""
+    out={}; items=list(ids.items())
+    for i in range(0,len(items),50):
+        chunk=items[i:i+50]
+        d=get('https://statsapi.mlb.com/api/v1/people?personIds='+','.join(str(v) for _,v in chunk)+'&hydrate=stats(group=%5Bfielding%5D,type=%5Bcareer%5D)')
+        for p in d.get('people',[]):
+            g={}
+            for st in p.get('stats',[]):
+                for sp in st.get('splits',[]):
+                    a=(sp.get('position') or {}).get('abbreviation'); n=sp['stat'].get('games') or 0
+                    if a and a not in ('P','TWP') and n>=min_games: g[a]=g.get(a,0)+n
+            if g: out[' '.join(w for w in norm(p['fullName']).split() if w not in ('jr','sr','ii','iii'))]=[a for a,_ in sorted(g.items(),key=lambda x:-x[1])]
+    return out
+
+def lookup_ids(names,ids):
+    """MLB ids for players who are off the 40-man (released / outrighted free agents)."""
+    import urllib.parse
+    out={}
+    for n in names:
+        k=norm(n)
+        if k in ids: continue
+        try:
+            d=get('https://statsapi.mlb.com/api/v1/people/search?sportIds=1&names='+urllib.parse.quote(n))
+            for p in d.get('people',[]):
+                if norm(p['fullName'])==k: out[k]=p['id']; break
+        except Exception: pass
+    return out
