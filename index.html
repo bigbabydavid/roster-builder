@@ -3386,15 +3386,26 @@ function rosterAdd(a){
   saveRoster(); setTimeout(fillMissingBats, 0);
 }
 const BATS_TRIED = new Set();
+function knownBT(name){ // handedness we already hold: MLB's 40-man feed, then the free-agent tracker
+  const k = norm(name), h = HANDS[k]; if(h && h.b) return h.b+'/'+(h.t||'R');
+  const f = FA_TRACKER.find(x=>norm(x.n)===k); if(f && f.b) return f.b+'/'+(f.t||'R');
+  const e = (typeof FA_JAPAN_EXTRA!=='undefined') ? FA_JAPAN_EXTRA.find(x=>norm(x.n)===k) : null; if(e && e.b) return e.b+'/'+(e.t||'R');
+  return null;
+}
 function fillMissingBats(){ // players you add or acquire have no bats/throws yet — look them up so lineups know their handedness
   if(typeof players==='undefined' || currentTeamId!==TEAM_ID) return;
-  realP().filter(p=>p.custom && !p.bt && p.name && !BATS_TRIED.has(norm(p.name))).forEach(pl=>{
+  if(POSSTATE===0) ensurePositions();
+  const all = () => { const a = realP().slice(); if(REAL) players.forEach(p=>{ if(!a.includes(p)) a.push(p); }); return a; };
+  const apply = (k, bt) => { let ch = false; all().forEach(q=>{ if(q.custom && !q.bt && norm(q.name)===k){ q.bt = bt; ch = true; } }); return ch; };
+  let any = false;
+  all().filter(p=>p.custom && !p.bt && p.name).forEach(pl=>{ const k = norm(pl.name), kb = knownBT(pl.name); if(kb && apply(k, kb)) any = true; });
+  if(any){ saveRoster(); if(window.render) window.render(); }
+  all().filter(p=>p.custom && !p.bt && p.name && !BATS_TRIED.has(norm(p.name))).forEach(pl=>{
     const k = norm(pl.name); BATS_TRIED.add(k);
     fetch('https://statsapi.mlb.com/api/v1/people/search?names='+encodeURIComponent(pl.name)).then(r=>r.json()).then(j=>{
       const l = (j&&j.people)||[], x = l.find(y=>norm(y.fullName)===k && y.active) || l.find(y=>norm(y.fullName)===k); if(!x || !x.batSide) return;
-      const bt = (x.batSide.code||'')+'/'+((x.pitchHand&&x.pitchHand.code)||'R'); let ch = false;
-      realP().forEach(q=>{ if(q.custom && !q.bt && norm(q.name)===k){ q.bt = bt; ch = true; } });
-      if(ch){ saveRoster(); if(window.render) window.render(); }
+      const bt = (x.batSide.code||'')+'/'+((x.pitchHand&&x.pitchHand.code)||'R');
+      if(apply(k, bt)){ saveRoster(); if(window.render) window.render(); }
     }).catch(()=>{ BATS_TRIED.delete(k); });
   });
 }
@@ -3427,6 +3438,7 @@ function planSync(){
   players.forEach(p=>{ const rp = realById.get(p.id); if(!rp || !rp.pid) return;
     if(typeof p.hurtManual!=='boolean' && p.hurt!==rp.hurt){ p.hurt = rp.hurt; changed = true; }
     if(p.ilLabel!==rp.ilLabel){ p.ilLabel = rp.ilLabel; changed = true; } });
+  players.forEach(p=>{ if(!p.bt){ const rp = realById.get(p.id); const bt = (rp && rp.bt) || (p.custom ? knownBT(p.name) : null); if(bt){ p.bt = bt; changed = true; } } });
   const ids = new Set(players.map(p=>p.id));
   ['RHP','LHP'].forEach(k=>lineups[k].forEach(sl=>{ if(sl.playerId && !ids.has(sl.playerId)){ sl.playerId = null; sl.position = null; changed = true; } }));
   return changed;
@@ -3454,7 +3466,7 @@ async function planEnter(){
   players = players.map(p=>({...p})); lineups = blankLineups();
   await window.loadState();     // restores your saved depth-chart placements (separate storage key)
   planSync(); mountPlan();
-  window.render(); window.saveState();
+  window.render(); window.saveState(); setTimeout(fillMissingBats, 0);
 }
 function planExit(){
   if(!REAL) return;
