@@ -3001,6 +3001,8 @@ const QO_DECLINED = [];
 const qoDecl = name => QO_DECLINED.some(n=>norm(n)===norm(name));
 const QO_NOTE = 'Declined the qualifying offer — signing him costs draft-pick compensation (his old club gets a pick back)';
 const qoTag = name => qoDecl(name) ? `<span class="pay-tag qo" title="${esc(QO_NOTE)}">Declined QO · pick attached</span>` : '';
+// a qualifying offer can only go to your own club's pending free agents — never another team's player
+const ownPending = name => PENDING_FA.some(x=>norm(x.name)===norm(name));
 const qoBlockOf = name => { const p = PENDING_FA.find(x=>norm(x.name)===norm(name)); return p && p.qoBlock || ''; };
 // FanGraphs 2027 free-agent tracker (Oct 15, 2026). l = FanGraphs' free-agent likelihood: F free agent, P probably, T toss-up, n probably not, X not happening.
 const FA_TRACKER_DATE = 'Oct 15, 2026';
@@ -3269,13 +3271,29 @@ function rawCharge(it, y){
   }
   return baseFor(it, y);
 }
+// Money another club pays toward a player's contract shows up as a negative "owed from / cash from" line on the sheet (Arenado: -$9M from the Cardinals).
+// It belongs to the player: if he's traded away it leaves with him, so the club's relief is his salary minus that credit, not the full salary.
+const CREDIT_RE = /(owed from|cash from)/i;
+const lastNm = n => norm(n).split(' ').pop();
+const goneByTrade = it => { const st = S.status[it.id]; return !!(st && (st.mode==='traded' || st.mode==='claimed')); };
+function creditFor(it, y){ // what other clubs pay toward this player in year y (positive number)
+  if(it.cat==='other' || it.added) return 0; const ln = lastNm(it.name); let t = 0;
+  SEED.forEach(o=>{ if(o.cat==='other' && CREDIT_RE.test(o.name||'') && norm(o.name).includes(ln)){ const v = rawCharge(o, y); if(typeof v==='number' && v<0) t += -v; } });
+  return t;
+}
+const netRaw = (it, y) => Math.max(0, (rawCharge(it,y)||0) - creditFor(it,y)); // his salary less what another club pays toward it
+function creditOwner(it){ // the player a credit line belongs to, once he's gone by trade
+  if(it.cat!=='other' || it.added || !CREDIT_RE.test(it.name||'')) return null;
+  const nn = norm(it.name); return SEED.find(s=>s.cat!=='other' && goneByTrade(s) && nn.includes(lastNm(s.name))) || null;
+}
 function charge(it, y){
   let c = rawCharge(it, y);
   if(c==null) return 0;
   const st = S.status[it.id];
   if(st && (st.mode==='nontender' || st.mode==='claimed')) return 0;
   if(st && st.mode==='outright' && it.cat!=='guaranteed') return 0;
-  if(st && st.mode==='traded') c = (st.pay!=null) ? Math.min(c, st.pay) : c * (st.frac||0);
+  if(c<0 && creditOwner(it)) return 0;
+  if(st && st.mode==='traded'){ c = Math.max(0, c - creditFor(it, y)); c = (st.pay!=null) ? Math.min(c, st.pay) : c * (st.frac||0); }
   return c;
 }
 function isActive(it){ const st=S.status[it.id]; return !(st && (st.mode==='traded' || st.mode==='released' || st.mode==='nontender' || st.mode==='claimed' || st.mode==='outright')); }
@@ -3589,7 +3607,7 @@ function logEntries(calc){
       const sentKeys = Object.keys(S.status).filter(k=>S.status[k].tradeId===pkg);
       const sent = sentKeys.map(k=>byId[k]&&byId[k].name).filter(Boolean);
       const inc = grp.reduce((s,x)=>s+(byId[x.id]?(rawCharge(byId[x.id],y)||0):0),0);
-      const sentEff = sentKeys.reduce((s,k)=>s-(byId[k]?rawCharge(byId[k],y)-charge(byId[k],y):0),0);
+      const sentEff = sentKeys.reduce((s,k)=>s-(byId[k]?netRaw(byId[k],y)-charge(byId[k],y):0),0);
       const teams = [...new Set(grp.map(x=>x.from).filter(Boolean))];
       const stS = sentKeys.map(k=>S.status[k]), payTot = stS.reduce((t,x)=>t+(x.pay||0),0);
       const fracs = stS.filter(x=>x.pay==null && x.frac>0).map(x=>Math.round(x.frac*100)), multi = sentKeys.some(k=>byId[k] && YEARS.filter(yy=>(rawCharge(byId[k],yy)||0)>0).length>1);
@@ -3602,7 +3620,7 @@ function logEntries(calc){
     const st = S.status[k], it = byId[k]; if(!it || st.assumed || st.tradeId) return;
     if(st.mode==='traded'){
       const kept = st.pay!=null ? `still paying ${fmt(st.pay,2)}/yr` : st.frac ? `still paying ${Math.round(st.frac*100)}%` : 'no money retained';
-      L.push({kind:'remove', acts:[['tradeAway','Edit',{id:k}],['undoStatus','Undo',{id:k}]], at:st.at||0, eff:-(rawCharge(it,y)-charge(it,y)), text:`Traded away ${it.name}`, sub:kept});
+      L.push({kind:'remove', acts:[['tradeAway','Edit',{id:k}],['undoStatus','Undo',{id:k}]], at:st.at||0, eff:-(netRaw(it,y)-charge(it,y)), text:`Traded away ${it.name}`, sub:kept});
     } else if(st.mode==='claimed' || st.mode==='outright'){
       const cl = st.mode==='claimed', still = !cl && it.cat==='guaranteed';
       L.push({kind:'remove', acts:[['undoStatus','Undo',{id:k}]], at:st.at||0, eff: still?0:-(rawCharge(it,y)||0), text:`Designated ${it.name} for assignment`, sub: cl ? 'claimed on waivers — his salary comes off the books' : (still ? 'outrighted to the minors — his guaranteed salary still counts' : 'outrighted to the minors — off the 40-man')});
@@ -4018,7 +4036,7 @@ function faHTML(){
         <label class="pay-field">Minor-league salary ($M, optional)<input data-f="aav" id="mAav" value="${esc(f.aav)}" inputmode="decimal" placeholder="for reference"></label>
         <label class="pay-field">Season<select data-f="start" id="mStart">${yearOpts(+f.start,2027,2032)}</select></label><span></span></div>` : `
     <div class="pay-seg"><button data-m="mode" data-v="terms" class="${terms?'active':''}">Enter full terms</button><button data-m="mode" data-v="aav" class="${terms?'':'active'}">I know the AAV</button></div>
-    ${qoBlockOf(f.name) ? `<span class="pay-qo-off" title="Ineligible for the qualifying offer — ${esc(qoBlockOf(f.name))}"><button class="pay-eat-link" disabled style="text-decoration:none;font-weight:700">⚑ Make a qualifying offer</button></span>` : `<button class="pay-eat-link" data-m="qo" style="text-decoration:none;font-weight:700">⚑ Make a qualifying offer (1 yr, ${fmt(S.rules.qo,2)})</button>`}
+    ${!ownPending(f.name) ? '' : qoBlockOf(f.name) ? `<span class="pay-qo-off" title="Ineligible for the qualifying offer — ${esc(qoBlockOf(f.name))}"><button class="pay-eat-link" disabled style="text-decoration:none;font-weight:700">⚑ Make a qualifying offer</button></span>` : `<button class="pay-eat-link" data-m="qo" style="text-decoration:none;font-weight:700">⚑ Make a qualifying offer (1 yr, ${fmt(S.rules.qo,2)})</button>`}
     ${terms ? `<div class="pay-row3">
         <label class="pay-field">Years<input data-f="years" id="mYears" value="${esc(f.years)}" inputmode="numeric"></label>
         <label class="pay-field">Total value ($M)<input data-f="total" id="mTotal" value="${esc(f.total)}" inputmode="decimal" placeholder="e.g. 180"></label>
@@ -4460,7 +4478,7 @@ function sentAavNote(){
   if(!M || !M.f) return '';
   const byId = {}; ownItems().forEach(it=>{ byId[it.id]=it; });
   const rows = M.f.send.map(id=>{ const it = byId[id]; if(!it) return ''; const d = remDeal(ownDbRow(it.name)); if(!d) return '';
-    const mine = rawCharge(it, S.season)||0, diff = Math.abs(d.aav-mine)>0.005;
+    const mine = netRaw(it, S.season), diff = Math.abs(d.aav-mine)>0.005;
     return `<div>${esc(it.name)}: ${diff?'counts as ':''}<b>${fmt(d.aav,2)} AAV</b> to the new club (${remTxt(d)})${diff?` — vs ${fmt(mine,2)} on your books`:''}</div>`; }).filter(Boolean);
   return rows.length ? `<div class="pay-hint" style="margin-top:6px">${rows.join('')}<div style="margin-top:3px;opacity:.8">A traded player’s tax value resets to the guaranteed money still owed ÷ the guaranteed years left.</div></div>` : '';
 }
@@ -4535,7 +4553,7 @@ function updateSendSugg(){
 }
 function retainedFor(items){ // -> {id: {frac|pay}}
   const out = {}; const f = M.f; const v = f.retOpen ? (parseM(f.ret)||0) : 0;
-  const raw = {}; let sum = 0; items.forEach(it=>{ raw[it.id] = rawCharge(it, S.season)||0; sum += raw[it.id]; });
+  const raw = {}; let sum = 0; items.forEach(it=>{ raw[it.id] = netRaw(it, S.season); sum += raw[it.id]; });
   items.forEach(it=>{
     if(!v) out[it.id] = {frac:0};
     else if(f.retHow==='usd') out[it.id] = {frac:0, pay: Math.round(v*(sum? raw[it.id]/sum : 1/items.length)*100)/100};
@@ -4549,7 +4567,7 @@ function pkgNet(){
     const aav = parseM(g.aav)||0; const base = (g.sched && g.sched[y]!=null) ? g.sched[y] : aav; inc += Math.max(0, base-(parseM(g.eat)||0)); });
   const byId = {}; ownItems().forEach(it=>{ byId[it.id]=it; });
   const items = f.send.map(id=>byId[id]).filter(Boolean); const ret = retainedFor(items); let out = 0;
-  items.forEach(it=>{ const raw = rawCharge(it,y)||0; const r = ret[it.id]; const kept = r.pay!=null ? Math.min(raw, r.pay) : raw*(r.frac||0); out += raw-kept; });
+  items.forEach(it=>{ const raw = netRaw(it,y); const r = ret[it.id]; const kept = r.pay!=null ? Math.min(raw, r.pay) : raw*(r.frac||0); out += raw-kept; });
   return inc - out;
 }
 function savePackage(){
@@ -4614,7 +4632,7 @@ function onModalClick(e){
   if(m==='handf'){ M.f.handf = v; document.querySelectorAll('#mHandRow button').forEach(x=>x.classList.toggle('active', x.dataset.v===v)); updateBrowse(); return; }
   if(m==='shandf'){ M.f.shandf = v; const q = (document.getElementById('mSendQ')||{}).value||''; paint(); setVal('mSendQ', q); updateSendSugg(); return; }
   if(m==='pick'){ pickRow(b.dataset.s, +b.dataset.i); return; }
-  if(m==='qo'){ readFields(); if(qoBlockOf(M.f.name)) return; Object.assign(M.f,{mode:'aav', aav:String(S.rules.qo), years:'1', qo:true}); paint(); return; }
+  if(m==='qo'){ readFields(); if(qoBlockOf(M.f.name) || !ownPending(M.f.name)) return; Object.assign(M.f,{mode:'aav', aav:String(S.rules.qo), years:'1', qo:true}); paint(); return; }
   if(m==='mode'){ readFields(); M.f.mode = v; paint(); return; }
   if(m==='shareCopy'){ const txt = M.link; if(!txt) return; const done = ()=>{ b.textContent = 'Copied ✓'; setTimeout(()=>{ b.textContent = 'Copy link'; }, 1500); };
     if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, ()=>{ const i = document.getElementById('mShareLink'); if(i){ i.select(); } }); else { const i = document.getElementById('mShareLink'); if(i){ i.select(); try{ document.execCommand('copy'); done(); }catch(e){} } } return; }
@@ -4732,7 +4750,7 @@ function onClick(e){
       if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, ()=>{}); else { const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy'); done();}catch(e){} ta.remove(); } break; }
     case 'walk': S.walked = S.walked||{}; S.walked[b.dataset.name] = Date.now(); saveState(); renderAll(); break;
     case 'unwalk': if(S.walked) delete S.walked[b.dataset.name]; saveState(); renderAll(); break;
-    case 'qo': if(qoBlockOf(b.dataset.name)) break; openFA({name:b.dataset.name, f:{mode:'aav', aav:String(S.rules.qo), years:'1', qo:true}}); break;
+    case 'qo': if(qoBlockOf(b.dataset.name) || !ownPending(b.dataset.name)) break; openFA({name:b.dataset.name, f:{mode:'aav', aav:String(S.rules.qo), years:'1', qo:true}}); break;
     case 'editAdded': { const a = S.added.find(x=>x.id===id); if(!a) break;
       if(a.promo) openPromo({editing:a.id, name:a.name, f:{aav:String(a.aav), years:String(a.years), start:String(a.start)}, pick:{pos:a.pos, type:a.type, age:a.age, lvl:a.lvl}});
       else if(a.kind==='fa') openFA({editing:a.id, name:a.name, f:{mil:!!a.mil, mode:'aav', aav:a.mil&&!nomAav(a)?'':String(nomAav(a)), years:String(a.years), start:String(a.start), qo:!!a.qo, sbonus:a.struct&&a.struct.bonus?String(a.struct.bonus):'', sdef:a.struct&&a.struct.defer?String(a.struct.defer):'', sdefyrs:a.struct&&a.struct.deferYrs?String(a.struct.deferYrs):'', sout:a.out?String(a.out.after):'', sok:a.opt?a.opt.kind:'', ssal:a.opt?String(a.opt.salary):'', sobuy:a.opt&&a.opt.buyout?String(a.opt.buyout):''}});
