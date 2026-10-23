@@ -1215,7 +1215,7 @@
       <h1 id="brandTitle">26-Man Roster Builder<span class="sub" id="brandSub">New York Yankees — 40-man pool</span></h1>
     </div>
   </div>
-  <div class="view-tabs" id="viewTabs"><button type="button" class="view-tab active" data-view="roster">Roster Builder</button><button type="button" class="view-tab" data-view="payroll">Offseason Simulator<span class="tab-sub">Yankees</span></button></div>
+  <div class="view-tabs" id="viewTabs"><button type="button" class="view-tab active" data-view="payroll">Offseason Simulator<span class="tab-sub">Yankees</span></button><button type="button" class="view-tab" data-view="roster">Roster Builder</button></div>
   <div id="headerBlurb" style="font-size:12px; opacity:0.75; text-align:right; max-width:220px;">Drag players onto the roster above. Click any tile to label it Lock, Bubble, or Cut.</div>
 </header>
 
@@ -1230,7 +1230,7 @@
   </div>
   <div class="team-nav-league">
     <h4 class="team-nav-heading">Tools</h4>
-    <div class="team-nav-row"><button type="button" class="team-nav-item" id="navPayroll" data-view="payroll" title="Yankees offseason simulator">Offseason Simulator</button></div>
+    <div class="team-nav-row"><button type="button" class="team-nav-item" id="navPayroll" data-view="payroll" title="Yankees offseason simulator">Offseason Simulator</button><button type="button" class="team-nav-item" id="navRoster" data-view="roster" title="26-man roster builder">Roster Builder</button></div>
   </div>
 </nav>
 
@@ -1605,7 +1605,7 @@ const LAST_TEAM_KEY = 'mlb_roster_last_team';
 function updateUrlForTeam(teamId, {replace=false, sim=false}={}){
   if(typeof history === 'undefined' || !history.pushState) return;
   const team = teamById(teamId);
-  const path = '/' + team.slug + (sim ? '/offseason' : '');
+  const path = '/' + team.slug + (sim ? '' : '/roster'); // the Offseason Simulator is the main page; the roster tool lives at /<team>/roster
   if(location.pathname.replace(/\/+$/, '') === path) return;
   try{ // file:// pages (a downloaded copy) can't change the URL — just skip it
     if(replace) history.replaceState(null, '', path);
@@ -1639,9 +1639,9 @@ async function switchTeam(teamId, {updateUrl=true}={}){
 // pick that up and route it the same way a nav click or the dropdown would.
 window.addEventListener('popstate', ()=>{
   const parts = location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase().split('/');
-  const isSim = x => x==='payroll' || x==='offseason'; // /payroll is the original link
-  const simUrl = isSim(parts[0]) || isSim(parts[1]);
-  const team = isSim(parts[0]) ? teamById(DEFAULT_TEAM_ID) : (parts[0] ? teamBySlug(parts[0]) : null);
+  const isLegacy = x => x==='payroll' || x==='offseason'; // old simulator links
+  const simUrl = parts[0]!=='roster' && parts[1]!=='roster';
+  const team = (isLegacy(parts[0]) || parts[0]==='roster') ? teamById(DEFAULT_TEAM_ID) : (parts[0] ? teamBySlug(parts[0]) : null);
   if(simUrl){ openPayrollView({push:false, teamId: team ? team.id : currentTeamId}); return; }
   if(PayrollPlanner.isOpen()) PayrollPlanner.close();
   if(team) switchTeam(team.id);
@@ -4293,7 +4293,7 @@ function summaryCardHTML(){
     <div class="sc-h"><img class="sc-logo" src="${logoURL(TEAM_ID)}" alt=""><div><div class="sc-t">${esc(teamNick())} offseason plan</div><div class="sc-s">${y} payroll for the luxury tax</div></div></div>
     <div class="sc-stats">${stat(y+' CBT payroll', fmt(yr.total))}${stat(over>0?'over the tax line':'under the tax line', fmt(Math.abs(over)), over>0?'bad':'ok')}${stat('Estimated tax', fmt(yr.tax,1))}${stat('Payroll + tax', fmt(yr.totalCost))}</div>
     <div class="sc-m"><div class="sc-mh">${L.length?`${L.length} move${L.length===1?'':'s'}`:'No moves yet'}</div>${L.length?`<ul>${rows}${more}</ul>`:''}</div>
-    <div class="sc-f">mlbrostertool.com/${esc(teamObj().slug)}/offseason</div></div>`;
+    <div class="sc-f">mlbrostertool.com/${esc(teamObj().slug)}</div></div>`;
 }
 function shareHTML(){
   return shell('Share your plan', `<div class="pay-hint">Anyone who opens the link sees these exact moves as their own editable copy. It carries your payroll moves, not your depth chart.</div>
@@ -4305,7 +4305,7 @@ function shareHTML(){
 async function openShare(){
   M = {type:'share', link:'', html:shareHTML}; paint();
   const str = await packPlan(); if(!M || M.type!=='share') return;
-  M.link = `${/^https?:/.test(location.origin)?location.origin:'https://mlbrostertool.com'}/${teamObj().slug}/offseason#plan=${str}`;
+  M.link = `${/^https?:/.test(location.origin)?location.origin:'https://mlbrostertool.com'}/${teamObj().slug}#plan=${str}`;
   const el = document.getElementById('mShareLink'); if(el) el.value = M.link;
   const nt = document.getElementById('mShareNote'); if(nt && M.link.length>6000) nt.textContent = 'This is a long link — it works in a browser, but some apps may cut it off. The image is the safer thing to post.';
 }
@@ -4846,11 +4846,11 @@ return {applyFG, open, close, isOpen, useTeam, optBadge, optCycle, paintAlert, p
   // when the path doesn't name one, e.g. a plain visit to the root domain.
   const pathParts = location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase().split('/');
   const pathSlug = pathParts[0];
-  const isSimSeg = x => x==='payroll' || x==='offseason'; // /payroll is the original link
-  const simPath = isSimSeg(pathParts[0]) || isSimSeg(pathParts[1]); // /offseason (Yankees) or /<team>/offseason
+  const isSimSeg = x => x==='payroll' || x==='offseason' || x==='roster'; // /payroll and /offseason are old simulator links; /roster is the roster tool (Yankees)
+  const simPath = pathParts[0]!=='roster' && pathParts[1]!=='roster'; // the simulator is the default page: /, /<team>, /<team>/offseason
   const pathTeam = (pathSlug && !isSimSeg(pathSlug)) ? teamBySlug(pathSlug) : null;
   if(isSimSeg(pathSlug)){
-    // the original Offseason Simulator link — Yankees
+    // an old simulator link or /roster — Yankees
   } else if(pathTeam){
     if(pathTeam.id !== DEFAULT_TEAM_ID){
       currentTeamId = pathTeam.id;
@@ -4873,7 +4873,8 @@ return {applyFG, open, close, isOpen, useTeam, optBadge, optCycle, paintAlert, p
   }
   // Make sure the address bar actually reflects wherever we landed — most
   // visits start at the bare domain, which otherwise never gets a team slug.
-  updateUrlForTeam(currentTeamId, {replace:true, sim:simPath}); // also tidies old /payroll links to /offseason
+  updateUrlForTeam(currentTeamId, {replace:true, sim:simPath}); // also tidies old /payroll and /offseason links
+  document.querySelectorAll('#viewTabs [data-view]').forEach(b=>b.classList.toggle('active', (b.dataset.view==='payroll')===simPath));
 
   const teamSelect = document.getElementById('teamSelect');
   if(teamSelect){
