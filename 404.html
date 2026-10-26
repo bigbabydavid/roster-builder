@@ -691,6 +691,22 @@
 
   /* ---- "Fill this spot" button (mobile) ---- sits at the end of each
      roster lane; hidden on desktop, where drag-and-drop already does this. */
+  .role-chip{ position:static; width:auto; height:auto; display:inline-block; margin-top:3px; padding:1px 7px; border-radius:9px; font-size:10px; font-weight:700; line-height:1.5; border:1px dashed var(--line,#c6ccd3); color:var(--grey); background:transparent; cursor:pointer; }
+  .role-chip.set{ border-style:solid; border-color:var(--navy); background:var(--navy); color:#fff; }
+  body.plan-active #addPlayerBtn, body.plan-active #addPlayerForm{ display:none !important; }
+  .minors-sec{ margin:18px 0 0; border:1px solid var(--line,#d9dde3); border-radius:4px; background:#fff; }
+  .minors-sec > summary{ cursor:pointer; padding:12px 16px; font-family:var(--disp); font-size:20px; font-weight:700; color:var(--navy); list-style:none; } .minors-sec > summary::-webkit-details-marker{ display:none; }
+  .minors-sec > summary::before{ content:'▸'; display:inline-block; width:18px; transition:transform .15s; } .minors-sec[open] > summary::before{ transform:rotate(90deg); }
+  .minors-sec > summary span{ font-family:var(--body); font-size:13px; font-weight:500; color:var(--grey); margin-left:8px; }
+  .mn-body{ padding:0 16px 14px; } .mn-lv{ margin-top:10px; } .mn-lv h4{ margin:0 0 6px; font-size:14px; color:var(--navy); } .mn-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:4px 16px; }
+  .mn-p{ display:flex; align-items:baseline; gap:6px; padding:4px 0; border-top:1px solid #eef0f2; font-size:13.5px; } .mn-p b{ font-weight:600; } .mn-p span{ color:var(--grey); font-size:12px; margin-left:auto; white-space:nowrap; }
+  .pay-card-h, .pay-plan-head h2, body.plan-active .roster-section > h2.section-title, body.plan-active .pool-header-row h2{ cursor:pointer; user-select:none; }
+  .pay-card-h h3::before, .pay-plan-head h2::before, body.plan-active .roster-section > h2.section-title::before, body.plan-active .pool-header-row h2::before{ content:'▾'; display:inline-block; width:1.1em; font-size:.8em; color:var(--grey); }
+  .pay-card.collapsed .pay-card-h h3::before, .pay-plan-head.collapsed h2::before, .roster-section.collapsed > h2.section-title::before, .pool-section.collapsed .pool-header-row h2::before{ content:'▸'; }
+  .pay-card.collapsed > :not(.pay-card-h){ display:none !important; }
+  .roster-section.collapsed > :not(h2.section-title){ display:none !important; }
+  .pool-section.collapsed > :not(.pool-header-row){ display:none !important; }
+  .pay-plan-head.collapsed > :not(h2){ display:none !important; }
   .fill-spot-btn{ display:none; }
 
   /* ---- Move/Add picker popup ---- shared by "tap a tile to move it" and
@@ -867,6 +883,53 @@
     body.split .pool-col h3{ position:static; }
   }
 
+  /* ---- main navigation: menus in the header ---- */
+  header.topbar.mm-head{ display:flex; flex-wrap:wrap; align-items:center; gap:4px 28px; padding:0 22px; min-height:76px; border-bottom:4px solid #C8922E; }
+  header.topbar.mm-head .brand{ padding:10px 0; }
+  .mm-nav{ display:flex; flex-wrap:wrap; align-items:stretch; gap:4px; flex:1 1 auto; }
+  .mm-menu{ position:relative; display:flex; }
+  .mm-btn{ appearance:none; border:0; background:transparent; color:#fff; font:inherit; font-size:16px; font-weight:600; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:8px; height:72px; padding:0 14px; box-shadow:inset 0 -4px 0 transparent; }
+  .mm-btn:hover{ background:rgba(255,255,255,.07); }
+  .mm-btn[aria-expanded="true"]{ background:rgba(255,255,255,.1); box-shadow:inset 0 -4px 0 #C8922E; }
+  .mm-btn:focus-visible{ outline:2px solid #fff; outline-offset:-3px; }
+  .mm-abbr{ background:rgba(255,255,255,.16); border-radius:6px; padding:2px 8px; font-size:13px; font-weight:700; letter-spacing:.04em; }
+  .mm-pop{ display:none; position:absolute; top:100%; left:0; margin-top:4px; background:#fff; color:#0c2340; border-radius:14px; box-shadow:0 18px 48px rgba(12,35,64,.28); padding:10px; box-sizing:border-box; z-index:70; width:400px; max-width:92vw; flex-direction:column; gap:2px; }
+  .mm-pop.open{ display:flex; }
+  .mm-item{ appearance:none; border:0; background:transparent; font:inherit; text-align:left; cursor:pointer; display:flex; gap:14px; align-items:flex-start; padding:12px 14px; border-radius:10px; color:#0c2340; width:100%; }
+  .mm-item:hover,.mm-item:focus-visible{ background:#eef1f6; outline:none; }
+  .mm-item .mm-ico{ width:36px; height:36px; border-radius:9px; background:#eef1f6; flex:none; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; }
+  .mm-item:hover .mm-ico{ background:#fff; }
+  .mm-item b{ display:block; font-size:16px; } .mm-item span.d{ display:block; font-size:14px; color:#4f5a6c; line-height:1.35; font-weight:500; }
+  .mm-foot{ border-top:1px solid #e3e7ee; margin:6px 4px 0; padding:10px 10px 4px; } .mm-foot button{ appearance:none; border:0; background:none; font:inherit; font-size:14px; font-weight:700; color:#0c2340; cursor:pointer; padding:0; text-decoration:underline; text-underline-offset:3px; }
+  .mm-foot-roster{ display:none; } body:not(.view-payroll) .mm-foot-sim{ display:none; } body:not(.view-payroll) .mm-foot-roster{ display:block; }
+  body:not(.view-payroll) .mm-sim-only{ display:none !important; }
+  .mm-pop.mm-teams{ width:860px; padding:24px; display:none; grid-template-columns:repeat(2,minmax(0,1fr)); gap:28px; } .mm-pop.mm-teams.open{ display:grid; }
+  .mm-lg{ display:flex; flex-direction:column; gap:14px; min-width:0; } .mm-lg h3{ margin:0; font-size:17px; text-transform:uppercase; letter-spacing:.06em; border-bottom:2px solid #e3e7ee; padding-bottom:8px; }
+  .mm-divs{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; } .mm-div{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .mm-div h4{ margin:0; font-size:12px; color:#5a6578; text-transform:uppercase; letter-spacing:.08em; padding:0 8px 4px; }
+  .mm-team{ appearance:none; border:0; background:transparent; color:#0c2340; font:inherit; cursor:pointer; display:flex; align-items:center; gap:6px; width:100%; min-height:40px; padding:6px 8px; border-radius:8px; text-align:left; }
+  .mm-team:hover,.mm-team:focus-visible{ background:#eef1f6; outline:none; } .mm-team.cur{ background:var(--navy); color:#fff; }
+  .mm-team img{ width:20px; height:20px; object-fit:contain; flex:none; } .mm-team b{ font-size:14px; width:38px; flex:none; } .mm-team span{ font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+  .mm-right{ display:flex; align-items:center; gap:10px; padding:10px 0; margin-left:auto; }
+  .mm-ghost{ appearance:none; height:40px; padding:0 18px; border-radius:8px; border:1px solid rgba(255,255,255,.35); background:transparent; color:#fff; font:inherit; font-weight:700; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .mm-ghost:hover{ background:rgba(255,255,255,.1); } .mm-ghost.mm-icon{ width:44px; padding:0; } .mm-ghost.armed{ background:#b3261e; border-color:#b3261e; width:auto; padding:0 14px; }
+  .mm-scrim{ position:fixed; inset:0; background:rgba(12,35,64,.18); z-index:55; } .mm-scrim[hidden]{ display:none; }
+  #headerBlurb,#viewTabs{ display:none !important; }
+  @media (max-width: 980px){
+    header.topbar.mm-head{ padding:0 14px; gap:0 14px; }
+    .mm-btn{ height:52px; font-size:15px; padding:0 10px; }
+    .mm-menu{ position:static; }
+    .mm-pop,.mm-pop.mm-teams{ position:fixed; left:10px; right:10px; top:var(--header-h,120px); width:auto; max-width:none; max-height:calc(100vh - var(--header-h,120px) - 16px); overflow-y:auto; }
+    .mm-pop.mm-teams{ grid-template-columns:1fr; gap:18px; padding:16px; } .mm-divs{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  }
+  /* page heading + CBA note */
+  .pay-topline{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; }
+  .pay-crumb{ font-size:13.5px; color:#4f5a6c; font-weight:500; } .pay-h1{ margin:2px 0 0; font-family:var(--disp); font-size:38px; line-height:1.05; font-weight:700; }
+  .pay-seasons{ display:flex; flex-wrap:wrap; gap:4px; background:#fff; border:1px solid #dde2ea; border-radius:10px; padding:4px; }
+  .pay-seasons button{ appearance:none; border:0; background:transparent; font:inherit; font-size:15px; font-weight:600; color:#3d4859; height:38px; padding:0 15px; border-radius:7px; cursor:pointer; }
+  .pay-seasons button.on{ background:var(--navy); color:#fff; font-weight:700; }
+  .pay-cbabar{ display:flex; flex-wrap:wrap; align-items:center; gap:6px 12px; background:#fff6e3; border:1px solid #edd7a8; border-radius:10px; padding:9px 16px; font-size:14.5px; color:#4a3a12; }
+  .pay-cbabar button{ appearance:none; border:0; background:none; font:inherit; font-weight:700; color:#4a3a12; text-decoration:underline; text-underline-offset:3px; cursor:pointer; padding:0; }
   /* ================= Payroll Planner (view toggled by body.view-payroll) ================= */
   .view-tabs{ display:flex; gap:4px; background:rgba(255,255,255,0.14); padding:3px; border-radius:9px; flex-shrink:0; }
   .view-tab{
@@ -1043,6 +1106,7 @@
   .pay-linkrow .pay-btn{ flex:none; white-space:nowrap; }
   .pay-modal-h{ background:var(--navy); color:#fff; padding:12px 16px; font-weight:800; font-size:14px; display:flex; justify-content:space-between; align-items:center; }
   .pay-modal-h button{ background:none; border:none; color:#fff; font-size:18px; cursor:pointer; }
+  .pay-modal-b > *{ flex-shrink:0; } /* a long form scrolls; it must not squash its own rows */
   .pay-modal-b{ padding:14px 16px; display:flex; flex-direction:column; gap:12px; color:var(--navy); }
   .pay-modal-f{ padding:12px 16px; border-top:1px solid #e4e8ed; display:flex; justify-content:flex-end; gap:8px; background:#fafbfc; }
   .pay-row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
@@ -1051,6 +1115,33 @@
   .pay-seg button{ flex:1; appearance:none; border:none; background:#fff; font:inherit; font-size:12.5px; font-weight:700; padding:7px 8px; cursor:pointer; color:var(--grey); }
   .pay-seg button.active{ background:var(--navy); color:#fff; }
   .pay-posrow{ margin-top:8px; overflow-x:auto; max-width:100%; } .pay-posrow button{ flex:1 0 auto; padding:7px 10px; white-space:nowrap; }
+  #welcome{ position:fixed; inset:0; z-index:9999; background:#f4f6f9; overflow-y:auto; color:var(--navy,#0c2340); }
+  #welcome .wl{ max-width:980px; margin:0 auto; padding:44px 22px 60px; display:flex; flex-direction:column; gap:26px; }
+  #welcome h1{ font-family:var(--disp); font-size:clamp(38px,6vw,60px); line-height:1; margin:0; font-weight:700; }
+  #welcome .wl-lead{ font-size:19px; line-height:1.45; max-width:640px; margin:10px 0 0; color:#33445c; }
+  #welcome ul.wl-do{ list-style:none; padding:0; margin:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:14px; }
+  #welcome ul.wl-do li{ background:#fff; border:1px solid #d9dee5; border-radius:6px; padding:14px 16px; font-size:15px; line-height:1.45; } #welcome ul.wl-do b{ display:block; font-family:var(--disp); font-size:21px; margin-bottom:2px; }
+  #welcome .wl-cba{ background:#fff6e0; border:1px solid #f0dca0; border-radius:6px; padding:12px 16px; font-size:14.5px; line-height:1.5; color:#4a3205; }
+  #welcome h2{ font-family:var(--disp); font-size:28px; margin:0 0 4px; }
+  #welcome .wl-leagues{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:22px; }
+  #welcome .wl-lg h3{ font-size:13px; margin:0 0 8px; color:var(--grey,#667); letter-spacing:.04em; }
+  #welcome .wl-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(138px,1fr)); gap:8px; }
+  #welcome .wl-team{ appearance:none; font:inherit; display:flex; align-items:center; gap:9px; text-align:left; background:#fff; border:1px solid #cfd5dc; border-radius:7px; padding:8px 10px; cursor:pointer; font-size:13px; font-weight:700; color:inherit; }
+  #welcome .wl-team:hover,#welcome .wl-team:focus-visible{ border-color:var(--navy,#0c2340); box-shadow:0 0 0 2px rgba(12,35,64,.18); outline:none; }
+  #welcome .wl-team img{ width:26px; height:26px; object-fit:contain; flex-shrink:0; }
+  #welcome .wl-foot{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; font-size:13.5px; color:#53627a; }
+  #welcome .wl-cont{ appearance:none; font:inherit; font-weight:800; background:var(--navy,#0c2340); color:#fff; border:none; border-radius:7px; padding:10px 16px; cursor:pointer; }
+  #welcome .wl-link{ appearance:none; background:none; border:none; font:inherit; color:inherit; text-decoration:underline; cursor:pointer; padding:0; }
+  .fa-steps{ display:flex; gap:6px; } .fa-steps button{ flex:1; appearance:none; border:1px solid #cfd5dc; background:#fff; font:inherit; font-size:12.5px; font-weight:700; color:var(--grey); padding:7px 10px; border-radius:8px; cursor:pointer; text-align:left; }
+  .fa-steps button.on{ background:var(--navy); border-color:var(--navy); color:#fff; }
+  .fa-who{ display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:15px; } .fa-who button{ font-size:12px; }
+  .fa-warn{ border-radius:9px; padding:8px 11px; font-size:12.5px; line-height:1.45; } .fa-warn.red{ background:#fdecea; border:1px solid #f0b8b2; color:#8a1f14; } .fa-warn.amber{ background:#fff6e0; border:1px solid #f0dca0; color:#6b4a00; }
+  .fa-impact{ border:1px solid #d9dee5; border-radius:10px; padding:10px 12px; background:#fafbfc; display:flex; flex-direction:column; gap:8px; }
+  .fa-imp-h{ font-weight:800; font-size:13px; } .fa-imp-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px; }
+  .fa-imp-grid div{ display:flex; flex-direction:column; gap:1px; } .fa-imp-grid span{ font-size:11px; color:var(--grey); } .fa-imp-grid b{ font-family:Georgia,serif; font-size:15px; } .fa-imp-grid em{ font-style:normal; font-size:11.5px; color:var(--grey); }
+  .fa-imp-grid .bad{ color:#b3261e; } .fa-imp-grid .good{ color:#1b6e3a; }
+  .fa-imp-t{ width:100%; border-collapse:collapse; font-size:12px; } .fa-imp-t th,.fa-imp-t td{ text-align:right; padding:3px 6px; border-top:1px solid #e6e9ee; } .fa-imp-t th:first-child,.fa-imp-t td:first-child{ text-align:left; } .fa-imp-t th{ color:var(--grey); font-weight:700; border-top:none; }
+  .fa-sched{ display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:8px; } .fa-sched label{ font-size:11px; color:var(--grey); display:flex; flex-direction:column; gap:2px; } .fa-sched input{ font:inherit; font-size:13px; padding:6px 8px; border:1px solid #cfd5dc; border-radius:7px; width:100%; box-sizing:border-box; }
   .pay-calc{ background:#f3f5f8; border-radius:9px; padding:9px 12px; font-size:13px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
   .pay-calc b{ font-family:Georgia,serif; font-size:16px; }
   .pay-hint{ font-size:11.5px; color:var(--grey); line-height:1.45; }
@@ -1201,12 +1292,23 @@
   .sc-m ul{ list-style:none; margin:0; padding:0; } .sc-m li{ display:flex; justify-content:space-between; gap:16px; padding:7px 0; border-top:1px solid #eef0f2; font-size:14.5px; } .sc-m li b{ font-family:var(--disp); font-weight:600; font-size:17px; white-space:nowrap; }
   .sc-m li em{ display:block; font-style:normal; color:var(--grey); font-size:12.5px; } .sc-more{ color:var(--grey); }
   .sc-f{ padding:10px 22px 14px; font-size:12px; color:var(--grey); }
+  .pay-ro{ font-size:13.5px; padding:2px 0 6px; color:var(--navy); } .pay-ro b{ font-family:var(--disp); font-size:17px; }
+  .pay-lock{ font-size:12.5px; color:var(--grey); margin:-2px 0 6px; }
+  .pay-cf{ border:1px solid var(--line,#d9dde3); border-radius:4px; padding:10px 14px; margin-bottom:10px; } .pay-cf h4{ margin:0 0 6px; font-family:var(--disp); font-size:18px; }
+  .pay-cf ul{ list-style:none; margin:0; padding:0; } .pay-cf li{ display:flex; justify-content:space-between; gap:12px; padding:5px 0; border-top:1px solid #eef0f2; font-size:14px; } .pay-cf li:first-child{ border-top:none; } .pay-cf li span{ color:var(--grey); font-size:12.5px; text-align:right; }
+  .sc-tabs{ display:flex; gap:6px; margin:2px 0 10px; } .sc-tabs .pay-btn.on{ background:var(--navy); color:#fff; border-color:var(--navy); }
+  .sc-lu{ display:flex; border-bottom:1px solid #e3e6ea; } .sc-lu > div{ flex:1 1 0; padding:12px 18px 10px; } .sc-lu > div + div{ border-left:1px solid #e3e6ea; }
+  .sc-lu ol{ list-style:none; margin:0; padding:0; } .sc-lu li{ display:flex; gap:8px; align-items:baseline; padding:4px 0; border-top:1px solid #eef0f2; font-size:14px; white-space:nowrap; }
+  .sc-lu li i{ font-style:normal; color:var(--grey); width:14px; font-size:12px; } .sc-lu li u{ text-decoration:none; font-family:var(--disp); font-weight:700; width:26px; } .sc-lu li s{ text-decoration:none; color:var(--grey); font-size:12px; margin-left:auto; }
+  .sc-pit{ display:flex; } .sc-pit > div{ flex:1 1 0; padding:12px 18px 10px; } .sc-pit > div + div{ border-left:1px solid #e3e6ea; }
+  .sc-pit ul{ list-style:none; margin:0; padding:0; } .sc-pit li{ padding:4px 0; border-top:1px solid #eef0f2; font-size:14px; } .sc-pit li s{ text-decoration:none; color:var(--grey); font-size:12px; margin-left:6px; }
+  .sc-pit .sc-pen{ columns:2; column-gap:14px; } .sc-empty{ color:var(--grey); font-size:13.5px; padding:6px 0; }
 </style>
 </head>
 <body>
 <div id="appFrame">
 
-<header class="topbar">
+<header class="topbar mm-head">
   <div class="brand">
     <div class="interlock" id="brandLogo"><span class="interlock-fallback">NY</span>
       <img src="" alt="" onload="this.previousElementSibling.style.display='none';" onerror="this.remove();">
@@ -1215,24 +1317,15 @@
       <h1 id="brandTitle">26-Man Roster Builder<span class="sub" id="brandSub">New York Yankees — 40-man pool</span></h1>
     </div>
   </div>
-  <div class="view-tabs" id="viewTabs"><button type="button" class="view-tab active" data-view="payroll">Offseason Simulator<span class="tab-sub">Yankees</span></button><button type="button" class="view-tab" data-view="roster">Roster Builder</button></div>
-  <div id="headerBlurb" style="font-size:12px; opacity:0.75; text-align:right; max-width:220px;">Drag players onto the roster above. Click any tile to label it Lock, Bubble, or Cut.</div>
+  <nav class="mm-nav" id="mmNav" aria-label="Main"></nav>
+  <div class="mm-right">
+    <button type="button" class="mm-ghost mm-sim-only" id="mmShare">Share</button>
+    <button type="button" class="mm-ghost mm-icon mm-sim-only" id="mmReset" aria-label="Reset everything" title="Reset everything"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path></svg></button>
+  </div>
+  <div class="view-tabs" id="viewTabs" hidden><button type="button" class="view-tab active" data-view="payroll">Offseason Simulator<span class="tab-sub">Yankees</span></button><button type="button" class="view-tab" data-view="roster">Roster Builder</button></div>
+  <div id="headerBlurb" hidden></div>
 </header>
-
-<nav class="team-nav" id="teamNav">
-  <div class="team-nav-league">
-    <h4 class="team-nav-heading">American League</h4>
-    <div class="team-nav-row" id="teamNavAL"></div>
-  </div>
-  <div class="team-nav-league">
-    <h4 class="team-nav-heading">National League</h4>
-    <div class="team-nav-row" id="teamNavNL"></div>
-  </div>
-  <div class="team-nav-league">
-    <h4 class="team-nav-heading">Tools</h4>
-    <div class="team-nav-row"><button type="button" class="team-nav-item" id="navPayroll" data-view="payroll" title="Yankees offseason simulator">Offseason Simulator</button><button type="button" class="team-nav-item" id="navRoster" data-view="roster" title="26-man roster builder">Roster Builder</button></div>
-  </div>
-</nav>
+<div class="mm-scrim" id="mmScrim" hidden></div>
 
 <div class="toolbar">
   <div class="legend" id="legendRow">
@@ -1578,6 +1671,7 @@ function applyTeamBranding(teamId){
   const favicon = document.getElementById('favicon');
   if(favicon) favicon.href = logoURL(team.id);
   renderTeamNav(teamId);
+  if(typeof mmSync==='function') mmSync(teamId);
   const nick = team.name.replace(/^(Los Angeles|New York|San Diego|San Francisco|St\. Louis|Tampa Bay|Kansas City|Arizona|Atlanta|Baltimore|Boston|Chicago|Cincinnati|Cleveland|Colorado|Detroit|Houston|Miami|Milwaukee|Minnesota|Oakland|Philadelphia|Pittsburgh|Seattle|Texas|Toronto|Washington)\s+/,'');
   const ts = document.querySelector('#viewTabs .tab-sub'); if(ts) ts.textContent = nick;
   const np = document.getElementById('navPayroll'); if(np) np.title = nick + ' offseason simulator';
@@ -1641,6 +1735,7 @@ window.addEventListener('popstate', ()=>{
   const parts = location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase().split('/');
   const isLegacy = x => x==='payroll' || x==='offseason'; // old simulator links
   const simUrl = parts[0]!=='roster' && parts[1]!=='roster';
+  if(!parts[0]){ showWelcome(); return; } else hideWelcome();
   const team = (isLegacy(parts[0]) || parts[0]==='roster') ? teamById(DEFAULT_TEAM_ID) : (parts[0] ? teamBySlug(parts[0]) : null);
   if(simUrl){ openPayrollView({push:false, teamId: team ? team.id : currentTeamId}); return; }
   if(PayrollPlanner.isOpen()) PayrollPlanner.close();
@@ -1684,6 +1779,7 @@ function applySavedPlayerStateToExisting(){
         p.status = s.status || null;
         p.hurt = !!s.hurt;
         p.hurtManual = typeof s.hurtManual === 'boolean' ? s.hurtManual : null;
+        p.role = s.role || null;
         if(typeof s.order === 'number') p.order = s.order;
       }
     });
@@ -1727,13 +1823,13 @@ async function loadState(){
 
 async function saveState(){
   const map = {};
-  players.forEach(p=>{ map[p.id] = {group:p.group, placed:p.placed, status:p.status||null, hurt:!!p.hurt, hurtManual: typeof p.hurtManual === 'boolean' ? p.hurtManual : null, order:p.order}; });
+  players.forEach(p=>{ map[p.id] = {group:p.group, placed:p.placed, status:p.status||null, hurt:!!p.hurt, hurtManual: typeof p.hurtManual === 'boolean' ? p.hurtManual : null, role:p.role||null, order:p.order}; });
   // Custom (not-on-the-40-man) players carry no DEFAULTS/API record to be
   // recreated from later, so their full identity has to be saved too, not
   // just their placement.
   const customPlayers = players.filter(p=>p.custom).map(p=>({
     id:p.id, name:p.name, num:p.num, bt:p.bt, type:p.type, via:p.via||null, payId:p.payId||null,
-    group:p.group, placed:p.placed, status:p.status||null, hurt:!!p.hurt, hurtManual: typeof p.hurtManual === 'boolean' ? p.hurtManual : null, order:p.order
+    group:p.group, placed:p.placed, status:p.status||null, hurt:!!p.hurt, hurtManual: typeof p.hurtManual === 'boolean' ? p.hurtManual : null, role:p.role||null, order:p.order
   }));
   const payload = JSON.stringify({players:map, lineups, customPlayers});
   try{
@@ -1828,6 +1924,13 @@ function openFillSpotPopup(groupKey){
   openPicker(`Add to ${col.label}`, items, id=>moveToSpot(id, groupKey));
 }
 
+const RP_ROLES = {closer:{label:'Closer', abbr:'CL'}, setup:{label:'Setup', abbr:'SU'}, middle:{label:'Middle', abbr:'MR'}, long:{label:'Long man', abbr:'LR'}};
+const RP_ROLE_ORDER = [null,'closer','setup','middle','long'];
+function cycleRole(id){
+  const p = players.find(pl=>pl.id===id); if(!p) return;
+  p.role = RP_ROLE_ORDER[(RP_ROLE_ORDER.indexOf(p.role||null)+1) % RP_ROLE_ORDER.length];
+  saveState(); render();
+}
 function tileHTML(p){
   const visual = p.status ? `label-${p.status}` : '';
   const statusTitle = p.status === 'lock' ? 'Lock — click to set Bubble'
@@ -1850,10 +1953,12 @@ function tileHTML(p){
   const toPoolToggle = p.placed === 'roster'
     ? `<div class="mini-toggle to-pool" data-toggle="to-pool" data-id="${p.id}" title="Send back to the pool">⤓</div>`
     : '';
+  const roleChip = (p.placed==='roster' && p.group==='RP') ? `<div class="mini-toggle role-chip ${p.role?'set':''}" data-toggle="role" data-id="${p.id}" title="Bullpen role — click to change">${p.role?RP_ROLES[p.role].label:'+ role'}</div>` : '';
   return `<div class="tile ${visual}" data-id="${p.id}">
     <div class="info">
       <div class="name"><span class="name-text" title="${p.name}">${p.name}</span>${nameBadges}${orgBadge}</div>
       <div class="meta">${numPart}${p.bt}</div>
+      ${roleChip}
       ${window.__planActive && typeof PayrollPlanner!=='undefined' ? PayrollPlanner.optBadge(p) : ''}
       ${ilBadge}
     </div>
@@ -1950,6 +2055,7 @@ async function syncRosterFromAPI(){
           status: saved ? (saved.status || null) : null,
           hurt: hurtManual !== null ? hurtManual : hurt, // manual override beats the live API
           hurtManual,
+          role: saved ? (saved.role||null) : null,
           ilLabel,
           order: saved && typeof saved.order === 'number' ? saved.order : maxOrder
         });
@@ -2280,7 +2386,7 @@ function buildFullExport(){
     if(!list.length) return `<div class="fx-roster-empty">—</div>`;
     const isPitcherBox = key === 'SP' || key === 'RP';
     return list.map(p=>{
-      const tag = (isPitcherBox && throwsLeft(p)) ? ' (L)' : '';
+      const tag = ((isPitcherBox && throwsLeft(p)) ? ' (L)' : '') + ((key==='RP' && p.role && RP_ROLES[p.role]) ? ' – '+RP_ROLES[p.role].abbr : '');
       return `<div class="fx-roster-player">${p.name}${tag}</div>`;
     }).join('');
   };
@@ -2428,6 +2534,7 @@ function attachTileEvents(tile){
       const id = btn.dataset.id;
       if(btn.dataset.toggle === 'status') cycleStatus(id);
       else if(btn.dataset.toggle === 'hurt') toggleHurt(id);
+      else if(btn.dataset.toggle === 'role') cycleRole(id);
       else if(btn.dataset.toggle === 'to-pool') sendToPool(id);
       else if(btn.dataset.toggle === 'remove') removePlayer(id);
     });
@@ -3181,7 +3288,7 @@ let S = null; // saved per-team state
 function defaultState(){
   return {v:2, season:2027, target:{on:false, value:300}, rules:clone(DEFAULT_RULES),
           overrides:{}, options:{}, added:[], customOther:[], walked:{}, extraOrg:[],
-          status:{}, optManual:{}};
+          status:{}, optManual:{}, ext:{}};
 }
 function loadState(){
   S = defaultState();
@@ -3248,13 +3355,14 @@ function allItems(){
   (S.extraOrg||[]).forEach(e=>items.push({id:e.id, name:e.name, cat:'org', kind:'org', pos:e.pos||'', type:'', base:{}}));
   S.customOther.forEach(c=>items.push({id:c.id, name:c.name, cat:'other', kind:'custom', pos:'', type:'', base:{...c.base}, note:c.note||''}));
   S.added.forEach(a=>items.push({id:a.id, name:a.name, pos:a.pos||'', type:a.type, kind:a.kind, cat:a.kind==='fa'?'fa':'trade',
-    contract:a.mil ? `Minor-league deal · non-roster${nomAav(a)?' · '+fmt(nomAav(a),2)+' in the minors':''}` : a.promo ? `${a.lvl?'Promoted from '+a.lvl+' · ':''}${fmt(a.aav,2)} · ${a.years} yr from ${a.start}` : a.kind==='fa' ? `${a.years} yr, ${fmt(nomAav(a)*a.years)} · ${fmt(a.aav)} ${Math.abs(nomAav(a)-a.aav)>1e-9?'CBT ':''}AAV · from ${a.start}${structText(a)?' · '+structText(a):''}` : `via trade${a.from?' from '+a.from:''} · ${a.sched?`${a.start} ${fmt(a.sched[a.start]!=null?a.sched[a.start]:a.aav)}${a.through>a.start?` … ${a.through} ${fmt(a.sched[a.through]!=null?a.sched[a.through]:a.aav)}`:''}`:`${fmt(a.aav)} AAV through ${a.through}`}${a.eat?` · other team pays ${fmt(a.eat)}/yr`:''}`,
+    contract:a.mil ? `Minor-league deal · non-roster${nomAav(a)?' · '+fmt(nomAav(a),2)+' in the minors':''}` : a.promo ? `${a.lvl?'Promoted from '+a.lvl+' · ':''}${fmt(a.aav,2)} · ${a.years} yr from ${a.start}` : a.kind==='fa' ? `${a.years} yr, ${fmt(nomAav(a)*a.years)} · ${fmt(a.aav)} ${Math.abs(nomAav(a)-a.aav)>1e-9?'CBT ':''}AAV · from ${a.start}${structText(a)?' · '+structText(a):''}${a.shape?' · '+(a.shape==='front'?'front-loaded':a.shape==='back'?'back-loaded':'custom salary schedule'):''}` : `via trade${a.from?' from '+a.from:''} · ${a.sched?`${a.start} ${fmt(a.sched[a.start]!=null?a.sched[a.start]:a.aav)}${a.through>a.start?` … ${a.through} ${fmt(a.sched[a.through]!=null?a.sched[a.through]:a.aav)}`:''}`:`${fmt(a.aav)} AAV through ${a.through}`}${a.eat?` · other team pays ${fmt(a.eat)}/yr`:''}`,
     note:a.info||a.notes||'', added:a}));
   return items;
 }
 // Charge before trade/release status (what the player's own cells show).
 const optYear = (it, y) => it.option && (it.option.years ? it.option.years.includes(y) : y===it.option.year);
 function rawCharge(it, y){
+  const ex = S.ext && S.ext[it.id]; if(ex && y>=ex.start && y<=ex.through) return ex.aav; // the luxury tax counts the average every year; ex.sched is the cash-by-year structure
   if(it.added){
     const a = it.added;
     if(a.kind==='fa'){
@@ -3297,7 +3405,7 @@ function charge(it, y){
   return c;
 }
 function isActive(it){ const st=S.status[it.id]; return !(st && (st.mode==='traded' || st.mode==='released' || st.mode==='nontender' || st.mode==='claimed' || st.mode==='outright')); }
-function hasOverride(it){ return !!(S.overrides[it.id] && Object.keys(S.overrides[it.id]).length) || !!S.status[it.id] || (S.options[it.id] && S.options[it.id]!=='undecided'); }
+function hasOverride(it){ return !!(S.ext && S.ext[it.id]) ||  !!(S.overrides[it.id] && Object.keys(S.overrides[it.id]).length) || !!S.status[it.id] || (S.options[it.id] && S.options[it.id]!=='undecided'); }
 
 /* ---------- tax math ---------- */
 function taxFor(P, T, consec){
@@ -3475,9 +3583,31 @@ function planExit(){
 }
 function planSlot(){ return document.getElementById('planSlot'); }
 function unmountPlan(){ const frame = document.getElementById('appFrame'), sb = document.getElementById('statsBar'), bs = document.getElementById('boardSplit');
-  if(frame && sb && bs){ frame.appendChild(sb); frame.appendChild(bs); } }
+  if(frame && sb && bs){ frame.appendChild(sb); frame.appendChild(bs); }
+  document.body.classList.remove('plan-active');
+  const h = document.getElementById('addPlayerHint'); if(h && h.dataset.orig){ h.innerHTML = h.dataset.orig; delete h.dataset.orig; }
+  const m = document.getElementById('minorsSec'); if(m) m.remove(); }
+function minorsList(){
+  const nick = teamNick(), onRoster = new Set(players.map(p=>norm(p.name)));
+  const gone = new Set(S.added.map(a=>norm(a.name)));
+  return PROS_POOL.filter(x=>x.t===nick && !onRoster.has(norm(x.n)) && !gone.has(norm(x.n)) && !S.status['x:'+norm(x.n)]);
+}
+function minorsHTML(list){
+  const order = ['AAA','AA','A+','A','Rk','DSL','FCL'], lvl = x=>x.lv||'Other';
+  const lvls = [...new Set(list.map(lvl))].sort((a,b)=>{ const i = order.indexOf(a), j = order.indexOf(b); return (i<0?99:i)-(j<0?99:j) || a.localeCompare(b); });
+  const names = {AAA:'Triple-A', AA:'Double-A', 'A+':'High-A', A:'Single-A'};
+  return lvls.map(l=>{ const g = list.filter(x=>lvl(x)===l).sort((a,b)=>prosSort(b)-prosSort(a) || a.n.localeCompare(b.n));
+    return `<div class="mn-lv"><h4>${esc(names[l]||l)} · ${g.length}</h4><div class="mn-grid">${g.map(x=>`<div class="mn-p"><b>${esc(x.n)}</b>${prosBadge(x)}<span>${esc([x.pos||'', x.g?'age '+x.g:''].filter(Boolean).join(' · '))}</span></div>`).join('')}</div></div>`; }).join('');
+}
 function mountPlan(){ const slot = planSlot(), sb = document.getElementById('statsBar'), bs = document.getElementById('boardSplit');
-  if(slot && sb && bs && REAL){ slot.appendChild(sb); slot.appendChild(bs); } }
+  if(slot && sb && bs && REAL){ slot.appendChild(sb); slot.appendChild(bs);
+    document.body.classList.add('plan-active');
+    const h = document.getElementById('addPlayerHint'); if(h && !h.dataset.orig){ h.dataset.orig = h.innerHTML; h.textContent = 'To bring someone in, sign a free agent or make a trade from the Transactions menu — they’ll show up here.'; }
+    let m = document.getElementById('minorsSec'); const list = minorsList();
+    if(!m){ m = document.createElement('details'); m.id = 'minorsSec'; m.className = 'minors-sec'; m.innerHTML = '<summary></summary><div class="mn-body"></div>'; }
+    if(m.parentNode!==slot) slot.appendChild(m);
+    const sig = list.map(x=>x.n).join('|');
+    if(m.dataset.sig!==sig){ m.dataset.sig = sig; m.querySelector('summary').innerHTML = `Minor leaguers on file<span>${list.length} players in the ${esc(teamNick())} system, not on the 40-man</span>`; m.querySelector('.mn-body').innerHTML = list.length ? minorsHTML(list) : '<div class="pay-hint">No minor leaguers on file for this club.</div>'; } applyCollapsed(); } }
 function planTick(){ // called after every payroll render
   if(typeof currentTeamId==='undefined' || currentTeamId!==TEAM_ID) return;
   if(REAL){ mountPlan(); if(planSync()){ window.saveState(); window.render(); } return; }
@@ -3488,6 +3618,27 @@ function planTick(){ // called after every payroll render
 
 /* ---------- rendering ---------- */
 let UI = {assumeOpen:false, armed:null};
+const COLL_KEY = 'mlb_collapsed_v1';
+let COLL = {}; try{ COLL = JSON.parse(localStorage.getItem(COLL_KEY)||'{}')||{}; }catch(e){ COLL = {}; }
+function collTargets(){ // [heading element, collapsible container]
+  const out = [];
+  document.querySelectorAll('.pay-card').forEach(c=>{ const h = c.querySelector('.pay-card-h h3'); if(h) out.push([h, c, 'pay-card-h']); });
+  const ph = document.querySelector('.pay-plan-head'); if(ph){ const h = ph.querySelector('h2'); if(h) out.push([h, ph, null]); }
+  if(document.body.classList.contains('plan-active')){
+    document.querySelectorAll('.roster-section').forEach(c=>{ const h = c.querySelector(':scope > h2.section-title'); if(h) out.push([h, c, null]); });
+    document.querySelectorAll('.pool-section').forEach(c=>{ const h = c.querySelector('.pool-header-row h2'); if(h) out.push([h, c, null]); });
+  }
+  return out;
+}
+const collKey = h => h.textContent.replace(/\s+/g,' ').trim().replace(/^\d{4} /,'YR ');
+function applyCollapsed(){ collTargets().forEach(([h,c])=>{ c.classList.toggle('collapsed', !!COLL[collKey(h)]); }); }
+document.addEventListener('click', e=>{
+  const h = e.target.closest('.pay-card-h, .pay-plan-head > h2, .roster-section > h2.section-title, .pool-header-row h2'); if(!h || e.target.closest('button, a, input, select')) return;
+  const hit = collTargets().find(([hd,c])=>hd===h || hd.parentNode===h || hd.closest('.pay-card-h')===h); if(!hit) return;
+  const k = collKey(hit[0]); COLL[k] = !COLL[k]; if(!COLL[k]) delete COLL[k];
+  try{ localStorage.setItem(COLL_KEY, JSON.stringify(COLL)); }catch(err){}
+  applyCollapsed();
+});
 
 function renderAll(){
   const root = $('payrollView'); if(!root) return;
@@ -3497,7 +3648,6 @@ function renderAll(){
   const yr = calc.years[S.season];
   const rmap = rosterNameMap();
   root.innerHTML = `<div class="pay-wrap">
-    <div class="pay-banner"><b>The CBA expires this December.</b> Nothing is set for 2027 yet — the $${S.rules.threshold[2027]}M line and the tax rates below carry the 2026 rules forward as an assumption, and a new deal (or a salary cap) could change all of it. Everything is editable under <b>Assumptions & tax rules</b>.</div>
     ${sharedBanner()}
     ${topline()}
     ${hero(yr, calc)}
@@ -3510,23 +3660,16 @@ function renderAll(){
   </div>`;
   const det = root.querySelector('details.pay-assume');
   if(det){ det.open = UI.assumeOpen; det.addEventListener('toggle', ()=>{ UI.assumeOpen = det.open; }); }
-  planTick();
+  planTick(); applyCollapsed();
 }
 
 function topline(){
-  const chips = YEARS.map(y=>`<button class="pay-chip${y===S.season?' active':''}" data-act="season" data-y="${y}">${y}</button>`).join('');
-  const armed = k => UI.armed===k;
+  const tabs = YEARS.map(y=>`<button role="tab" aria-selected="${y===S.season}" class="${y===S.season?'on':''}" data-act="season" data-y="${y}">${y}</button>`).join('');
   return `<div class="pay-topline">
-    <div class="pay-season-chips"><span class="pay-lbl">Season</span>${chips}</div>
-    <div class="pay-actions">
-      <button class="pay-btn primary" data-act="addFA">+ Sign a free agent</button>
-      <button class="pay-btn primary" data-act="addTrade">+ Acquire via trade</button>
-      <button class="pay-btn primary" data-act="addPromo">+ Add to 40-man</button>
-      <button class="pay-btn" data-act="addOther">+ Other payment</button>
-      <button class="pay-btn" data-act="share">Share</button>
-      <button class="pay-btn danger tiny${armed('all')?' armed':''}" data-act="resetAll">${armed('all')?'Click again to confirm':'Reset everything'}</button>
-    </div>
-  </div>`;
+    <div><div class="pay-crumb">Payroll &amp; Contracts / Cap space &amp; CBT</div><h2 class="pay-h1">Payroll outlook</h2></div>
+    <div class="pay-seasons" role="tablist" aria-label="Season">${tabs}</div>
+  </div>
+  <div class="pay-cbabar"><strong>CBA expires in December.</strong><span>2027+ figures carry the 2026 rules forward as an assumption.</span><button type="button" data-act="openAssume">Edit assumptions</button><button type="button" data-about="1">About this tool</button></div>`;
 }
 
 function fortyMan(calc){
@@ -3604,6 +3747,8 @@ function hero(yr, calc){
 }
 
 /* ---------- transaction log (derived from the current moves, so undo/remove keeps it honest) ---------- */
+function rawNoExt(it, y){ const e = S.ext; S.ext = {}; try{ return rawCharge(it,y); } finally{ S.ext = e; } }
+function extDelta(it, y){ const ex = S.ext && S.ext[it.id]; if(!ex || y<ex.start || y>ex.through) return 0; return ex.aav - (rawNoExt(it,y)||0); }
 function logEntries(calc){
   const y = S.season, byId = {}; calc.items.forEach(it=>{ byId[it.id]=it; });
   const L = [];
@@ -3639,6 +3784,11 @@ function logEntries(calc){
     } else if(st.mode==='nontender'){
       L.push({kind:'remove', grp:'nt', who:it.name, acts:[['undoStatus','Undo',{id:k}]], at:st.at||0, eff:-(rawCharge(it,y)||0), text:`Non-tendered ${it.name}`, sub:'salary comes off the books'});
     } else L.push({kind:'remove', acts:[['undoStatus','Undo',{id:k}]], at:st.at||0, eff:0, text:`Released ${it.name}`, sub:'salary still counts against the tax'});
+  });
+  Object.keys(S.ext||{}).forEach(k=>{
+    const ex = S.ext[k], it = byId[k]; if(!it) return;
+    const yrs = ex.through-ex.start+1, tot = ex.aav*yrs;
+    L.push({kind:'add', acts:[['extend','Edit',{id:k}],['undoExt','Undo',{id:k}]], at:ex.at||0, eff:extDelta(it,y), text:`Extended ${it.name}`, sub:`${fmt(ex.aav,2)} a year${ex.shape&&ex.shape!=='flat'?' AAV, '+(ex.shape==='custom'?'custom structure':ex.shape+'-loaded')+' ('+Object.keys(ex.sched||{}).map(y=>fmt(ex.sched[y],1)).join(' / ')+')':''}, ${ex.start===ex.through?ex.start:ex.start+'–'+ex.through} (${yrs} yr, ${fmt(tot,1)} total)`});
   });
   Object.keys(S.options).forEach(k=>{
     const v = S.options[k]; const it = byId[k]; if(!it || !it.option || v==='undecided') return;
@@ -3766,14 +3916,15 @@ function rowHTML(it, rmap){
   const info = [it.contract, it.note].filter(Boolean).join(' — ');
   const yrs = YEARS.filter(y=>y!==S.season).map(y=>{ const r = rawCharge(it,y); return r==null||r===0 ? '' : `<span>${y}: ${fmt(r,2)}</span>`; }).filter(Boolean).join('');
   const pyrs = yrs ? `<div class="pyrs">${yrs}</div>` : ''; // phones only: the other seasons as one line
+  const extBtn = (!st && it.cat!=='other' && it.kind!=='custom') ? ` <button class="pay-btn tiny ghost" data-act="extend" data-id="${esc(it.id)}" title="Sign him to a contract extension">${S.ext&&S.ext[it.id]?'Extension ✓':'Extend'}</button>` : '';
   const acts = it.added
-    ? `<button class="pay-btn tiny" data-act="editAdded" data-id="${esc(it.id)}">Edit</button> <button class="pay-btn tiny danger" data-act="removeAdded" data-id="${esc(it.id)}">Remove</button>`
+    ? `<button class="pay-btn tiny" data-act="editAdded" data-id="${esc(it.id)}">Edit</button>${extBtn} <button class="pay-btn tiny danger" data-act="removeAdded" data-id="${esc(it.id)}">Remove</button>`
     : it.kind==='custom'
       ? `<button class="pay-btn tiny danger" data-act="removeOther" data-id="${esc(it.id)}">Remove</button>`
       : it.cat==='other' ? ''
       : (st
           ? `<button class="pay-btn tiny" data-act="undoStatus" data-id="${esc(it.id)}">Undo</button>`
-          : `<button class="pay-btn tiny" data-act="tradeAway" data-id="${esc(it.id)}">Trade</button> ${it.cat==='guaranteed'?`<button class="pay-btn tiny ghost" data-act="release" data-id="${esc(it.id)}" title="Released players' salaries still count toward the tax">Release</button>`:`<button class="pay-btn tiny ghost" data-act="nontender" data-id="${esc(it.id)}" title="Let him go before the tender deadline — his salary comes off the books">Non-tender</button>`} <button class="pay-btn tiny ghost" data-act="dfa" data-id="${esc(it.id)}" title="Designate for assignment — clears a 40-man spot">DFA</button>`)
+          : `<button class="pay-btn tiny" data-act="tradeAway" data-id="${esc(it.id)}">Trade</button> ${it.cat==='guaranteed'?`<button class="pay-btn tiny ghost" data-act="release" data-id="${esc(it.id)}" title="Released players' salaries still count toward the tax">Release</button>`:`<button class="pay-btn tiny ghost" data-act="nontender" data-id="${esc(it.id)}" title="Let him go before the tender deadline — his salary comes off the books">Non-tender</button>`} <button class="pay-btn tiny ghost" data-act="dfa" data-id="${esc(it.id)}" title="Designate for assignment — clears a 40-man spot">DFA</button>${extBtn}`)
         + (hasOverride(it) ? ` <button class="pay-btn tiny ghost" data-act="resetRow" data-id="${esc(it.id)}" title="Undo your edits to this player">↺</button>` : '');
   return `<tr class="${cls}"><td class="pname-cell"><div class="pname">${it.added&&it.added.from?teamLogo(it.added.from):''}${esc(it.name)}${it.pos?` <span style="color:var(--grey);font-weight:600;font-size:11px">${esc(it.pos)}</span>`:''}${(()=>{ const v = optOf(it).v; return (typeof v==='number' && v>0 && !it.added) ? ` <span class="opt-ast" title="${v} minor-league option${v>1?'s':''} left — can start 2027 in the minors">*</span>` : ''; })()}${tags.join('')}</div>${info?`<div class="pinfo">${esc(info)}</div>`:''}${opt}${pyrs}</td>
     ${YEARS.map(y=>cellHTML(it,y)).join('')}<td class="acts">${acts}</td></tr>`;
@@ -3814,7 +3965,7 @@ function assumptionsHTML(){
   return `<details class="pay-assume"><summary>Assumptions &amp; tax rules (editable)</summary><div class="pay-assume-body">
     <div><label class="pay-field">Estimating method<select data-act="rule" data-key="basis"><option value="fg"${R.basis!=='est'?' selected':''}>FanGraphs basis (default): their 2027 estimate; later years only list contracts</option><option value="est"${R.basis==='est'?' selected':''}>Full estimate: also projects later arbitration years and roster fill</option></select></label></div>
     <div><div class="pay-lbl">CBT threshold by season ($M)</div><div class="pay-grid-in">${yrIn(R.threshold,'threshold')}</div>
-      <div class="pay-hint">2026's line is $244M. Nothing is set beyond it — change these if the new CBA moves it.</div></div>
+      <div class="pay-hint">The CBA expires this December, so nothing is set for 2027. 2026's line is $244M; these numbers carry the 2026 rules forward — change them if the new CBA moves it.</div></div>
     <div class="pay-grid-in">
       ${one('Tier width ($M)','bandWidth',R.bandWidth)}
       <label class="pay-field">Prior years over the line (entering 2027)<select data-act="rule" data-key="priorConsecutive">${[0,1,2].map(n=>`<option value="${n}"${R.priorConsecutive===n?' selected':''}>${n===0?'0 (first-time payer)':n===1?'1 (second straight year)':'2+ (third+ straight year)'}</option>`).join('')}</select></label>
@@ -3882,6 +4033,12 @@ function onModalInput(e){
     else if(t.id==='mRoster'){ M.f.roster = t.checked; }
     else if(t.id==='mSendQ'){ updateSendSugg(); }
   }
+  if(M.type==='extpick' && t.id==='mExtQ'){ extPickList(); return; }
+  if(M.type==='ext' && t.dataset && t.dataset.xy){ M.f.xs = M.f.xs||{}; document.querySelectorAll('#mXSched input[data-xy]').forEach(x=>{ M.f.xs[x.dataset.xy] = x.value; }); M.f.shape = 'custom'; M.xsig = `${M.f.start}|${Math.round(num('mYears')||0)}|custom|${M.f.aav}`; document.querySelectorAll('#mXShape button').forEach(x=>x.classList.toggle('active', x.dataset.v==='custom')); updateCalc(); return; }
+  if(M.type==='ext' && t.dataset && t.dataset.f){ M.f[t.dataset.f] = t.value; updateCalc(); }
+  if(M.type==='fa'){ M.ack = false; const er = document.getElementById('mErr'); if(er) er.style.display = 'none'; }
+  if(M.type==='fa' && t.dataset && t.dataset.sy){ M.f.sched = M.f.sched || {}; document.querySelectorAll('#mSchedBox input[data-sy]').forEach(x=>{ M.f.sched[x.dataset.sy] = x.value; });
+    M.f.shape = 'custom'; M.schedSig = `${M.f.start}|${Math.round(num('mYears')||0)}|custom`; document.querySelectorAll('#mShape button').forEach(x=>x.classList.toggle('active', x.dataset.v==='custom')); }
   if(t.id==='mName'){ if(M.type==='fa'){ if(!M.editing) updateFaBrowse(); matchFA(); } else if(M.type==='promo'){ M.picked=null; updateFarm(); } else if(M.type==='pkg'){ M.f.q = t.value; updateBrowse(); } else updateSugg(); }
   if(t.id==='mTeam'){ M.f.team = t.value; updateBrowse(); }
   if(t.id==='mFaLik'){ M.f.falik = t.value; updateFaBrowse(); }
@@ -4033,20 +4190,29 @@ function pickRow(kind, i){
 
 /* --- free agent --- */
 function faHTML(){
-  const f = M.f, terms = f.mode==='terms';
-  return shell(M.editing?'Edit signing':'Sign a free agent', `
-    <label class="pay-field">Player<input data-f="name" id="mName" value="${esc(f.name)}" placeholder="${M.editing?'Player name':'Search free agents by name…'}" autocomplete="off"></label>
-    ${M.editing ? '' : `<div class="pay-filters"><select class="pay-in" id="mFaLik"><option value="likely"${(f.falik||'likely')==='likely'?' selected':''}>Likely free agents</option><option value="shots"${f.falik==='shots'?' selected':''}>+ long shots</option><option value="all"${f.falik==='all'?' selected':''}>Everyone on the tracker</option></select>
+  const f = M.f, terms = f.mode==='terms', step = M.editing ? 'terms' : (f.step||'find');
+  const steps = M.editing ? '' : `<div class="fa-steps"><button type="button" data-m="fastep" data-v="find" class="${step==='find'?'on':''}">1 · Find a player</button><button type="button" data-m="fastep" data-v="terms" class="${step==='terms'?'on':''}">2 · Contract terms</button></div>`;
+  const err = `<div class="fa-warn red" id="mErr" style="display:none"></div>`;
+  if(step==='find'){
+    return shell('Sign a free agent', `${steps}
+    <label class="pay-field">Player<input data-f="name" id="mName" value="${esc(f.name)}" placeholder="Search free agents by name…" autocomplete="off"></label>
+    <div class="pay-filters"><select class="pay-in" id="mFaLik"><option value="likely"${(f.falik||'likely')==='likely'?' selected':''}>Likely free agents</option><option value="shots"${f.falik==='shots'?' selected':''}>+ long shots</option><option value="all"${f.falik==='all'?' selected':''}>Everyone on the tracker</option></select>
       <select class="pay-in" id="mFaSort"><option value="aav"${(f.fasort||'aav')==='aav'?' selected':''}>Sort: suggested AAV</option><option value="war"${f.fasort==='war'?' selected':''}>Sort: 2026 WAR</option><option value="age"${f.fasort==='age'?' selected':''}>Sort: youngest</option><option value="name"${f.fasort==='name'?' selected':''}>Sort: name</option></select></div>
     <div class="pay-seg pay-posf pay-posrow" id="mFaPos">${segBtns(POS_ROW_FA,'faposf',f.faposf||'')}</div>
     <div class="pay-seg pay-posf pay-posrow" id="mFaHand">${handRow('fahand', f.faposf||'', f.fahand||'')}</div>
-    <div class="pay-browse" id="mFaBrowse"></div>`}
+    <div class="pay-browse" id="mFaBrowse"></div>
+    ${err}
+    <div class="pay-hint">Pick a player from the list to set the contract terms. Not on the list? Type his name and continue.</div>`,
+    `<button class="pay-btn" data-m="close">Cancel</button><button class="pay-btn primary" data-m="fanext">Next: contract terms</button>`);
+  }
+  return shell(M.editing?'Edit signing':'Sign a free agent', `${steps}
+    <div class="fa-who"><b>${esc(f.name)}</b>${M.editing?'':`<button class="pay-btn tiny ghost" data-m="faback">Change player</button>`}</div>
     <div class="pay-pickinfo" id="mPickInfo" style="display:none"></div>
     <div class="pay-seg"><button data-m="dealtype" data-v="" class="${f.mil?'':'active'}">Major-league contract</button><button data-m="dealtype" data-v="mil" class="${f.mil?'active':''}">Minor-league deal</button></div>
     ${f.mil ? `<div class="pay-hint">A minor-league deal takes no 40-man spot and doesn’t count toward the tax unless he’s added to the 40-man later (edit the signing to turn it into a 40-man contract).</div>
       <div class="pay-row3">
         <label class="pay-field">Minor-league salary ($M, optional)<input data-f="aav" id="mAav" value="${esc(f.aav)}" inputmode="decimal" placeholder="for reference"></label>
-        <label class="pay-field">Season<select data-f="start" id="mStart">${yearOpts(+f.start,2027,2032)}</select></label><span></span></div>` : `
+        <label class="pay-field">Season<select data-f="start" id="mStart">${yearOpts(+f.start,2027,2032)}</select></label><span></span></div>${err}` : `
     <div class="pay-seg"><button data-m="mode" data-v="terms" class="${terms?'active':''}">Enter full terms</button><button data-m="mode" data-v="aav" class="${terms?'':'active'}">I know the AAV</button></div>
     ${!ownPending(f.name) ? '' : qoBlockOf(f.name) ? `<span class="pay-qo-off" title="Ineligible for the qualifying offer — ${esc(qoBlockOf(f.name))}"><button class="pay-eat-link" disabled style="text-decoration:none;font-weight:700">⚑ Make a qualifying offer</button></span>` : `<button class="pay-eat-link" data-m="qo" style="text-decoration:none;font-weight:700">⚑ Make a qualifying offer (1 yr, ${fmt(S.rules.qo,2)})</button>`}
     ${terms ? `<div class="pay-row3">
@@ -4058,11 +4224,101 @@ function faHTML(){
         <label class="pay-field">AAV ($M)<input data-f="aav" id="mAav" value="${esc(f.aav)}" inputmode="decimal" placeholder="e.g. 30"></label>
         <label class="pay-field">Years<input data-f="years" id="mYears" value="${esc(f.years)}" inputmode="numeric"></label>
         <label class="pay-field">First season<select data-f="start" id="mStart">${yearOpts(+f.start,2027,2032)}</select></label></div>`}
+    <div class="fa-warn" id="mWarn" style="display:none"></div>
     ${sxHTML(f)}
     <div class="pay-calc"><span>CBT hit per year</span><b id="mCalc">—</b></div>
-    <div class="pay-hint" id="mSxNote" style="display:none"></div>`}
+    <div class="pay-hint" id="mSxNote" style="display:none"></div>
+    <div class="pay-sec" id="mSchedSec" style="display:none"><div class="pay-sec-h">Salary by year</div>
+      <div class="pay-hint">Front- or back-loading changes what he’s paid each year, not the tax number — the CBT counts the average annual value.</div>
+      <div class="pay-seg" id="mShape">${[['flat','Flat'],['front','Front-loaded'],['back','Back-loaded'],['custom','Custom']].map(([v,l])=>`<button type="button" data-m="shape" data-v="${v}" class="${(f.shape||'flat')===v?'active':''}">${l}</button>`).join('')}</div>
+      <div class="fa-sched" id="mSchedBox"></div><div class="pay-hint" id="mSchedNote"></div></div>
+    ${err}
+    <div class="fa-impact" id="mImpact" style="display:none"></div>`}
     <label style="font-size:12.5px;display:flex;gap:7px;align-items:center"><input type="checkbox" id="mRoster" ${f.roster?'checked':''}> Also add to the roster builder’s player pool</label>`,
-    `<button class="pay-btn" data-m="close">Cancel</button><button class="pay-btn primary" data-m="saveFA">${M.editing?'Save':(f.mil?'Add minor-league deal':'Add contract')}</button>`);
+    `${M.editing?'':`<button class="pay-btn" data-m="faback">← Back</button>`}<button class="pay-btn" data-m="close">Cancel</button><button class="pay-btn primary" data-m="saveFA" id="mSaveFA">${M.editing?'Save':(f.mil?'Add minor-league deal':'Add contract')}</button>`);
+}
+// Where a player is likely to sign: the same suggested deal the free-agent list shows (null for anyone not on the board).
+function faErr(msg){ const e = document.getElementById('mErr'); if(e){ e.textContent = msg; e.style.display = ''; } }
+function marketFor(name){ const p = faPool().find(x=>norm(x.name)===norm(name)); return p ? suggestDeal(p) : null; }
+const FA_FLOOR = 0.85, FA_CEIL = 1.3; // offers under 85% of his projected AAV aren't realistic; well over 130% is bidding against yourself
+const alreadyAdded = name => S.added.find(a=>norm(a.name)===norm(name));
+// Free agents signed on another club's sheet (each club's plan is saved separately in this browser) can't be signed again here.
+function signedElsewhere(){
+  const m = new Map();
+  TEAMS.forEach(t=>{ if(t.id===TEAM_ID) return; try{ const raw = localStorage.getItem(STORE_KEY(t.id)); if(!raw) return;
+    (JSON.parse(raw).added||[]).forEach(a=>{ if(a.kind==='fa' && a.name) m.set(norm(a.name), t.name); }); }catch(e){} });
+  return m;
+}
+function dupMsg(name){
+  if(alreadyAdded(name)) return `${name} is already on your sheet — edit or undo that signing instead of adding him again.`;
+  const t = signedElsewhere().get(norm(name));
+  return t ? `${name} has already signed with the ${t} in your plan. Undo that signing there first if you want him on this team.` : '';
+}
+function schedShape(shape, n, total){
+  const out = [];
+  for(let i=0;i<n;i++){ let w = 1; if(n>1 && shape!=='flat'){ const t = ((n-1)/2 - i)/((n-1)/2); w = 1 + 0.5*(shape==='front'?t:-t); } out.push(total/n*w); }
+  const r = out.map(v=>Math.round(v*100)/100); const diff = Math.round((total - r.reduce((a,b)=>a+b,0))*100)/100; r[n-1] = Math.round((r[n-1]+diff)*100)/100; return r;
+}
+function faSchedule(r){ // salary for each season of the deal, in order
+  const f = M.f, shape = f.shape||'flat', start = +f.start, total = r.aav*r.years;
+  if(shape==='custom'){ const base = schedShape('flat', r.years, total); return base.map((v,i)=>{ const c = f.sched && f.sched[start+i]; const n = parseM(c); return n==null ? v : n; }); }
+  return schedShape(shape, r.years, total);
+}
+// The signing as it would be saved, built from the form without saving it.
+function faDraft(){
+  if(M.f.mil) return null; const r = faAav(); if(!r) return null; matchFA();
+  const sc = structCalc(r);
+  return {r, rec:{id: M.editing || 'draft', kind:'fa', name:(M.f.name||'').trim(), pos:M.fa?M.fa.pos:'', type:M.fa?(M.fa.type||((M.fa.pos==='SP'||M.fa.pos==='RP')?'P':'H')):'H',
+    aav:Math.round(sc.aav*1000)/1000, aavNom:Math.round(r.aav*1000)/1000, years:r.years, start:+M.f.start, at:Date.now(), struct:sc.struct||undefined, out:sc.out||undefined, opt:sc.opt||undefined}};
+}
+function impactFor(rec){ // the whole sheet with and without this signing
+  const saved = S.added;
+  try{
+    S.added = saved.filter(a=>a.id!==rec.id); const c0 = calcAll(), f0 = fortyMan(c0);
+    S.added = S.added.concat([rec]); const c1 = calcAll(), f1 = fortyMan(c1);
+    return {c0, c1, f0, f1};
+  } finally { S.added = saved; }
+}
+function updateFaExtras(){
+  const warn = document.getElementById('mWarn'), imp = document.getElementById('mImpact'), sec = document.getElementById('mSchedSec');
+  if(!M || M.type!=='fa' || !warn) return;
+  const d = faDraft(); M.belowFloor = false;
+  const btn = document.getElementById('mSaveFA'); if(btn && !M.editing) btn.textContent = 'Add contract';
+  if(!d){ warn.style.display = 'none'; if(imp) imp.style.display = 'none'; if(sec) sec.style.display = 'none'; return; }
+  const {r, rec} = d, f = M.f;
+  // realism check against his projected deal
+  const mk = f.qo ? null : marketFor(f.name);
+  if(mk){
+    const ratio = r.aav/mk.aav, proj = `${fmt(mk.aav,1)} AAV (${mk.years} yr / ${fmt(mk.total)})`;
+    if(ratio<FA_FLOOR){ M.belowFloor = true; warn.className = 'fa-warn red'; warn.innerHTML = `<b>Unrealistic offer.</b> His projected deal is about ${proj}. ${fmt(r.aav,1)} a year is ${Math.round((1-ratio)*100)}% under that — he wouldn’t sign for less than roughly ${fmt(mk.aav*FA_FLOOR,1)}.`; warn.style.display = ''; }
+    else if(ratio>FA_CEIL){ warn.className = 'fa-warn amber'; warn.innerHTML = `<b>Well above market.</b> His projected deal is about ${proj}; ${fmt(r.aav,1)} a year is ${Math.round((ratio-1)*100)}% over it.`; warn.style.display = ''; }
+    else warn.style.display = 'none';
+  } else warn.style.display = 'none';
+  // salary by year
+  const sched = faSchedule(r), shape = f.shape||'flat', sig = `${f.start}|${r.years}|${shape}`, box = document.getElementById('mSchedBox');
+  if(sec) sec.style.display = '';
+  if(box && M.schedSig!==sig){ M.schedSig = sig;
+    box.innerHTML = sched.map((v,i)=>`<label>${+f.start+i}<input data-sy="${+f.start+i}" value="${Math.round(v*100)/100}" inputmode="decimal"></label>`).join(''); }
+  else if(box && shape!=='custom'){ box.querySelectorAll('input[data-sy]').forEach((el,i)=>{ if(sched[i]!=null) el.value = Math.round(sched[i]*100)/100; }); }
+  const total = r.aav*r.years, sum = sched.reduce((a,b)=>a+b,0), note = document.getElementById('mSchedNote');
+  M.schedBad = Math.abs(sum-total)>0.05;
+  if(note) note.innerHTML = M.schedBad ? `<span style="color:#b3261e;font-weight:700">Adds to ${fmt(sum,2)} — the deal is ${fmt(total,2)}. Adjust a year to match.</span>` : `Adds to ${fmt(total,2)}.`;
+  // payroll impact
+  if(!imp) return;
+  const I = impactFor(rec), yrs = YEARS.filter(y=>y>=rec.start && y<rec.start+rec.years);
+  if(!yrs.length){ imp.style.display = 'none'; return; }
+  const hy = yrs.includes(S.season) ? S.season : yrs[0], a0 = I.c0.years[hy], a1 = I.c1.years[hy], T = a1.T, over = a1.total-T;
+  const tgt = S.target.on ? S.target.value : null;
+  const cell = (l, b, em, cls) => `<div><span>${l}</span><b class="${cls||''}">${b}</b>${em?`<em>${em}</em>`:''}</div>`;
+  imp.innerHTML = `<div class="fa-imp-h">After this signing · ${hy}</div><div class="fa-imp-grid">
+    ${cell('Projected payroll', `${fmt(a0.total,1)} → ${fmt(a1.total,1)}`, fmtEff(a1.total-a0.total)+' vs now')}
+    ${cell(`vs the CBT line (${fmt(T,0)})`, `${fmt(Math.abs(over),1)} ${over>0?'over':'under'}`, over>0?'in tax territory':'room left', over>0?'bad':'good')}
+    ${cell('Est. tax bill', a0.tax>0||a1.tax>0 ? `${fmt(a0.tax,1)} → ${fmt(a1.tax,1)}` : '$0.0M', a1.tax>a0.tax ? fmtEff(a1.tax-a0.tax)+' more' : '', a1.tax>a0.tax?'bad':'')}
+    ${I.f1==null ? '' : cell('40-man roster', `${I.f0} → ${I.f1}/40`, I.f1>40?'over 40 — someone has to go':'', I.f1>40?'bad':'')}
+    ${tgt==null ? '' : cell('Your target', `${fmt(Math.abs(tgt-a1.total),1)} ${tgt>=a1.total?'left':'over'}`, fmt(tgt,0)+' target', tgt>=a1.total?'good':'bad')}</div>
+    <table class="fa-imp-t"><tr><th>Season</th><th>Salary</th><th>CBT hit</th><th>Payroll after</th><th>vs line</th></tr>
+    ${yrs.map(y=>{ const o = I.c1.years[y], dv = o.total-o.T; return `<tr><td>${y}</td><td>${fmt(sched[y-rec.start]!=null?sched[y-rec.start]:r.aav,1)}</td><td>${fmt(rec.aav,1)}</td><td>${fmt(o.total,1)}</td><td style="color:${dv>0?'#b3261e':'#1b6e3a'}">${dv>0?'+':'−'}${fmt(Math.abs(dv),1)}</td></tr>`; }).join('')}</table>`;
+  imp.style.display = '';
 }
 function hasSx(f){ return !!(f.sbonus||f.sdef||f.sout||f.sok); }
 function sxHTML(f){
@@ -4150,10 +4406,10 @@ function faRows(){
 }
 function updateFaBrowse(){
   const box = document.getElementById('mFaBrowse'); if(!box || !M || M.type!=='fa') return;
-  const rows = faRows(), cur = M.picked ? norm(M.picked.name) : '', total = rows.length, show = rows.slice(0,150);
+  const rows = faRows(), cur = M.picked ? norm(M.picked.name) : '', total = rows.length, show = rows.slice(0,150), SE = signedElsewhere();
   box.innerHTML = show.length ? show.map(([p,i,s])=>{ const on = norm(p.name)===cur;
-    const meta = [p.pos2||p.pos, p.age?'age '+p.age:'', p.w!=null?p.w.toFixed(1)+' WAR':'', p.jp?'NPB':(p.o?'2026: '+p.o:''), (p.l&&p.l!=='F')?FA_LIKE[p.l]:'', qoDecl(p.name)?'Declined QO · pick attached':''].filter(Boolean).join(' · ');
-    return `<button type="button" class="pay-sugg-item${on?' added':''}" data-m="fapick" data-i="${i}">${on?'<i class="chk">✓</i>':''}${p.team?teamLogo(p.team):''}<b>${esc(p.name)}</b><em class="fa-sug">${s.years} yr · ${fmt(s.total)}</em><span>${esc(meta)}</span></button>`; }).join('') + (total>150?`<div class="pay-hint" style="padding:8px 12px">Showing 150 of ${total} — filter or search to narrow.</div>`:'') + (rows.nohand?`<div class="pay-hint" style="padding:8px 12px">${rows.nohand} player${rows.nohand===1?'':'s'} with no handedness on file ${POSSTATE>=2?'':'yet '}hidden by this filter.</div>`:'')
+    const meta = [p.pos2||p.pos, p.age?'age '+p.age:'', p.w!=null?p.w.toFixed(1)+' WAR':'', p.jp?'NPB':(p.o?'2026: '+p.o:''), (p.l&&p.l!=='F')?FA_LIKE[p.l]:'', qoDecl(p.name)?'Declined QO · pick attached':'', alreadyAdded(p.name)?'Already signed':(SE.get(norm(p.name))?'Signed with '+SE.get(norm(p.name)):'')].filter(Boolean).join(' · ');
+    return `<button type="button" class="pay-sugg-item${on||alreadyAdded(p.name)||SE.get(norm(p.name))?' added':''}" data-m="fapick" data-i="${i}">${on?'<i class="chk">✓</i>':''}${p.team?teamLogo(p.team):''}<b>${esc(p.name)}</b><em class="fa-sug">${s.years} yr · ${fmt(s.total)}</em><span>${esc(meta)}</span></button>`; }).join('') + (total>150?`<div class="pay-hint" style="padding:8px 12px">Showing 150 of ${total} — filter or search to narrow.</div>`:'') + (rows.nohand?`<div class="pay-hint" style="padding:8px 12px">${rows.nohand} player${rows.nohand===1?'':'s'} with no handedness on file ${POSSTATE>=2?'':'yet '}hidden by this filter.</div>`:'')
     : '<div class="pay-hint" style="padding:10px 12px">No free agents match — you can still type any name below and enter the terms yourself.</div>';
 }
 function faApply(p, force){
@@ -4165,7 +4421,7 @@ function faApply(p, force){
   matchFA(); updateCalc(); updateFaBrowse();
 }
 function openFA(opts={}){
-  const base = {mode:'terms', name:opts.name||'', aav:'', years:'1', total:'', start:String(S.season), roster:true};
+  const base = {mode:'terms', name:opts.name||'', aav:'', years:'1', total:'', start:String(S.season), roster:true, step:(opts.name||opts.editing)?'terms':'find', shape:'flat'};
   M = {type:'fa', f:{...base, ...(opts.f||{})}, editing:opts.editing||null, html:faHTML};
   matchFA(); paint(); ensurePositions();
   if(!M.editing && opts.name){ const p = faPool().find(x=>norm(x.name)===norm(opts.name)); if(p) faApply(p, !(opts.f&&opts.f.aav)); }
@@ -4266,7 +4522,7 @@ function pkRename(o, map){
 }
 async function packPlan(){
   const diff = {}; Object.keys(S.rules).forEach(k=>{ if(JSON.stringify(S.rules[k])!==JSON.stringify(DEFAULT_RULES[k])) diff[k] = S.rules[k]; });
-  const o = {v:2, t:TEAM_ID, s:S.season, tg:S.target.on?S.target.value:null, r:diff, ov:S.overrides, op:S.options, a:S.added, c:S.customOther, w:S.walked, x:S.extraOrg, st:S.status, om:S.optManual};
+  const o = {v:2, t:TEAM_ID, s:S.season, tg:S.target.on?S.target.value:null, r:diff, ov:S.overrides, op:S.options, a:S.added, c:S.customOther, w:S.walked, x:S.extraOrg, st:S.status, om:S.optManual, ex:S.ext};
   let json = JSON.stringify(pkRename(pkStrip(o,true), PK_ENC));
   // timestamps -> seconds since the earliest one
   const atk = PK_ENC.at, atRe = new RegExp('"'+atk+'":(\\d{9,14})\\b','g');
@@ -4305,7 +4561,7 @@ async function importPlan(str){
     let had = false;
     try{ const prev = localStorage.getItem(STORE_KEY(TEAM_ID)); if(prev){ localStorage.setItem(STORE_KEY(TEAM_ID)+'_prev', prev); had = true; } }catch(e){}
     S = {...defaultState(), season:o.s||2027, target:(o.tg!=null?{on:true,value:o.tg}:{on:false,value:300}), rules:{...clone(DEFAULT_RULES), ...(o.r||{})},
-      overrides:o.ov||{}, options:o.op||{}, added:o.a||[], customOther:o.c||[], walked:o.w||{}, extraOrg:o.x||[], status:o.st||{}, optManual:o.om||{}};
+      overrides:o.ov||{}, options:o.op||{}, added:o.a||[], customOther:o.c||[], walked:o.w||{}, extraOrg:o.x||[], status:o.st||{}, optManual:o.om||{}, ext:o.ex||{}};
     saveState(); S.added.forEach(a=>rosterAdd(a)); UI.shared = {had}; renderAll();
   }catch(e){ console.warn('Could not read the shared plan', e); UI.shared = {bad:true}; renderAll(); }
 }
@@ -4325,11 +4581,31 @@ function summaryCardHTML(){
     <div class="sc-m"><div class="sc-mh">${L.length?`${L.length} move${L.length===1?'':'s'}`:'No moves yet'}</div>${L.length?`<ul>${rows}${more}</ul>`:''}</div>
     <div class="sc-f">mlbrostertool.com/${esc(teamObj().slug)}</div></div>`;
 }
+function lineupCardHTML(){
+  const y = S.season, hand = p=>{ const h = (typeof battingHand==='function') ? battingHand(p) : null; return h||''; };
+  const byId = new Map(players.map(p=>[p.id,p]));
+  const col = (key,title)=>{
+    const rows = lineups[key].map((sl,i)=>{ const p = sl.playerId && byId.get(sl.playerId); if(!p) return ''; return `<li><i>${i+1}</i><u>${esc(sl.position||'–')}</u><span>${esc(p.name)}</span><s>${hand(p)}</s></li>`; }).join('');
+    return `<div><div class="sc-mh">${title}</div>${rows?`<ol>${rows}</ol>`:'<div class="sc-empty">Not set yet</div>'}</div>`;
+  };
+  const grp = k=>players.filter(p=>p.placed==='roster' && p.group===k).sort((a,b)=>(a.order??0)-(b.order??0));
+  const thr = p=>((p.bt||'').split('/')[1]||'');
+  const sp = grp('SP'), rp = grp('RP').sort((a,b)=>RP_ROLE_ORDER.slice(1).concat([null]).indexOf(a.role||null)-RP_ROLE_ORDER.slice(1).concat([null]).indexOf(b.role||null));
+  const pit = (p,n)=>`<li>${n?n+'. ':''}${esc(p.name)}${(!n && p.role && RP_ROLES[p.role])?` <s>${RP_ROLES[p.role].label}</s>`:(thr(p)?`<s>${thr(p)}HP</s>`:'')}</li>`;
+  return `<div class="sc" id="shareCard">
+    <div class="sc-h"><img class="sc-logo" src="${logoURL(TEAM_ID)}" alt=""><div><div class="sc-t">${esc(teamNick())} ${y} lineup &amp; rotation</div><div class="sc-s">Built in the offseason simulator</div></div></div>
+    <div class="sc-lu">${col('RHP','Vs. right-handers')}${col('LHP','Vs. left-handers')}</div>
+    <div class="sc-pit"><div><div class="sc-mh">Rotation</div>${sp.length?`<ul>${sp.map((p,i)=>pit(p,i+1)).join('')}</ul>`:'<div class="sc-empty">Not set yet</div>'}</div>
+      <div><div class="sc-mh">Bullpen</div>${rp.length?`<ul class="sc-pen">${rp.map(p=>pit(p,0)).join('')}</ul>`:'<div class="sc-empty">Not set yet</div>'}</div></div>
+    <div class="sc-f">mlbrostertool.com/${esc(teamObj().slug)}</div></div>`;
+}
 function shareHTML(){
-  return shell('Share your plan', `<div class="pay-hint">Anyone who opens the link sees these exact moves as their own editable copy. It carries your payroll moves, not your depth chart.</div>
+  const v = M.view==='lu' ? 'lu' : 'mv';
+  return shell('Share your plan', `<div class="pay-hint">Anyone who opens the link sees these exact payroll moves as their own editable copy. The link doesn’t carry your depth chart — the Lineup &amp; rotation image is how you share that.</div>
     <div class="pay-field">Link<div class="pay-linkrow"><input id="mShareLink" readonly value="${esc(M.link||'Building link…')}" onfocus="this.select()"><button class="pay-btn primary" data-m="shareCopy">Copy link</button></div></div>
     <div class="pay-hint" id="mShareNote"></div>
-    <div class="sc-wrap">${summaryCardHTML()}</div>`,
+    <div class="sc-tabs"><button class="pay-btn ${v==='mv'?'on':''}" data-m="shareView" data-v="mv">Payroll moves</button><button class="pay-btn ${v==='lu'?'on':''}" data-m="shareView" data-v="lu">Lineup &amp; rotation</button></div>
+    <div class="sc-wrap">${v==='lu'?lineupCardHTML():summaryCardHTML()}</div>`,
     `<button class="pay-btn" data-m="close">Close</button><button class="pay-btn" data-m="shareImg">Download image</button><button class="pay-btn primary" data-m="shareCopy">Copy link</button>`);
 }
 async function openShare(){
@@ -4345,7 +4621,7 @@ async function shareImage(){
   try{ const d = await fetchLogoDataUri(logoURL(TEAM_ID)); if(d) img.src = d; else img.style.visibility='hidden'; }catch(e){}
   const w0 = el.style.width; el.style.width = '640px';
   let canvas; try{ canvas = await html2canvas(el, {backgroundColor:'#ffffff', scale:2}); } finally { el.style.width = w0; }
-  const a = document.createElement('a'); a.download = `${teamObj().slug}-offseason-plan.png`; a.href = canvas.toDataURL('image/png'); a.click();
+  const a = document.createElement('a'); a.download = `${teamObj().slug}-${M&&M.view==='lu'?'lineup-rotation':'offseason-plan'}.png`; a.href = canvas.toDataURL('image/png'); a.click();
 }
 function dfaHTML(){
   const g = M.cat==='guaranteed';
@@ -4404,11 +4680,18 @@ function newGetRow(p){
 function addIncoming(i, tok){
   const p = tradePool()[i];
   const ex = M.f.get.findIndex(x=>x.pid===p.i && x.name===p.n);
-  if(ex>=0){ M.f.get.splice(ex,1); renderGetRows(); updateBrowse(); updateCalc(); return; } // clicking again removes
+  if(ex>=0){ M.f.get.splice(ex,1); syncTradeLock(); renderGetRows(); updateBrowse(); updateCalc(); return; } // clicking again removes
   const g = newGetRow(p);
   const pi = posOf(p); if(pi){ g.pos = pi.abbr; g.ptype = pi.type==='Pitcher'?'P':'H'; }
-  M.f.get.push(g); renderGetRows(); updateBrowse(); updateCalc();
+  M.f.get.push(g); syncTradeLock(); renderGetRows(); updateBrowse(); updateCalc();
   if(!pi) lookupPos(p.n, tok, g.key);
+}
+function tradeLock(){ if(!M || !M.f) return ''; const g = M.f.get.find(x=>x.from && !x.manual); return g ? g.from : ''; }
+function syncTradeLock(){
+  const L = tradeLock(); const sel = document.getElementById('mTeam'), nt = document.getElementById('mLock');
+  if(L) M.f.team = L;
+  if(sel){ sel.disabled = !!L; sel.value = M.f.team||''; }
+  if(nt) nt.textContent = L ? `Trading with the ${L} — remove their players to switch teams.` : 'Pick a team to trade with — once you add a player, the trade is locked to that club.';
 }
 function renderGetRows(){ const box = document.getElementById('mGetRows'); if(box) box.innerHTML = M.f.get.map(getRowHTML).join(''); }
 
@@ -4471,14 +4754,15 @@ function getRowHTML(g, i){
       <div class="pay-field">Or share of salary<div class="pay-seg">${[25,50,75].map(p=>`<button data-m="geatpct" data-k="${g.key}" data-v="${p}">${p}%</button>`).join('')}</div></div></div></div>`
     : `<button class="pay-eat-link" data-m="geatopen" data-k="${g.key}">Other team paying part of the salary?</button>`;
   return `<div class="pay-get"><div class="pay-get-h">${teamLogo(g.from)}${g.manual?`<input class="pay-in" data-g="name" data-k="${g.key}" value="${esc(g.name)}" placeholder="Player name" style="flex:1">`:`<b>${esc(g.name)}</b>`}<span>${esc(g.from||'')}${g.info?' · '+esc(g.info):''}</span><button type="button" data-m="getdel" data-k="${g.key}" aria-label="Remove">×</button></div>
-    <div class="pay-row3"><label class="pay-field">Salary ($M / yr)<input data-g="aav" data-k="${g.key}" value="${esc(g.aav)}" inputmode="decimal"></label>
+    ${g.manual ? `<div class="pay-row3"><label class="pay-field">Salary ($M / yr)<input data-g="aav" data-k="${g.key}" value="${esc(g.aav)}" inputmode="decimal"></label>
       <label class="pay-field">First season<select data-g="start" data-k="${g.key}">${yearOpts(+g.start,2027,2032)}</select></label>
       <label class="pay-field">Through<select data-g="through" data-k="${g.key}">${yearOpts(+g.through,2027,2032)}</select></label></div>
     <div class="pay-row3"><label class="pay-field">Position<input data-g="pos" data-k="${g.key}" value="${esc(g.pos)}" placeholder="SP, CF…"></label>
       <label class="pay-field">Type<select data-g="ptype" data-k="${g.key}"><option value="H"${g.ptype==='H'?' selected':''}>Hitter</option><option value="P"${g.ptype==='P'?' selected':''}>Pitcher</option></select></label>
-      ${g.manual?`<label class="pay-field">From<input data-g="from" data-k="${g.key}" value="${esc(g.from)}" placeholder="optional"></label>`:'<div></div>'}</div>
+      <label class="pay-field">From<input data-g="from" data-k="${g.key}" value="${esc(g.from)}" placeholder="optional"></label></div>`
+    : `<div class="pay-ro"><b>${fmt(+g.aav||0,2)}</b> a year · ${+g.start===+g.through?g.start:g.start+'–'+g.through}${g.pos?' · '+esc(g.pos):''}</div>`}
     ${g.reset?`<div class="pay-hint">${esc(g.reset)}</div>`:''}
-    ${g.sched?`<div class="pay-hint">Arbitration schedule: ${Object.keys(g.sched).map(y=>`${y} ${fmt(g.sched[y])}`).join(' · ')}. Typing a salary replaces it with a flat number.</div>`:''}
+    ${g.sched?`<div class="pay-hint">Arbitration schedule: ${Object.keys(g.sched).map(y=>`${y} ${fmt(g.sched[y])}`).join(' · ')}.</div>`:''}
     ${eat}</div>`;
 }
 function teamOpts(sel){
@@ -4494,7 +4778,30 @@ function sentAavNote(){
     return `<div>${esc(it.name)}: ${diff?'counts as ':''}<b>${fmt(d.aav,2)} AAV</b> to the new club (${remTxt(d)})${diff?` — vs ${fmt(mine,2)} on your books`:''}</div>`; }).filter(Boolean);
   return rows.length ? `<div class="pay-hint" style="margin-top:6px">${rows.join('')}<div style="margin-top:3px;opacity:.8">A traded player’s tax value resets to the guaranteed money still owed ÷ the guaranteed years left.</div></div>` : '';
 }
+function confirmHTML(){
+  const f = M.f, byId = {}; ownItems().forEach(it=>{ byId[it.id]=it; });
+  const items = f.send.map(id=>byId[id]).filter(Boolean), ret = retainedFor(items);
+  const rows = f.get.filter(g=>g.name.trim() && parseM(g.aav)!=null);
+  const team = [...new Set(rows.map(g=>g.from).filter(Boolean))].join(' / ') || 'the other club';
+  const sendLis = f.send.map(id=>{ const it = byId[id]; const nm = it?it.name:((f.meta&&f.meta[id])||{}).name; if(!nm) return '';
+    let note = it ? `${fmt(netRaw(it,S.season),2)} on your ${S.season} books` : (String(id).startsWith('x:')?'minor leaguer':'40-man');
+    const r = it && ret[it.id]; if(r){ if(r.pay!=null && r.pay>0) note += ` · you keep paying ${fmt(r.pay,2)}/yr`; else if(r.frac>0) note += ` · you keep paying ${Math.round(r.frac*100)}%`; }
+    return `<li><b>${esc(nm)}</b><span>${esc(note)}</span></li>`; }).join('');
+  const getLis = rows.map(g=>{ const eat = parseM(g.eat)||0; const yrs = +g.start===+g.through?g.start:g.start+'–'+g.through;
+    return `<li><b>${esc(g.name)}</b><span>${fmt(parseM(g.aav)||0,2)} a year · ${yrs}${eat?` · ${esc(g.from||'they')} pays ${fmt(eat,2)}/yr`:''}</span></li>`; }).join('');
+  const yrsList = []; for(let y=S.season; y<=2032; y++) yrsList.push(y);
+  const nets = yrsList.map(y=>[y,pkgNet(y)]).filter(([y,n],i)=>Math.abs(n)>0.005 || i===0);
+  let before = null; try{ before = calcAll().years[S.season].total; }catch(e){}
+  const after = before!=null ? before + pkgNet(S.season) : null, T = S.rules.threshold[S.season];
+  return shell('Review this trade', `<div class="pay-hint">Nothing is final until you confirm. Here is the full trade with the ${esc(team)}.</div>
+    <div class="pay-cf"><h4>You send</h4>${sendLis?`<ul>${sendLis}</ul>`:'<div class="pay-hint">Nobody — you’re only taking on players.</div>'}</div>
+    <div class="pay-cf"><h4>You get from the ${esc(team)}</h4>${getLis?`<ul>${getLis}</ul>`:'<div class="pay-hint">Nobody — you’re only sending players.</div>'}</div>
+    <div class="pay-cf"><h4>Payroll impact</h4><ul>${nets.map(([y,n])=>`<li><b>${y}</b><span>${fmtEff(n)}</span></li>`).join('')}
+      ${after!=null?`<li><b>${S.season} CBT payroll</b><span>${fmt(before,1)} → ${fmt(after,1)} (${after>T?fmt(after-T,1)+' over':fmt(T-after,1)+' under'} the ${fmt(T,0)} line)</span></li>`:''}</ul></div>`,
+    `<button class="pay-btn" data-m="pkgback">Back</button><button class="pay-btn primary" data-m="savePkg">Confirm trade</button>`);
+}
 function pkgHTML(){
+  if(M.f.confirm) return confirmHTML();
   const f = M.f, byId = {}; ownItems().forEach(it=>{ byId[it.id]=it; });
   const pills = f.send.map(id=>{ const it = byId[id] || (f.meta && f.meta[id]); return it ? `<span class="pay-pill">${esc(it.name)} <em>${byId[id]?fmt(rawCharge(byId[id],S.season)||0):(String(id).startsWith('x:')?'minors':'40-man')}</em><button type="button" data-m="unsend" data-id="${esc(id)}" aria-label="Remove">×</button></span>` : ''; }).join('');
   const ret = !f.send.length ? '' : f.retOpen
@@ -4513,7 +4820,8 @@ function pkgHTML(){
       <div class="pay-pills">${pills || '<span class="pay-hint">Nobody yet — leave empty if you’re only taking on a player.</span>'}</div>${sentAavNote()}
       <button class="pay-eat-link" data-m="sendmanual">Add someone not in the list (prospect, minor leaguer…)</button>${ret}</div>`;
   const getSec = `<div class="pay-sec"><div class="pay-sec-h">${f.getFirst?'You get':'You get back'} <span>(optional)</span></div>
-      <div class="pay-filters"><select class="pay-in" id="mTeam"><option value="">All teams</option>${teamOpts(f.team)}</select></div>
+      <div class="pay-filters"><select class="pay-in" id="mTeam"${tradeLock()?' disabled':''}><option value="">All teams</option>${teamOpts(f.team)}</select></div>
+      <div class="pay-lock" id="mLock">${tradeLock()?`Trading with the ${esc(tradeLock())} — remove their players to switch teams.`:'Pick a team to trade with — once you add a player, the trade is locked to that club.'}</div>
       <div class="pay-seg pay-posf pay-posrow" id="mPosRow">${segBtns(POS_ROW_T,'posf',f.posf||'')}</div>
       <div class="pay-seg pay-posf pay-posrow" id="mHandRow">${handRow('handf', f.posf||'', f.handf||'')}</div>
       <input class="pay-in" id="mName" placeholder="Search by name (filters apply)…" autocomplete="off" value="${esc(f.q||'')}">
@@ -4573,8 +4881,8 @@ function retainedFor(items){ // -> {id: {frac|pay}}
   });
   return out;
 }
-function pkgNet(){
-  const y = S.season, f = M.f; let inc = 0;
+function pkgNet(yy){
+  const y = yy||S.season, f = M.f; let inc = 0;
   f.get.forEach(g=>{ const s=+g.start, t=Math.max(s,+g.through); if(y<s||y>t) return;
     const aav = parseM(g.aav)||0; const base = (g.sched && g.sched[y]!=null) ? g.sched[y] : aav; inc += Math.max(0, base-(parseM(g.eat)||0)); });
   const byId = {}; ownItems().forEach(it=>{ byId[it.id]=it; });
@@ -4622,6 +4930,60 @@ function otherHTML(){
     <div class="pay-hint">Use a negative number for money another club is sending you, positive for dead money you owe.</div>`,
     `<button class="pay-btn" data-m="close">Cancel</button><button class="pay-btn primary" data-m="saveOther">Add</button>`);
 }
+function extHTML(){
+  const f = M.f;
+  return shell(`${M.editing?'Edit extension':'Extend'} — ${esc(M.name)}`, `
+    <div class="pay-hint">${esc(M.cur)}</div>
+    <div class="pay-row3"><label class="pay-field">Salary ($M / yr)<input data-f="aav" id="mAav" value="${esc(f.aav)}" inputmode="decimal"></label>
+      <label class="pay-field">Years<input data-f="years" id="mYears" value="${esc(f.years)}" inputmode="numeric"></label>
+      <label class="pay-field">First season<select data-f="start" id="mStart">${yearOpts(+f.start,2027,2032)}</select></label></div>
+    <div class="pay-field">Structure<div class="pay-seg" id="mXShape">${[['flat','Flat'],['front','Front-loaded'],['back','Back-loaded'],['custom','Custom']].map(([v,l])=>`<button type="button" data-m="xshape" data-v="${v}" class="${(f.shape||'flat')===v?'active':''}">${l}</button>`).join('')}</div></div>
+    <div class="fa-sched" id="mXSched"></div><div class="pay-hint" id="mXSchedNote"></div>
+    <div class="pay-hint">The extension replaces whatever he was set to make in those seasons (arbitration projections included). Seasons after 2032 aren’t shown in the outlook.</div>
+    <div class="pay-calc"><span>Extension</span><b id="mCalc">—</b></div><div class="pay-hint" id="mExtNote"></div>`,
+    `<button class="pay-btn" data-m="close">Cancel</button>${M.editing?'<button class="pay-btn danger" data-m="delExt">Remove extension</button>':''}<button class="pay-btn primary" data-m="saveExt">${M.editing?'Save':'Add extension'}</button>`);
+}
+function extSchedule(){ // [[year, salary]] for the form as filled in
+  const f = M.f, a = parseM(f.aav), n = Math.round(parseM(f.years)||0), st = +f.start; if(a==null || n<1) return null;
+  const base = schedShape(f.shape||'flat', n, a*n);
+  return base.map((v,i)=>{ if((f.shape||'flat')==='custom'){ const c = parseM(f.xs && f.xs[st+i]); return [st+i, c==null ? v : c]; } return [st+i, v]; });
+}
+function updateExtSched(force){
+  const box = document.getElementById('mXSched'); if(!box || !M || M.type!=='ext') return;
+  const sc = extSchedule(); if(!sc){ box.innerHTML = ''; return; }
+  const sig = `${M.f.start}|${sc.length}|${M.f.shape||'flat'}|${M.f.aav}`;
+  if(force || M.xsig!==sig){ M.xsig = sig;
+    box.innerHTML = sc.map(([y,v])=>`<label class="pay-field"><span>${y}</span><input data-xy="${y}" value="${esc(String(Math.round(v*100)/100))}" inputmode="decimal"></label>`).join(''); }
+  const tot = sc.reduce((t,x)=>t+x[1],0), avg = tot/sc.length, nt = document.getElementById('mXSchedNote');
+  if(nt) nt.textContent = (M.f.shape==='custom') ? `Total ${fmtX(tot)} · averages ${fmtX(avg)} a year — the luxury tax counts that average every year.` : `Total ${fmtX(tot)} · averages ${fmtX(avg)} a year. Front- or back-loading changes the cash in each season, not the tax value — the luxury tax counts the ${fmtX(avg)} average every year.`;
+}
+function extCandidates(q){
+  const toks = norm(q||'').split(' ').filter(Boolean);
+  return calcAll().items.filter(it=>it.cat!=='other' && it.kind!=='custom' && isActive(it) && !S.status[it.id] && (!toks.length || toks.every(t=>norm(it.name).includes(t))))
+    .sort((a,b)=>(rawNoExt(b,S.season)||0)-(rawNoExt(a,S.season)||0));
+}
+function extPickList(){
+  const box = document.getElementById('mExtList'), q = document.getElementById('mExtQ'); if(!box) return;
+  const list = extCandidates(q?q.value:'');
+  box.innerHTML = list.length ? list.map(it=>{ const paid = YEARS.filter(y=>(rawNoExt(it,y)||0)>0), last = paid.length?paid[paid.length-1]:null, has = S.ext && S.ext[it.id];
+    return `<button type="button" class="pay-sugg-item${has?' added':''}" data-m="extpick" data-id="${esc(it.id)}">${has?'<i class="chk">✓</i>':''}<b>${esc(it.name)}</b><span>${esc([it.pos||'', last?'under contract through '+last:'no money beyond this season', has?'extended':''].filter(Boolean).join(' · '))}</span></button>`; }).join('')
+    : '<div class="pay-hint" style="padding:10px 12px">Nobody on your roster matches.</div>';
+}
+function openExtPick(){
+  M = {type:'extpick', f:{}, html:()=>shell('Extend a player', `<div class="pay-hint">Pick anyone on your roster — veterans, arbitration or pre-arb players, and players you’ve signed or traded for.</div>
+    <input class="pay-in" id="mExtQ" placeholder="Search your players…" autocomplete="off"><div class="pay-browse" id="mExtList" style="max-height:340px"></div>`, `<button class="pay-btn" data-m="close">Cancel</button>`)};
+  paint(); extPickList(); const e = document.getElementById('mExtQ'); if(e) e.focus();
+}
+function openExt(id){
+  const it = calcAll().items.find(x=>x.id===id); if(!it) return;
+  const ex = S.ext && S.ext[id];
+  const paid = YEARS.filter(y=>(rawNoExt(it,y)||0)>0), last = paid.length ? paid[paid.length-1] : S.season-1;
+  const lastAmt = paid.length ? rawNoExt(it,last) : S.rules.minSalary;
+  const cur = paid.length ? `Currently under contract through ${last} (${fmt(lastAmt,2)} in ${last}).` : 'No money on the books beyond this season.';
+  M = {type:'ext', id, name:it.name, cur, editing:!!ex, f: ex ? {aav:String(ex.nom!=null?ex.nom:ex.aav), years:String(ex.through-ex.start+1), start:String(ex.start), shape:ex.shape||'flat', xs:ex.shape==='custom'?{...ex.sched}:{}}
+        : {aav:String(Math.round(lastAmt*100)/100), years:'3', start:String(Math.min(2032, last+1)), shape:'flat', xs:{}}, html:extHTML};
+  paint();
+}
 function openOther(){ M = {type:'other', f:{name:'',amt:'',start:String(S.season),through:String(S.season)}, html:otherHTML}; paint(); }
 
 function updateCalc(){
@@ -4629,8 +4991,13 @@ function updateCalc(){
   if(M.type==='promo'){ const a = num('mAav'), y = Math.round(num('mYears')||0); c.textContent = (a!=null&&y>0) ? `${fmtX(a)} × ${y} yr` : '—'; }
   else if(M.type==='fa'){ const r = faAav(); const nt = document.getElementById('mSxNote');
     if(!r){ c.textContent = '—'; if(nt) nt.style.display='none'; }
-    else { const s = structCalc(r); c.textContent = `${fmtX(s.aav)} × ${r.years} yr = ${fmtX(s.aav*r.years)}`; if(nt){ nt.innerHTML = s.notes.length ? esc(s.notes.join(' · ')) : ''; nt.style.display = s.notes.length ? '' : 'none'; } } }
+    else { const s = structCalc(r); c.textContent = `${fmtX(s.aav)} × ${r.years} yr = ${fmtX(s.aav*r.years)}`; if(nt){ nt.innerHTML = s.notes.length ? esc(s.notes.join(' · ')) : ''; nt.style.display = s.notes.length ? '' : 'none'; } }
+    updateFaExtras(); }
   else if(M.type==='pkg'){ c.textContent = fmtEff(pkgNet()); }
+  else if(M.type==='ext'){ const a = num('mAav'), n = Math.round(num('mYears')||0), st = +(document.getElementById('mStart')||{}).value;
+    c.textContent = (a!=null && n>0) ? `${fmtX(a)} × ${n} yr = ${fmtX(a*n)}` : '—'; updateExtSched();
+    const nt = document.getElementById('mExtNote'); if(nt){ const it = calcAll().items.find(x=>x.id===M.id); const y = S.season; const sc = extSchedule(); const yv = sc ? sc.reduce((t,x)=>t+x[1],0)/sc.length : null;
+      nt.textContent = (it && a!=null && n>0 && y>=st && y<st+n && yv!=null) ? `${y} payroll change: ${fmtEff(yv-(rawNoExt(it,y)||0))}` : (a!=null && n>0 ? `Starts in ${st} — no change to ${S.season} payroll.` : ''); } }
 }
 
 function onModalClick(e){
@@ -4648,11 +5015,21 @@ function onModalClick(e){
   if(m==='mode'){ readFields(); M.f.mode = v; paint(); return; }
   if(m==='shareCopy'){ const txt = M.link; if(!txt) return; const done = ()=>{ b.textContent = 'Copied ✓'; setTimeout(()=>{ b.textContent = 'Copy link'; }, 1500); };
     if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, ()=>{ const i = document.getElementById('mShareLink'); if(i){ i.select(); } }); else { const i = document.getElementById('mShareLink'); if(i){ i.select(); try{ document.execCommand('copy'); done(); }catch(e){} } } return; }
+  if(m==='shareView'){ M.view = b.dataset.v; const lk = M.link; paint(); const el = document.getElementById('mShareLink'); if(el && lk) el.value = lk; return; }
   if(m==='shareImg'){ b.textContent = 'Preparing…'; shareImage().finally(()=>{ b.textContent = 'Download image'; }); return; }
   if(m==='dfaPick'){ S.status[M.id] = {mode:v, at:Date.now()}; saveState(); closeModal(); renderAll(); return; }
   if(m==='sendopen'){ readFields(); M.f.sendOpen = true; paint(); return; }
   if(m==='sxopen'){ readFields(); M.f.sx = true; paint(); return; }
-  if(m==='fapick'){ const p = faPool()[+b.dataset.i]; if(p){ readFields(); faApply(p, true); } return; }
+  if(m==='fapick'){ const p = faPool()[+b.dataset.i]; if(!p) return; readFields();
+    const dup = dupMsg(p.name); if(dup){ faErr(dup); return; }
+    faApply(p, true); M.f.step = 'terms'; M.f.shape = 'flat'; M.schedSig = null; paint(); return; }
+  if(m==='fanext'){ readFields(); const nm = (M.f.name||'').trim(); if(!nm){ faErr('Pick a player or type a name first.'); return; }
+    { const dup = dupMsg(nm); if(dup){ faErr(dup); return; } }
+    M.f.name = nm; matchFA(); const p = faPool().find(x=>norm(x.name)===norm(nm)); if(p){ faApply(p, true); } M.f.step = 'terms'; M.f.shape = 'flat'; M.schedSig = null; paint(); return; }
+  if(m==='fastep'){ if(v==='terms'){ onModalClick({target:{closest:()=>({dataset:{m:'fanext'}})}}); } else if(M.f.step!=='find'){ readFields(); M.f.step = 'find'; paint(); } return; }
+  if(m==='faback'){ readFields(); M.f.step = 'find'; M.picked = null; paint(); return; }
+  if(m==='shape'){ readFields(); const r = faAav(); if(v==='custom' && r){ M.f.sched = {}; faSchedule(r).forEach((x,i)=>{ M.f.sched[+M.f.start+i] = String(Math.round(x*100)/100); }); } M.f.shape = v; M.schedSig = null;
+    document.querySelectorAll('#mShape button').forEach(x=>x.classList.toggle('active', x.dataset.v===v)); M.ack = false; updateFaExtras(); return; }
   if(m==='faposf'){ readFields(); M.f.faposf = v; if(M.f.fahand && !faHandOpts(v).some(o=>o[0]===M.f.fahand)) M.f.fahand = ''; paint(); return; }
   if(m==='fahand'){ readFields(); M.f.fahand = v; paint(); return; }
   if(m==='multirm'){ M.multi = (M.multi||[]).filter(x=>String(x.id)!==b.dataset.id); updateFarm(); updateMulti(); return; }
@@ -4687,7 +5064,8 @@ function onModalClick(e){
   }
   if(m==='saveFA'){
     readFields(); const r = faAav(); const name = M.f.name.trim();
-    if(!name){ document.getElementById('mName').focus(); return; }
+    if(!name){ M.f.step = 'find'; paint(); return; }
+    if(!M.editing){ const dup = dupMsg(name); if(dup){ faErr(dup); return; } }
     if(M.f.mil){ matchFA();
       const sal = num('mAav')||0;
       const rm = {id: M.editing || uid('fa'), kind:'fa', mil:true, name, pos: M.fa?M.fa.pos:'', type: M.fa?(M.fa.type||((M.fa.pos==='SP'||M.fa.pos==='RP')?'P':'H')):'H', aav:0, aavNom:Math.round(sal*1000)/1000, years:1, start:+M.f.start};
@@ -4695,9 +5073,12 @@ function onModalClick(e){
       commitAdded(rm, document.getElementById('mRoster').checked); closeModal(); return; }
     if(!r){ (document.getElementById(M.f.mode==='terms'?'mTotal':'mAav')).focus(); return; }
     matchFA();
+    if(M.schedBad){ faErr('Salary by year has to add up to the deal total before you can add it.'); return; }
+    if(M.belowFloor && !M.ack){ M.ack = true; const bt = document.getElementById('mSaveFA'); if(bt) bt.textContent = 'Add anyway'; faErr('This offer is below what he’d realistically sign for. Click again to add it anyway.'); return; }
     const rec = {id: M.editing || uid('fa'), kind:'fa', name, pos: M.fa?M.fa.pos:'', type: M.fa?(M.fa.type||((M.fa.pos==='SP'||M.fa.pos==='RP')?'P':'H')):'H',
       aav: Math.round(r.aav*1000)/1000, years:r.years, start:+M.f.start};
     if(M.f.qo && !qoBlockOf(name) && r.years===1 && Math.abs(r.aav-S.rules.qo)<1e-9) rec.qo = true;
+    if((M.f.shape||'flat')!=='flat'){ rec.shape = M.f.shape; rec.sched = {}; faSchedule(r).forEach((x,i)=>{ rec.sched[+M.f.start+i] = Math.round(x*100)/100; }); }
     { const sc = structCalc(r); rec.aavNom = Math.round(r.aav*1000)/1000; rec.aav = Math.round(sc.aav*1000)/1000;
       if(sc.struct) rec.struct = sc.struct; if(sc.out) rec.out = sc.out; if(sc.opt) rec.opt = sc.opt;
       if(M.editing){ const old = S.added.find(x=>x.id===M.editing); if(old && old.out && rec.out && old.out.after!==rec.out.after) delete S.options[rec.id+':out']; if(old && old.opt && !rec.opt) delete S.options[rec.id]; if(old && !rec.out) delete S.options[rec.id+':out']; } }
@@ -4706,7 +5087,8 @@ function onModalClick(e){
   }
   if(m==='dealtype'){ readFields(); M.f.mil = !!v; paint(); return; }
   if(m==='promoposf'){ readFields(); M.f.posf = v; paint(); if(M.picked) setInfo(`<b>${esc(M.picked.name)}</b> · ${esc(M.picked.pos)}${M.picked.age?' · age '+M.picked.age:''} · ${esc(M.picked.lvl)}`); return; }
-  if(m==='savePkg'){ savePackage(); return; }
+  if(m==='pkgback'){ M.f.confirm = false; paint(); return; }
+  if(m==='savePkg'){ if(!M.editing && !M.f.confirm){ const ok = M.f.get.some(g=>g.name.trim() && parseM(g.aav)!=null) || M.f.send.length; if(!ok) return; M.f.confirm = true; paint(); const el = modalRoot(); if(el) el.scrollTop = 0; return; } savePackage(); return; }
   if(m==='sendmanual'){ const q=(document.getElementById('mSendQ')||{}).value||''; const nm=q.trim(); if(!nm){ const el=document.getElementById('mSendQ'); if(el){ el.focus(); el.placeholder='Type the player’s name first, then click this link'; } return; } const id='x:'+norm(nm); M.f.meta=M.f.meta||{}; M.f.meta[id]={name:nm,pos:'',org:true}; if(!M.f.send.includes(id)) M.f.send.push(id); paint(); return; }
   if(m==='send'){ const id = b.dataset.id; if(M.f.send.includes(id)) M.f.send = M.f.send.filter(x=>x!==id); else M.f.send.push(id); const q = (document.getElementById('mSendQ')||{}).value||''; paint(); setVal('mSendQ', q); updateSendSugg(); return; }
   if(m==='sposf'){ M.f.sposf = v; if(M.f.shandf && !faHandOpts(v).some(o=>o[0]===M.f.shandf)) M.f.shandf = ''; const q = (document.getElementById('mSendQ')||{}).value||''; paint(); setVal('mSendQ', q); updateSendSugg(); return; }
@@ -4718,6 +5100,16 @@ function onModalClick(e){
   if(m==='rethow'){ M.f.retHow = v; paint(); return; }
   if(m==='retpct'){ M.f.ret = String(v); const el = document.getElementById('mRet'); if(el) el.value = v; updateCalc(); return; }
   if(m==='addmanual'){ const nm = (document.getElementById('mName')||{}).value||''; M.f.get.push({key:'g'+(++GK), id:null, name:nm.trim(), from:'', pos:'', ptype:'H', aav:'', start:String(S.season), through:String(S.season), eat:'', eatOpen:false, sched:null, info:'', pid:null, manual:true}); paint(); return; }
+  if(m==='xshape'){ readFields(); if(v==='custom'){ const sc = extSchedule(); M.f.xs = {}; if(sc) sc.forEach(([y,x])=>{ M.f.xs[y] = String(Math.round(x*100)/100); }); } M.f.shape = v; document.querySelectorAll('#mXShape button').forEach(x=>x.classList.toggle('active', x.dataset.v===v)); updateExtSched(true); return; }
+  if(m==='extpick'){ openExt(b.dataset.id); return; }
+  if(m==='saveExt'){ readFields(); const f = M.f, a = parseM(f.aav), n = Math.round(parseM(f.years)||0), st = +f.start;
+    if(a==null || a<=0){ const e = document.getElementById('mAav'); if(e) e.focus(); return; }
+    if(n<1){ const e = document.getElementById('mYears'); if(e) e.focus(); return; }
+    const sc = extSchedule(), shape = f.shape||'flat', avg = sc.reduce((t,x)=>t+x[1],0)/sc.length;
+    const rec = {aav:Math.round(avg*10000)/10000, start:st, through:st+n-1, at:(S.ext[M.id]&&S.ext[M.id].at)||Date.now()};
+    if(shape!=='flat'){ rec.shape = shape; rec.nom = a; rec.sched = {}; sc.forEach(([y,x])=>{ rec.sched[y] = Math.round(x*10000)/10000; }); }
+    S.ext = S.ext||{}; S.ext[M.id] = rec; saveState(); closeModal(); renderAll(); return; }
+  if(m==='delExt'){ if(S.ext) delete S.ext[M.id]; saveState(); closeModal(); renderAll(); return; }
   if(m==='saveOther'){
     readFields(); const f = M.f; const amt = parseM(f.amt); const name = f.name.trim();
     if(!name){ document.getElementById('mName').focus(); return; }
@@ -4744,6 +5136,7 @@ function dropRosterAdds(){
   const arr = realP(), keep = arr.filter(p=>p.via!=='payroll');
   if(keep.length!==arr.length){ if(REAL) REAL.players = keep; else players = keep; saveRoster(); }
 }
+const root0 = () => document.getElementById('payrollView');
 function onClick(e){
   const b = e.target.closest('[data-act]'); if(!b || b.tagName==='INPUT' || b.tagName==='SELECT') return;
   const act = b.dataset.act, id = b.dataset.id;
@@ -4753,6 +5146,7 @@ function onClick(e){
     case 'season': S.season = +b.dataset.y; saveState(); renderAll(); break;
     case 'target': if(b.dataset.v==='none') S.target.on=false; else { S.target.on=true; S.target.value=+b.dataset.v; } saveState(); renderAll(); break;
     case 'addFA': openFA(); break;
+    case 'addExt': openExtPick(); break;
     case 'addTrade': openPackage(); break;
     case 'addPromo': openPromo(); break;
     case 'planReset': confirmTwice('plan', async ()=>{ planExit(); await window.storageDelete('mlb_plan_depth_v1_'+currentTeamId); await planEnter(); renderAll(); }); break;
@@ -4765,23 +5159,26 @@ function onClick(e){
     case 'qo': if(qoBlockOf(b.dataset.name) || !ownPending(b.dataset.name)) break; openFA({name:b.dataset.name, f:{mode:'aav', aav:String(S.rules.qo), years:'1', qo:true}}); break;
     case 'editAdded': { const a = S.added.find(x=>x.id===id); if(!a) break;
       if(a.promo) openPromo({editing:a.id, name:a.name, f:{aav:String(a.aav), years:String(a.years), start:String(a.start)}, pick:{pos:a.pos, type:a.type, age:a.age, lvl:a.lvl}});
-      else if(a.kind==='fa') openFA({editing:a.id, name:a.name, f:{mil:!!a.mil, mode:'aav', aav:a.mil&&!nomAav(a)?'':String(nomAav(a)), years:String(a.years), start:String(a.start), qo:!!a.qo, sbonus:a.struct&&a.struct.bonus?String(a.struct.bonus):'', sdef:a.struct&&a.struct.defer?String(a.struct.defer):'', sdefyrs:a.struct&&a.struct.deferYrs?String(a.struct.deferYrs):'', sout:a.out?String(a.out.after):'', sok:a.opt?a.opt.kind:'', ssal:a.opt?String(a.opt.salary):'', sobuy:a.opt&&a.opt.buyout?String(a.opt.buyout):''}});
+      else if(a.kind==='fa') openFA({editing:a.id, name:a.name, f:{mil:!!a.mil, mode:'aav', aav:a.mil&&!nomAav(a)?'':String(nomAav(a)), years:String(a.years), start:String(a.start), qo:!!a.qo, shape:a.shape||'flat', sched:a.sched?Object.fromEntries(Object.entries(a.sched).map(([k,v])=>[k,String(v)])):undefined, sbonus:a.struct&&a.struct.bonus?String(a.struct.bonus):'', sdef:a.struct&&a.struct.defer?String(a.struct.defer):'', sdefyrs:a.struct&&a.struct.deferYrs?String(a.struct.deferYrs):'', sout:a.out?String(a.out.after):'', sok:a.opt?a.opt.kind:'', ssal:a.opt?String(a.opt.salary):'', sobuy:a.opt&&a.opt.buyout?String(a.opt.buyout):''}});
       else openPackage({edit:a.pkg||a.id}); break; }
     case 'removeAdded': { const a0 = S.added.find(x=>x.id===id); const pkg = a0 && (a0.pkg||a0.id); S.added = S.added.filter(a=>a.id!==id); rosterRemove(id);
       if(pkg && !S.added.some(x=>x.kind==='trade' && (x.pkg||x.id)===pkg)) Object.keys(S.status).forEach(k=>{ if(S.status[k].tradeId===pkg) delete S.status[k]; });
       saveState(); renderAll(); break; }
+    case 'extend': openExt(id); break;
+    case 'undoExt': if(S.ext) delete S.ext[id]; saveState(); renderAll(); break;
     case 'removeOther': S.customOther = S.customOther.filter(c=>c.id!==id); saveState(); renderAll(); break;
     case 'tradeAway': openPackage({send:[id]}); break;
     case 'removePkg': { const pk = b.dataset.id; S.added.filter(a=>a.kind==='trade' && (a.pkg||a.id)===pk).forEach(a=>rosterRemove(a.id)); S.added = S.added.filter(a=>!(a.kind==='trade' && (a.pkg||a.id)===pk)); Object.keys(S.status).forEach(k=>{ if(S.status[k].tradeId===pk) delete S.status[k]; }); saveState(); renderAll(); break; }
     case 'optReset': S.options[id] = 'undecided'; saveState(); renderAll(); break;
     case 'nontender': S.status[id] = {mode:'nontender', at:Date.now()}; saveState(); renderAll(); break;
     case 'share': openShare(); break;
+    case 'openAssume': { const d = root0().querySelector('details.pay-assume'); if(d){ d.open = true; UI.assumeOpen = true; d.scrollIntoView({behavior:'smooth', block:'start'}); } break; }
     case 'sharedKeep': UI.shared = null; renderAll(); break;
     case 'sharedRestore': try{ localStorage.setItem(STORE_KEY(TEAM_ID), localStorage.getItem(STORE_KEY(TEAM_ID)+'_prev')); }catch(e){} loadState(); S.added.forEach(a=>rosterAdd(a)); UI.shared = null; renderAll(); break;
     case 'dfa': { const it = calcAll().items.find(x=>x.id===id); if(it){ M = {type:'dfa', id, name:it.name, cat:it.cat, html:dfaHTML}; paint(); } break; }
     case 'release': S.status[id] = {mode:'released', at:Date.now()}; saveState(); renderAll(); break;
     case 'undoStatus': delete S.status[id]; saveState(); renderAll(); break;
-    case 'resetRow': delete S.overrides[id]; delete S.status[id]; delete S.options[id]; saveState(); renderAll(); break;
+    case 'resetRow': if(S.ext) delete S.ext[id]; delete S.overrides[id]; delete S.status[id]; delete S.options[id]; saveState(); renderAll(); break;
     case 'clearAdded': confirmTwice('added', ()=>{ S.added.forEach(a=>rosterRemove(a.id)); S.added=[]; saveState(); renderAll(); }); break;
     case 'resetRules': confirmTwice('rules', ()=>{ S.rules = clone(DEFAULT_RULES); saveState(); renderAll(); }); break;
     case 'resetAll': confirmTwice('all', ()=>{ dropRosterAdds(); S = defaultState(); saveState(); renderAll(); }); break;
@@ -4854,7 +5251,7 @@ function close(){
   setHeader(false); syncTabs(false);
 }
 function isOpen(){ return document.body.classList.contains('view-payroll'); }
-return {applyFG, open, close, isOpen, useTeam, optBadge, optCycle, paintAlert, planActive:()=>!!REAL, refresh:()=>{ if(isOpen() && !M) renderAll(); }, _debug:()=>({S, calcAll, taxFor, SEED, FG:FG_TOTALS, TEAM_SIM})};
+return {applyFG, open, close, isOpen, useTeam, threshold:()=>DEFAULT_RULES.threshold[2027], act:a=>onClick({target:{closest:()=>({tagName:'BUTTON', dataset:{act:a}})}}), armed:()=>UI.armed, optBadge, optCycle, paintAlert, planActive:()=>!!REAL, refresh:()=>{ if(isOpen() && !M) renderAll(); }, _debug:()=>({S, calcAll, taxFor, SEED, FG:FG_TOTALS, TEAM_SIM})};
 })();
 
 
@@ -4868,6 +5265,125 @@ return {applyFG, open, close, isOpen, useTeam, optBadge, optCycle, paintAlert, p
     new Promise(res=>setTimeout(res, 2500))
   ]);
 })();
+
+/* ---------- main navigation (header menus) ---------- */
+const MM_DIVS = {
+  'American League':[['East',[['BAL','Orioles'],['BOS','Red Sox'],['NYY','Yankees'],['TB','Rays'],['TOR','Blue Jays']]],['Central',[['CWS','White Sox'],['CLE','Guardians'],['DET','Tigers'],['KC','Royals'],['MIN','Twins']]],['West',[['ATH','Athletics'],['HOU','Astros'],['LAA','Angels'],['SEA','Mariners'],['TEX','Rangers']]]],
+  'National League':[['East',[['ATL','Braves'],['MIA','Marlins'],['NYM','Mets'],['PHI','Phillies'],['WSH','Nationals']]],['Central',[['CHC','Cubs'],['CIN','Reds'],['MIL','Brewers'],['PIT','Pirates'],['STL','Cardinals']]],['West',[['AZ','D-backs'],['COL','Rockies'],['LAD','Dodgers'],['SD','Padres'],['SF','Giants']]]]
+};
+const MM_MENUS = [
+  {id:'payroll', label:'Payroll & Contracts', sim:true, footer:{t:'Assumptions & tax rules', go:'assume'}, items:[
+    {n:'$', t:'Cap space & CBT', d:'Projected payroll against the tax line and every tier.', go:'hero'},
+    {n:'6Y', t:'Multi-year outlook', d:'Committed dollars season by season, 2027 through 2032.', go:'outlook'},
+    {n:'C', t:'Current contracts', d:'Every deal on the books, with options and buyouts.', go:'contracts'},
+    {n:'FA', t:'Impending free agents', d:'Who comes off the books after 2026 and can be re-signed.', go:'pending'}]},
+  {id:'depth', label:'Depth Chart & Lineups', items:[
+    {n:'26', t:'Active roster', d:'Your final 26-man roster, starters and bullpen.', go:'roster'},
+    {n:'40', t:'40-man roster', d:'Everyone else in the pool, with options and status.', go:'pool'},
+    {n:'DC', t:'Depth chart', d:'Roster counts and the board you can rearrange.', go:'depth'},
+    {n:'1–9', t:'Mock lineup', d:'Set a batting order against righties and lefties.', go:'lineup'}]},
+  {id:'tx', label:'Transactions', sim:true, footer:{t:'View your transaction log', go:'log'}, items:[
+    {n:'+', t:'Sign a free agent', d:'Browse the market and add a contract.', act:'addFA'},
+    {n:'EX', t:'Extend a player', d:'Sign anyone on your roster to a new, longer contract.', act:'addExt'},
+    {n:'⇄', t:'Acquire via trade', d:'Build a deal and see the payroll impact.', act:'addTrade'},
+    {n:'40', t:'Add to the 40-man', d:'Promote a prospect. Release, DFA or trade players from the contract rows.', act:'addPromo'},
+    {n:'¢', t:'Other payment', d:'Buyouts, retained salary and other dollars that count.', act:'addOther'}]}
+];
+function mmBuild(){
+  const nav = document.getElementById('mmNav'); if(!nav) return;
+  const chev = '<svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5 6 8l3.5-3.5"></path></svg>';
+  const teams = `<div class="mm-menu"><button type="button" class="mm-btn" data-mm="teams" aria-haspopup="true" aria-expanded="false">Teams <span class="mm-abbr" id="mmAbbr">NYY</span>${chev}</button>
+    <div class="mm-pop mm-teams" id="mmPop-teams">${Object.keys(MM_DIVS).map(lg=>`<div class="mm-lg"><h3>${lg}</h3><div class="mm-divs">${MM_DIVS[lg].map(([dv,list])=>`<div class="mm-div"><h4>${dv}</h4>${list.map(([ab,short])=>{ const t = TEAMS.find(x=>x.abbr===ab); return t ? `<button type="button" class="mm-team" data-mm-team="${t.id}" title="${t.name}"><img src="${logoSrc(t.id)}" alt="" onerror="this.remove()"><b>${ab}</b><span>${short}</span></button>` : ''; }).join('')}</div>`).join('')}</div></div>`).join('')}</div></div>`;
+  const menus = MM_MENUS.map(m=>`<div class="mm-menu${m.sim?' mm-sim-only':''}"><button type="button" class="mm-btn" data-mm="${m.id}" aria-haspopup="true" aria-expanded="false">${m.label}${chev}</button>
+    <div class="mm-pop" id="mmPop-${m.id}">${m.items.map(it=>`<button type="button" class="mm-item" ${it.go?`data-mm-go="${it.go}"`:`data-mm-act="${it.act}"`}><span class="mm-ico">${it.n}</span><span><b>${it.t}</b><span class="d">${it.d}</span></span></button>`).join('')}
+      ${m.id==='depth' ? `<div class="mm-foot mm-foot-sim"><button type="button" data-view="roster">Open Roster Builder →</button></div><div class="mm-foot mm-foot-roster"><button type="button" data-view="payroll">Back to the Offseason Simulator →</button></div>`
+        : `<div class="mm-foot"><button type="button" data-mm-go="${m.footer.go}">${m.footer.t} →</button></div>`}</div></div>`).join('');
+  nav.innerHTML = teams + menus;
+  mmSync(currentTeamId);
+}
+function mmSync(teamId){
+  const t = teamById(teamId), ab = document.getElementById('mmAbbr'); if(ab) ab.textContent = t.abbr;
+  document.querySelectorAll('.mm-team').forEach(b=>b.classList.toggle('cur', +b.dataset.mmTeam===t.id));
+  if(typeof updateStickyOffsets==='function') updateStickyOffsets();
+}
+function mmClose(){
+  document.querySelectorAll('.mm-pop.open').forEach(p=>p.classList.remove('open'));
+  document.querySelectorAll('.mm-btn[aria-expanded="true"]').forEach(b=>b.setAttribute('aria-expanded','false'));
+  const sc = document.getElementById('mmScrim'); if(sc) sc.hidden = true;
+}
+function mmGo(key){
+  const q = s => document.querySelector(s);
+  const card = txt => { const h = [...document.querySelectorAll('.pay-card-h h3')].find(x=>x.textContent.trim().toLowerCase().startsWith(txt)); return h ? h.closest('.pay-card') : null; };
+  let el = null;
+  switch(key){
+    case 'hero': el = q('.pay-hero'); break;
+    case 'outlook': el = card('multi-year outlook'); break;
+    case 'contracts': el = card('guaranteed contracts'); break;
+    case 'pending': el = card('pending free agents'); break;
+    case 'log': el = card('moves log'); break;
+    case 'assume': el = q('details.pay-assume'); if(el) el.open = true; break;
+    case 'roster': el = q('#boardSplit'); break;
+    case 'pool': el = q('#boardSplit .pool-col') || q('.pool-col'); break;
+    case 'depth': el = q('.pay-plan-head') || q('#statsBar'); break;
+    case 'lineup': el = q('.lineup-section'); break;
+  }
+  if(!el) return;
+  const h = (document.querySelector('header.topbar')||{}).offsetHeight || 76;
+  el.style.scrollMarginTop = (h + 14) + 'px';
+  el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+let mmResetTimer = null;
+function mmResetLabel(){
+  const b = document.getElementById('mmReset'); if(!b) return;
+  const armed = PayrollPlanner.armed()==='all';
+  b.classList.toggle('armed', armed);
+  b.innerHTML = armed ? 'Click again to reset' : '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path></svg>';
+}
+document.addEventListener('click', e=>{
+  const mb = e.target.closest('[data-mm]');
+  if(mb){ const id = mb.dataset.mm, pop = document.getElementById('mmPop-'+id), was = pop && pop.classList.contains('open');
+    mmClose(); if(pop && !was){ pop.classList.add('open'); mb.setAttribute('aria-expanded','true'); const sc = document.getElementById('mmScrim'); if(sc) sc.hidden = false; } return; }
+  const tm = e.target.closest('[data-mm-team]');
+  if(tm){ const tid = +tm.dataset.mmTeam; mmClose(); window.scrollTo({top:0}); if(tid!==currentTeamId) switchTeam(tid); return; }
+  const go = e.target.closest('[data-mm-go]'); if(go){ mmClose(); mmGo(go.dataset.mmGo); return; }
+  const ac = e.target.closest('[data-mm-act]'); if(ac){ mmClose(); PayrollPlanner.act(ac.dataset.mmAct); return; }
+  if(e.target.closest('[data-view]')) mmClose();
+  if(e.target.closest('#mmShare')){ PayrollPlanner.act('share'); return; }
+  if(e.target.closest('#mmReset')){ PayrollPlanner.act('resetAll'); mmResetLabel(); clearTimeout(mmResetTimer); mmResetTimer = setTimeout(mmResetLabel, 4500); return; }
+  if(e.target.closest('[data-about]')){ showWelcome(); return; }
+  if(e.target.closest('#mmScrim')) mmClose();
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') mmClose(); });
+
+/* ---------- welcome screen (bare domain) ---------- */
+const esc = x => String(x==null?'':x).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const WELCOME_KEY = 'mlb_welcome_seen_v1';
+const seenWelcome = () => { try{ return !!localStorage.getItem(WELCOME_KEY); }catch(e){ return true; } };
+function hideWelcome(){ const w = document.getElementById('welcome'); if(w) w.remove(); document.body.style.overflow = ''; try{ localStorage.setItem(WELCOME_KEY, '1'); }catch(e){} }
+function showWelcome(){
+  hideWelcome();
+  const cur = teamById(currentTeamId), thr = PayrollPlanner.threshold();
+  const lg = L => `<div class="wl-lg"><h3>${L==='AL'?'American League':'National League'}</h3><div class="wl-grid">${[...TEAMS].filter(t=>t.league===L).sort((a,b)=>a.name.localeCompare(b.name)).map(t=>`<button type="button" class="wl-team" data-welcome-team="${t.id}"><img src="${logoSrc(t.id)}" alt="" onerror="this.remove()">${esc(t.name)}</button>`).join('')}</div></div>`;
+  const w = document.createElement('div'); w.id = 'welcome';
+  w.innerHTML = `<div class="wl" role="dialog" aria-label="Welcome">
+    <div><h1>Offseason Simulator</h1><p class="wl-lead">Plan your team’s 2027 offseason against the luxury tax. Sign free agents, make trades and see what every move does to your payroll — then set the lineup you end up with.</p></div>
+    <div><h2>Select your team</h2><div class="wl-leagues">${lg('AL')}${lg('NL')}</div></div>
+    <ul class="wl-do"><li><b>Make the moves</b>Sign free agents, trade players, release or non-tender anyone on the roster.</li>
+      <li><b>Watch the payroll</b>See your payroll against the tax line, the tax bill and your 40-man count after each move.</li>
+      <li><b>Build the roster</b>Set the depth chart and lineups for the team you built, then share the plan.</li></ul>
+    <div class="wl-cba"><b>The CBA expires this December.</b> Nothing is set for 2027 yet, so the $${thr}M tax line and the tax rates here carry the 2026 rules forward as an assumption. A new deal, or a salary cap, could change all of it. Every number is editable under Assumptions &amp; tax rules.</div>
+    <div class="wl-foot"><button type="button" class="wl-cont" data-welcome-team="${cur.id}">Continue with the ${esc(cur.name)}</button><button type="button" class="wl-link" data-welcome-roster="1">Just want the 26-man roster builder?</button></div>
+  </div>`;
+  document.body.appendChild(w); document.body.style.overflow = 'hidden';
+}
+document.addEventListener('click', e=>{
+  const w = document.getElementById('welcome'); if(!w) return;
+  const t = e.target.closest('[data-welcome-team]'), r = e.target.closest('[data-welcome-roster]');
+  if(t){ const id = +t.dataset.welcomeTeam; hideWelcome();
+    if(id===currentTeamId && PayrollPlanner.isOpen()) updateUrlForTeam(id, {sim:true}); else openPayrollView({teamId:id}); }
+  else if(r){ hideWelcome(); if(PayrollPlanner.isOpen()) PayrollPlanner.close(); updateUrlForTeam(currentTeamId); }
+});
+document.addEventListener('click', e=>{ if(e.target.closest('.topbar .brand')){ if(history.pushState){ try{ history.pushState(null,'','/'); }catch(err){} } showWelcome(); } });
 
 (async function init(){
   // A direct link to a team's own URL (mlbrostertool.com/yankees) wins over
@@ -4903,7 +5419,9 @@ return {applyFG, open, close, isOpen, useTeam, optBadge, optCycle, paintAlert, p
   }
   // Make sure the address bar actually reflects wherever we landed — most
   // visits start at the bare domain, which otherwise never gets a team slug.
-  updateUrlForTeam(currentTeamId, {replace:true, sim:simPath}); // also tidies old /payroll and /offseason links
+  mmBuild();
+  const welcomeRoot = !pathSlug || (!seenWelcome() && !window.__bootPlan); // the bare domain, and anyone's first visit, start at "Select your team"
+  if(welcomeRoot) showWelcome(); if(pathSlug) updateUrlForTeam(currentTeamId, {replace:true, sim:simPath}); // also tidies old /payroll and /offseason links
   document.querySelectorAll('#viewTabs [data-view]').forEach(b=>b.classList.toggle('active', (b.dataset.view==='payroll')===simPath));
 
   const teamSelect = document.getElementById('teamSelect');
