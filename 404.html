@@ -708,6 +708,9 @@
   .pool-section.collapsed > :not(.pool-header-row){ display:none !important; }
   .pay-plan-head.collapsed > :not(h2){ display:none !important; }
   .brand{ cursor:pointer; }
+  .tile .mini-toggle.role-chip{ align-self:flex-start;  width:auto !important; height:auto !important; min-width:0 !important; border-radius:9px !important; padding:2px 9px !important; font-size:11px !important; line-height:1.4 !important; white-space:nowrap; display:inline-block !important; }
+  .cell-lv{ display:block; font-style:normal; font-size:9.5px; font-weight:700; color:var(--grey); text-align:right; padding-right:9px; margin-top:-3px; }
+  .pay-tbl tr.mine > td{ background:#eaf3fe; } .pay-tbl tr.mine > td.pname-cell{ box-shadow:inset 4px 0 0 var(--bubble,#3b82c4); } .pay-tbl tr.mine > td.col-sel{ background:#dcebfb; }
   .fill-spot-btn{ display:none; }
 
   /* ---- Move/Add picker popup ---- shared by "tap a tile to move it" and
@@ -922,6 +925,13 @@
     .mm-menu{ position:static; }
     .mm-pop,.mm-pop.mm-teams{ position:fixed; left:10px; right:10px; top:var(--header-h,120px); width:auto; max-width:none; max-height:calc(100vh - var(--header-h,120px) - 16px); overflow-y:auto; }
     .mm-pop.mm-teams{ grid-template-columns:1fr; gap:18px; padding:16px; } .mm-divs{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  }
+  @media (max-width: 600px){
+    header.topbar.mm-head{ gap:0 8px; min-height:0; }
+    header.topbar.mm-head .brand{ padding:8px 0 4px; flex:1 1 0; min-width:0; gap:8px; } header.topbar.mm-head .brand h1{ font-size:18px; white-space:nowrap; } header.topbar.mm-head .brand .interlock{ width:34px; height:34px; } header.topbar.mm-head .brand h1 .sub{ display:none; }
+    .mm-right{ position:absolute; right:12px; top:6px; padding:0; gap:6px; margin:0; } header.topbar.mm-head .brand{ flex:1 1 100%; padding-right:118px; } .mm-ghost{ height:34px; padding:0 12px; font-size:14px; } .mm-ghost.mm-icon{ width:36px; padding:0; }
+    .mm-nav{ order:3; flex:1 1 100%; min-width:0; max-width:calc(100% + 28px); flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; gap:0; margin:0 -14px; padding:0 8px; } .mm-nav::-webkit-scrollbar{ display:none; }
+    .mm-btn{ height:44px; font-size:14px; padding:0 9px; }
   }
   /* page heading + CBA note */
   .pay-topline{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; }
@@ -1297,6 +1307,21 @@
   .pay-lock{ font-size:12.5px; color:var(--grey); margin:-2px 0 6px; }
   .pay-cf{ border:1px solid var(--line,#d9dde3); border-radius:4px; padding:10px 14px; margin-bottom:10px; } .pay-cf h4{ margin:0 0 6px; font-family:var(--disp); font-size:18px; }
   .pay-cf ul{ list-style:none; margin:0; padding:0; } .pay-cf li{ display:flex; justify-content:space-between; gap:12px; padding:5px 0; border-top:1px solid #eef0f2; font-size:14px; } .pay-cf li:first-child{ border-top:none; } .pay-cf li span{ color:var(--grey); font-size:12.5px; text-align:right; }
+  .tr-cols{ display:grid; grid-template-columns:1fr auto 1fr; gap:10px; align-items:stretch; margin-bottom:12px; } .tr-arrow{ align-self:center; font-size:22px; color:var(--grey); }
+  .tr-side{ border:1px solid var(--line,#d9dde3); border-radius:6px; padding:10px 12px; min-width:0; } .tr-side-h{ display:flex; align-items:center; gap:8px; padding-bottom:8px; border-bottom:2px solid var(--navy); margin-bottom:4px; } .tr-side-h b{ display:block; font-family:var(--disp); font-size:19px; line-height:1.1; } .tr-side-h span{ font-size:12px; color:var(--grey); }
+  .tr-side ul{ list-style:none; margin:0; padding:0; } .tr-side li{ display:flex; flex-direction:column; padding:6px 0; border-top:1px solid #eef0f2; font-size:14px; } .tr-side li:first-child{ border-top:none; } .tr-side li span{ color:var(--grey); font-size:12.5px; }
+  @media (max-width:560px){ .tr-cols{ grid-template-columns:1fr; } .tr-arrow{ transform:rotate(90deg); justify-self:center; } }
+  .pay-modal.wide{ max-width:1060px; }
+  .tr-build{ display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start; } .tr-bcol{ min-width:0; }
+  .tr-bh{ display:flex; align-items:center; gap:8px; padding:8px 12px; margin-bottom:8px; background:var(--navy); color:#fff; border-radius:6px; } .tr-bh b{ font-family:var(--disp); font-size:20px; } .tr-bh span{ opacity:.8; font-size:13px; } .tr-bh .pay-logo{ width:28px; height:28px; background:#fff; border-radius:50%; padding:2px; }
+  @media (max-width:760px){ .tr-build{ grid-template-columns:1fr; } }
+  .tc{ width:100%; max-width:640px; background:#fff; color:var(--navy); font-family:var(--body); }
+  .tc-h{ background:var(--navy); color:#fff; padding:16px 22px; border-bottom:4px solid var(--bubble); display:flex; align-items:center; justify-content:center; gap:16px; }
+  .tc-h img{ width:52px; height:52px; border-radius:50%; background:#fff; object-fit:contain; padding:4px; } .tc-x{ font-size:26px; opacity:.8; }
+  .tc-t{ text-align:center; font-family:var(--disp); font-size:26px; font-weight:700; padding:12px 16px 2px; } .tc-ts{ text-align:center; font-size:12.5px; color:var(--grey); padding-bottom:10px; }
+  .tc-sides{ display:flex; border-top:1px solid #e3e6ea; border-bottom:1px solid #e3e6ea; } .tc-side{ flex:1 1 0; padding:12px 18px; min-width:0; } .tc-side + .tc-side{ border-left:1px solid #e3e6ea; }
+  .tc-side h4{ margin:0 0 6px; font-family:var(--disp); font-size:18px; } .tc-side ul{ list-style:none; margin:0; padding:0; } .tc-side li{ padding:6px 0; border-top:1px solid #eef0f2; font-size:15px; font-weight:600; } .tc-side li:first-child{ border-top:none; } .tc-side li span{ display:block; font-weight:400; font-size:12.5px; color:var(--grey); }
+  .tc-imp{ display:flex; flex-wrap:wrap; } .tc-imp > div{ flex:1 1 33%; padding:12px 18px; } .tc-imp > div:first-child{ flex-basis:42%; } .tc-imp > div:not(:first-child){ flex-basis:26%; } .tc-imp b{ display:block; font-family:var(--disp); font-size:22px; font-weight:600; white-space:nowrap; } .tc-imp b.bad{ color:var(--cut); } .tc-imp b.ok{ color:var(--lock); } .tc-imp span{ font-size:12.5px; color:var(--grey); }
   .sc-tabs{ display:flex; gap:6px; margin:2px 0 10px; } .sc-tabs .pay-btn.on{ background:var(--navy); color:#fff; border-color:var(--navy); }
   .sc-lu{ display:flex; border-bottom:1px solid #e3e6ea; } .sc-lu > div{ flex:1 1 0; padding:12px 18px 10px; } .sc-lu > div + div{ border-left:1px solid #e3e6ea; }
   .sc-lu ol{ list-style:none; margin:0; padding:0; } .sc-lu li{ display:flex; gap:8px; align-items:baseline; padding:4px 0; border-top:1px solid #eef0f2; font-size:14px; white-space:nowrap; }
@@ -3312,8 +3337,9 @@ function isEst(){ return S.rules.basis==='est'; }
 function baseFor(it, y){
   if(isEst() && it.mlbtr && it.mlbtr[y]!=null) return it.mlbtr[y];
   if(it.base && it.base[y]!=null) return it.base[y];
-  if(!isEst() && y!==2027) return null; // FanGraphs basis: only 2027 is estimated (their own numbers); later years stay blank like theirs
   const l = lvlOf(it, y);
+  if(!isEst() && y!==2027 && !/^ARB/.test(l||'')) return null; // FanGraphs basis leaves later years blank, but arbitration years still fill in (ARB 2, ARB 3…) so they can be edited
+
   if(!l) return null;
   if(l==='Pre') return S.rules.minSalary;
   if(l==='ARB 1') return S.rules.arbOneEstimate;
@@ -3370,6 +3396,7 @@ function rawCharge(it, y){
       if(a.out && y>a.out.after && S.options[a.id+':out']==='out') return null;
       if(a.opt && y===a.start+a.years){ return (S.options[a.id]||'undecided')==='exercise' ? a.opt.salary : null; }
     }
+    const ova = S.overrides[it.id]; if(ova && ova[y]!=null) return ova[y];
     return addedBase(a, y);
   }
   const ov = S.overrides[it.id];
@@ -3770,7 +3797,7 @@ function logEntries(calc){
       const stS = sentKeys.map(k=>S.status[k]), payTot = stS.reduce((t,x)=>t+(x.pay||0),0);
       const fracs = stS.filter(x=>x.pay==null && x.frac>0).map(x=>Math.round(x.frac*100)), multi = sentKeys.some(k=>byId[k] && YEARS.filter(yy=>(rawCharge(byId[k],yy)||0)>0).length>1);
       const cash = payTot>0 ? ` + ${fmt(payTot,payTot%1?2:1)}${multi?'/yr':''}` : (fracs.length ? ` + ${[...new Set(fracs)].join('/')}% of salary` : '');
-      L.push({kind: sent.length?'swap':'add', acts:[['editAdded','Edit',{id:a.id}],['removePkg','Undo',{id:pkg}]], at:a.at||0, eff:inc+sentEff, text:`Traded for ${grp.map(x=>x.name).join(', ')}${teams.length?' ('+teams.join(', ')+')':''}${sent.length?` — sending ${sent.join(', ')}${cash}`:''}`,
+      L.push({kind: sent.length?'swap':'add', acts:[['shareTrade','Share',{id:pkg}],['editAdded','Edit',{id:a.id}],['removePkg','Undo',{id:pkg}]], at:a.at||0, eff:inc+sentEff, text:`Traded for ${grp.map(x=>x.name).join(', ')}${teams.length?' ('+teams.join(', ')+')':''}${sent.length?` — sending ${sent.join(', ')}${cash}`:''}`,
         sub: grp.map(x=>`${x.name}: ${x.sched?'arbitration schedule':fmt(x.aav,2)+' AAV'} through ${x.through}${x.eat?` (other team pays ${fmt(x.eat,2)}/yr)`:''}`).join(' · ')});
     }
   });
@@ -3875,17 +3902,17 @@ function seasonHeads(){
 function cellHTML(it, y){
   const sel = y===S.season ? ' col-sel' : '';
   const raw = rawCharge(it, y);
-  if(it.added || optYear(it, y)){
+  if(optYear(it, y)){
     return `<td class="num${sel}">${raw==null?'<span style="color:#c3c8ce">—</span>':fmtCell(raw)}</td>`;
   }
   const ov = S.overrides[it.id] && S.overrides[it.id][y]!=null;
-  const est = !ov && isEst() && (it.lvl ? lvlOf(it,y) && !(it.mlbtr && it.mlbtr[y]!=null) && !(it.base && it.base[y]!=null) : false);
+  const est = !ov && (isEst() || y!==2027) && (it.lvl ? lvlOf(it,y) && !(it.mlbtr && it.mlbtr[y]!=null) && !(it.base && it.base[y]!=null) : false);
   const cls = ['pay-cell', ov?'ovr':'', est?'est':'', raw==null?'blank':''].filter(Boolean).join(' ');
-  return `<td class="num${sel}"><input class="${cls}" data-act="cell" data-id="${esc(it.id)}" data-y="${y}" value="${raw==null?'':fmtCell(raw)}" placeholder="—" inputmode="decimal" title="${est?'Estimate — edit to override':'Edit to override this season'}"></td>`;
+  return `<td class="num${sel}"><input class="${cls}" data-act="cell" data-id="${esc(it.id)}" data-y="${y}" value="${raw==null?'':fmtCell(raw)}" placeholder="—" inputmode="decimal" title="${est?'Estimate — edit to override':'Edit to override this season'}">${(raw!=null && lvlOf(it,y) && /^ARB/.test(lvlOf(it,y)))?`<i class="cell-lv">${esc(lvlOf(it,y))}</i>`:''}</td>`;
 }
 function rowHTML(it, rmap){
   const st = S.status[it.id];
-  const cls = [st&&(st.mode==='traded'||st.mode==='nontender'||st.mode==='claimed'||(st.mode==='outright'&&it.cat!=='guaranteed'))?'gone':'', st&&(st.mode==='released'||(st.mode==='outright'&&it.cat==='guaranteed'))?'dead':''].join(' ').trim();
+  const cls = [st&&(st.mode==='traded'||st.mode==='nontender'||st.mode==='claimed'||(st.mode==='outright'&&it.cat!=='guaranteed'))?'gone':'', st&&(st.mode==='released'||(st.mode==='outright'&&it.cat==='guaranteed'))?'dead':'', it.added?'mine':''].join(' ').trim();
   const rp = rmap.get(norm(it.name));
   const tradedFor = st && st.tradeId ? S.added.filter(a=>(a.pkg||a.id)===st.tradeId).map(a=>a.name).join(', ') : '';
   const tags = [];
@@ -3936,8 +3963,18 @@ function tableCard(title, sub, items, rmap, extraHead){
   return `<div class="pay-card"><div class="pay-card-h"><h3>${title}</h3><span class="sub">${sub}</span>${extraHead||''}</div>
     ${items.length ? `<div class="pay-scroll"><table class="pay-tbl"><thead><tr><th class="left">Player</th>${seasonHeads()}<th></th></tr></thead><tbody>${body}${tot}</tbody></table></div>` : `<div class="pay-empty">${esc(title)}: nothing here yet.</div>`}</div>`;
 }
+function tableCat(it){ // which table a row lives in: signings and trades sit with everyone else of the same kind
+  if(!it.added) return it.cat;
+  const a = it.added;
+  if(a.cat) return a.cat;
+  if(a.kind==='fa') return (a.promo||a.mil) ? 'pre' : 'guaranteed';
+  const inf = a.info||'';
+  if(/^Arbitration/.test(inf) || (a.sched && Object.keys(a.sched).length>1)) return 'arb';
+  if(/^(Pre-arb|Prospect|On the 40-man)/.test(inf)) return 'pre';
+  return 'guaranteed';
+}
 function tablesHTML(calc, rmap){
-  const by = c => calc.items.filter(it=>it.cat===c && it.kind!=='fa' && it.kind!=='trade');
+  const by = c => calc.items.filter(it=>it.cat!=='other' && tableCat(it)===c);
   const added = calc.items.filter(it=>it.added);
   const other = calc.items.filter(it=>it.cat==='other');
   const reSigned = new Set(S.added.map(a=>norm(a.name)));
@@ -3948,13 +3985,12 @@ function tablesHTML(calc, rmap){
       <td class="acts" colspan="2">${done?'':gone?`<button class="pay-btn tiny" data-act="unwalk" data-name="${esc(p.name)}">Undo</button>`:`<button class="pay-btn tiny ghost" data-act="walk" data-name="${esc(p.name)}" title="Let him go — no offer, no payroll hit">Let walk</button> ${p.qoBlock ? `<span class="pay-qo-off" title="Ineligible for the qualifying offer — ${esc(p.qoBlock)}"><button class="pay-btn tiny" disabled aria-disabled="true">Extend qualifying offer</button></span>` : `<button class="pay-btn tiny" data-act="qo" data-name="${esc(p.name)}" title="One year at ${fmt(S.rules.qo,2)}">Extend qualifying offer</button>`} <button class="pay-btn tiny" data-act="resign" data-name="${esc(p.name)}">Re-sign…</button>`}</td></tr>`;
   }).join('');
   return [
-    tableCard('Guaranteed contracts', `${S.season}: ${fmt(by('guaranteed').reduce((a,it)=>a+charge(it,S.season),0))}`, by('guaranteed'), rmap),
+    tableCard('Guaranteed contracts', `${S.season}: ${fmt(by('guaranteed').reduce((a,it)=>a+charge(it,S.season),0))}`, by('guaranteed'), rmap,
+      added.length ? `<button class="pay-btn tiny danger${UI.armed==='added'?' armed':''}" data-act="clearAdded" title="Remove every signing and trade acquisition you've added">${UI.armed==='added'?'Click again to confirm':'Clear all added'}</button>` : ''),
     `<div class="pay-card"><div class="pay-card-h"><h3>Pending free agents (contracts end after 2026)</h3><span class="sub">not on the ${S.season} payroll unless re-signed</span></div>
       <div class="pay-scroll"><table class="pay-tbl" style="min-width:420px"><tbody>${pend}</tbody></table></div></div>`,
-    tableCard('Arbitration-eligible', isEst()?'2027 = projections (FanGraphs / MLB Trade Rumors); later years estimated — click any number to override':'2027 projections from FanGraphs (MLB Trade Rumors model); later years left blank, like FanGraphs', by('arb'), rmap),
+    tableCard('Arbitration-eligible', isEst()?'2027 = projections (FanGraphs / MLB Trade Rumors); later years estimated — click any number to override':'2027 projections from FanGraphs (MLB Trade Rumors model); later arbitration years (ARB 2, ARB 3…) are estimates — click any number to override', by('arb'), rmap),
     tableCard('Pre-arbitration & first-year arb', 'league minimum until they reach arbitration (FanGraphs counts $0.8M each)', by('pre'), rmap),
-    tableCard('Free-agent signings & trade acquisitions', 'what you add shows up here and in the roster builder’s pool', added, rmap,
-      added.length ? `<button class="pay-btn tiny danger${UI.armed==='added'?' armed':''}" data-act="clearAdded">${UI.armed==='added'?'Click again to confirm':'Clear all added'}</button>` : ''),
     tableCard('Other payments & cash', 'negative = money coming in from another club (reduces payroll)', other, rmap),
   ].join('');
 }
@@ -4601,12 +4637,12 @@ function lineupCardHTML(){
     <div class="sc-f">mlbrostertool.com/${esc(teamObj().slug)}</div></div>`;
 }
 function shareHTML(){
-  const v = M.view==='lu' ? 'lu' : 'mv';
-  return shell('Share your plan', `<div class="pay-hint">Anyone who opens the link sees these exact payroll moves as their own editable copy. The link doesn’t carry your depth chart — the Lineup &amp; rotation image is how you share that.</div>
+  const v = M.view==='lu' ? 'lu' : M.view==='dc' ? 'dc' : 'mv';
+  return shell('Share your plan', `<div class="pay-hint">Anyone who opens the link sees these exact payroll moves as their own editable copy. The link doesn’t carry your depth chart — use the Depth chart or Lineup &amp; rotation image to share that.</div>
     <div class="pay-field">Link<div class="pay-linkrow"><input id="mShareLink" readonly value="${esc(M.link||'Building link…')}" onfocus="this.select()"><button class="pay-btn primary" data-m="shareCopy">Copy link</button></div></div>
     <div class="pay-hint" id="mShareNote"></div>
-    <div class="sc-tabs"><button class="pay-btn ${v==='mv'?'on':''}" data-m="shareView" data-v="mv">Payroll moves</button><button class="pay-btn ${v==='lu'?'on':''}" data-m="shareView" data-v="lu">Lineup &amp; rotation</button></div>
-    <div class="sc-wrap">${v==='lu'?lineupCardHTML():summaryCardHTML()}</div>`,
+    <div class="sc-tabs"><button class="pay-btn ${v==='mv'?'on':''}" data-m="shareView" data-v="mv">Payroll moves</button><button class="pay-btn ${v==='dc'?'on':''}" data-m="shareView" data-v="dc">Depth chart</button><button class="pay-btn ${v==='lu'?'on':''}" data-m="shareView" data-v="lu">Lineup &amp; rotation</button></div>
+    <div class="sc-wrap">${v==='lu'?lineupCardHTML():v==='dc'?`<div id="dcWrap" class="dc-wrap">${M.dcUrl?`<img src="${M.dcUrl}" alt="Depth chart" style="width:100%;display:block">`:'<div class="pay-hint" style="padding:20px">Building the depth chart image…</div>'}</div>`:summaryCardHTML()}</div>`,
     `<button class="pay-btn" data-m="close">Close</button><button class="pay-btn" data-m="shareImg">Download image</button><button class="pay-btn primary" data-m="shareCopy">Copy link</button>`);
 }
 async function openShare(){
@@ -4616,7 +4652,22 @@ async function openShare(){
   const el = document.getElementById('mShareLink'); if(el) el.value = M.link;
   const nt = document.getElementById('mShareNote'); if(nt && M.link.length>6000) nt.textContent = 'This is a long link — it works in a browser, but some apps may cut it off. The image is the safer thing to post.';
 }
+async function buildDepthImage(){
+  if(!M || M.type!=='share' || M.dcUrl || M.dcBusy) return; M.dcBusy = true;
+  try{
+    try{ window.render(); }catch(e){}
+    const el = document.getElementById('fullExport'); if(!el || typeof html2canvas==='undefined') throw new Error('no export target');
+    const logo = el.querySelector('.fx-team-logo img');
+    if(logo){ try{ const d = await fetchLogoDataUri(logoURL(TEAM_ID)); if(d) logo.src = d; }catch(e){} }
+    const canvas = await html2canvas(el, {backgroundColor:'#ffffff', scale:2});
+    if(!M || M.type!=='share') return; M.dcUrl = canvas.toDataURL('image/png');
+  }catch(e){ console.warn('depth chart image failed', e); if(M && M.type==='share') M.dcErr = true; }
+  finally{ if(M) M.dcBusy = false; }
+  if(M && M.type==='share' && M.view==='dc'){ const lk = M.link; paint(); const li = document.getElementById('mShareLink'); if(li && lk) li.value = lk;
+    if(M.dcErr){ const w = document.getElementById('dcWrap'); if(w) w.innerHTML = '<div class="pay-hint" style="padding:20px">Couldn’t build the image — close this and try again.</div>'; } }
+}
 async function shareImage(){
+  if(M && M.view==='dc'){ if(!M.dcUrl) return; const a = document.createElement('a'); a.download = `${teamObj().slug}-depth-chart.png`; a.href = M.dcUrl; a.click(); return; }
   const el = document.getElementById('shareCard'); if(!el || typeof html2canvas==='undefined') return;
   const img = el.querySelector('.sc-logo');
   try{ const d = await fetchLogoDataUri(logoURL(TEAM_ID)); if(d) img.src = d; else img.style.visibility='hidden'; }catch(e){}
@@ -4676,7 +4727,7 @@ function newGetRow(p){
     aav = sched[start]!=null ? sched[start] : (sched[Object.keys(sched)[0]]||0);
     info = (p.k==='p'?'Pre-arbitration':'Arbitration-eligible') + (p.m!=null?` · projected ${fmt(p.m)} for 2027`:'');
   }
-  return {key:'g'+(++GK), id:null, name:p.n, from:p.t, pos:p.pos&&(p.k==='m'||p.k==='r')&&p.pos!=='P'?p.pos.split('/')[0]:'', ptype:(p.k==='m'||p.k==='r')&&/P$/.test(p.pos||'')?'P':'H', aav:String(aav), start:String(start), through:String(Math.max(start,through)), eat:'', eatOpen:false, sched, info, pid:p.i, reset};
+  return {key:'g'+(++GK), id:null, name:p.n, from:p.t, pos:p.pos&&(p.k==='m'||p.k==='r')&&p.pos!=='P'?p.pos.split('/')[0]:'', ptype:(p.k==='m'||p.k==='r')&&/P$/.test(p.pos||'')?'P':'H', aav:String(aav), start:String(start), through:String(Math.max(start,through)), eat:'', eatOpen:false, sched, info, pid:p.i, reset, cat:(p.k==='g'?'guaranteed':(p.k==='p'||p.k==='m'||p.k==='r')?'pre':'arb')};
 }
 function addIncoming(i, tok){
   const p = tradePool()[i];
@@ -4692,6 +4743,7 @@ function syncTradeLock(){
   const L = tradeLock(); const sel = document.getElementById('mTeam'), nt = document.getElementById('mLock');
   if(L) M.f.team = L;
   if(sel){ sel.disabled = !!L; sel.value = M.f.team||''; }
+  const th = document.getElementById('mTheirHdr'), tl = document.getElementById('mTheirLogo'); if(th) th.textContent = L || 'Other club'; if(tl) tl.innerHTML = L ? teamLogo(L) : '';
   if(nt) nt.textContent = L ? `Trading with the ${L} — remove their players to switch teams.` : 'Pick a team to trade with — once you add a player, the trade is locked to that club.';
 }
 function renderGetRows(){ const box = document.getElementById('mGetRows'); if(box) box.innerHTML = M.f.get.map(getRowHTML).join(''); }
@@ -4779,26 +4831,39 @@ function sentAavNote(){
     return `<div>${esc(it.name)}: ${diff?'counts as ':''}<b>${fmt(d.aav,2)} AAV</b> to the new club (${remTxt(d)})${diff?` — vs ${fmt(mine,2)} on your books`:''}</div>`; }).filter(Boolean);
   return rows.length ? `<div class="pay-hint" style="margin-top:6px">${rows.join('')}<div style="margin-top:3px;opacity:.8">A traded player’s tax value resets to the guaranteed money still owed ÷ the guaranteed years left.</div></div>` : '';
 }
+function tradeImpactHTML(){
+  let impact = '';
+  try{
+    const I = tradeImpact(), yrs = YEARS.filter(y=>Math.abs(I.c1.years[y].total-I.c0.years[y].total)>0.005);
+    const hy = yrs.includes(S.season) ? S.season : (yrs[0]||S.season), a0 = I.c0.years[hy], a1 = I.c1.years[hy], T = a1.T, over = a1.total-T, tgt = S.target.on ? S.target.value : null;
+    const cell = (l, bb, em, cls) => `<div><span>${l}</span><b class="${cls||''}">${bb}</b>${em?`<em>${em}</em>`:''}</div>`;
+    impact = `<div class="fa-impact"><div class="fa-imp-h">After this trade · ${hy}</div><div class="fa-imp-grid">
+      ${cell('Projected payroll', `${fmt(a0.total,1)} → ${fmt(a1.total,1)}`, fmtEff(a1.total-a0.total)+' vs now')}
+      ${cell(`vs the CBT line (${fmt(T,0)})`, `${fmt(Math.abs(over),1)} ${over>0?'over':'under'}`, over>0?'in tax territory':'room left', over>0?'bad':'good')}
+      ${cell('Est. tax bill', a0.tax>0||a1.tax>0 ? `${fmt(a0.tax,1)} → ${fmt(a1.tax,1)}` : '$0.0M', a1.tax>a0.tax ? fmtEff(a1.tax-a0.tax)+' more' : (a1.tax<a0.tax ? fmtEff(a1.tax-a0.tax)+' less' : ''), a1.tax>a0.tax?'bad':(a1.tax<a0.tax?'good':''))}
+      ${I.f1==null ? '' : cell('40-man roster', `${I.f0} → ${I.f1}/40`, I.f1>40?'over 40 — someone has to go':'', I.f1>40?'bad':'')}
+      ${tgt==null ? '' : cell('Your target', `${fmt(Math.abs(tgt-a1.total),1)} ${tgt>=a1.total?'left':'over'}`, fmt(tgt,0)+' target', tgt>=a1.total?'good':'bad')}</div>
+      <table class="fa-imp-t"><tr><th>Season</th><th>Trade effect</th><th>Payroll after</th><th>vs line</th></tr>
+      ${(yrs.length?yrs:[hy]).map(y=>{ const o = I.c1.years[y], dv = o.total-o.T, d = o.total-I.c0.years[y].total; return `<tr><td>${y}</td><td>${fmtEff(d)}</td><td>${fmt(o.total,1)}</td><td style="color:${dv>0?'#b3261e':'#1b6e3a'}">${dv>0?'+':'−'}${fmt(Math.abs(dv),1)}</td></tr>`; }).join('')}</table></div>`;
+  }catch(e){ console.warn('trade impact failed', e); }
+  return impact;
+}
 function confirmHTML(){
   const f = M.f, byId = {}; ownItems().forEach(it=>{ byId[it.id]=it; });
   const items = f.send.map(id=>byId[id]).filter(Boolean), ret = retainedFor(items);
   const rows = f.get.filter(g=>g.name.trim() && parseM(g.aav)!=null);
-  const team = [...new Set(rows.map(g=>g.from).filter(Boolean))].join(' / ') || 'the other club';
+  const other = [...new Set(rows.map(g=>g.from).filter(Boolean))].join(' / ') || 'The other club';
   const sendLis = f.send.map(id=>{ const it = byId[id]; const nm = it?it.name:((f.meta&&f.meta[id])||{}).name; if(!nm) return '';
     let note = it ? `${fmt(netRaw(it,S.season),2)} on your ${S.season} books` : (String(id).startsWith('x:')?'minor leaguer':'40-man');
     const r = it && ret[it.id]; if(r){ if(r.pay!=null && r.pay>0) note += ` · you keep paying ${fmt(r.pay,2)}/yr`; else if(r.frac>0) note += ` · you keep paying ${Math.round(r.frac*100)}%`; }
     return `<li><b>${esc(nm)}</b><span>${esc(note)}</span></li>`; }).join('');
   const getLis = rows.map(g=>{ const eat = parseM(g.eat)||0; const yrs = +g.start===+g.through?g.start:g.start+'–'+g.through;
     return `<li><b>${esc(g.name)}</b><span>${fmt(parseM(g.aav)||0,2)} a year · ${yrs}${eat?` · ${esc(g.from||'they')} pays ${fmt(eat,2)}/yr`:''}</span></li>`; }).join('');
-  const yrsList = []; for(let y=S.season; y<=2032; y++) yrsList.push(y);
-  const nets = yrsList.map(y=>[y,pkgNet(y)]).filter(([y,n],i)=>Math.abs(n)>0.005 || i===0);
-  let before = null; try{ before = calcAll().years[S.season].total; }catch(e){}
-  const after = before!=null ? before + pkgNet(S.season) : null, T = S.rules.threshold[S.season];
-  return shell('Review this trade', `<div class="pay-hint">Nothing is final until you confirm. Here is the full trade with the ${esc(team)}.</div>
-    <div class="pay-cf"><h4>You send</h4>${sendLis?`<ul>${sendLis}</ul>`:'<div class="pay-hint">Nobody — you’re only taking on players.</div>'}</div>
-    <div class="pay-cf"><h4>You get from the ${esc(team)}</h4>${getLis?`<ul>${getLis}</ul>`:'<div class="pay-hint">Nobody — you’re only sending players.</div>'}</div>
-    <div class="pay-cf"><h4>Payroll impact</h4><ul>${nets.map(([y,n])=>`<li><b>${y}</b><span>${fmtEff(n)}</span></li>`).join('')}
-      ${after!=null?`<li><b>${S.season} CBT payroll</b><span>${fmt(before,1)} → ${fmt(after,1)} (${after>T?fmt(after-T,1)+' over':fmt(T-after,1)+' under'} the ${fmt(T,0)} line)</span></li>`:''}</ul></div>`,
+  const side = (logo, name, verb, lis, empty) => `<div class="tr-side"><div class="tr-side-h">${logo}<div><b>${esc(name)}</b><span>${verb}</span></div></div>${lis?`<ul>${lis}</ul>`:`<div class="pay-hint">${empty}</div>`}</div>`;
+  const impact = tradeImpactHTML();
+  return shell('Review this trade', `<div class="pay-hint">Nothing is final until you confirm.</div>
+    <div class="tr-cols">${side(teamLogo(teamObj().name), teamNick(), 'gives up', sendLis, 'Nobody — you’re only taking on players.')}<div class="tr-arrow" aria-hidden="true">⇄</div>${side(teamLogo(rows[0]&&rows[0].from||''), other, 'gives up', getLis, 'Nobody — you’re only sending players.')}</div>
+    ${impact}`,
     `<button class="pay-btn" data-m="pkgback">Back</button><button class="pay-btn primary" data-m="savePkg">Confirm trade</button>`);
 }
 function pkgHTML(){
@@ -4811,16 +4876,16 @@ function pkgHTML(){
         ${f.retHow==='usd'?'':`<div class="row">${[0,25,50,75].map(p=>`<button class="pay-chip small" data-m="retpct" data-v="${p}">${p===0?'None':p+'%'}</button>`).join(' ')}</div>`}</div>`
     : `<button class="pay-eat-link" data-m="retopen">You’re paying part of their salary?</button>`;
   const sendCollapsed = f.sendCollapsed && f.send.length && !f.sendOpen;
-  const sendSec = sendCollapsed ? `<div class="pay-sec"><div class="pay-sec-h">You send</div>
+  const sendSec = sendCollapsed ? `<div class="pay-sec"><div class="pay-sec-h">Players you send</div>
       <div class="pay-pills">${pills}</div>${sentAavNote()}
-      <button class="pay-eat-link" data-m="sendopen">Add another player to this trade…</button>${ret}</div>` : `<div class="pay-sec"><div class="pay-sec-h">${f.getFirst?'You give up':'You send'} <span>(optional)</span></div>
+      <button class="pay-eat-link" data-m="sendopen">Add another player to this trade…</button>${ret}</div>` : `<div class="pay-sec"><div class="pay-sec-h">Players you send <span>(optional)</span></div>
       <div class="pay-filters"><input class="pay-in" id="mSendQ" placeholder="Search your players…" autocomplete="off"></div>
       <div class="pay-seg pay-posf pay-posrow">${segBtns(POS_ROW_T,'sposf',f.sposf||'')}</div>
       <div class="pay-seg pay-posf pay-posrow">${handRow('shandf', f.sposf||'', f.shandf||'')}</div>
       <div class="pay-browse" id="mSendSugg"></div>
       <div class="pay-pills">${pills || '<span class="pay-hint">Nobody yet — leave empty if you’re only taking on a player.</span>'}</div>${sentAavNote()}
       <button class="pay-eat-link" data-m="sendmanual">Add someone not in the list (prospect, minor leaguer…)</button>${ret}</div>`;
-  const getSec = `<div class="pay-sec"><div class="pay-sec-h">${f.getFirst?'You get':'You get back'} <span>(optional)</span></div>
+  const getSec = `<div class="pay-sec"><div class="pay-sec-h">Players you get <span>(optional)</span></div>
       <div class="pay-filters"><select class="pay-in" id="mTeam"${tradeLock()?' disabled':''}><option value="">All teams</option>${teamOpts(f.team)}</select></div>
       <div class="pay-lock" id="mLock">${tradeLock()?`Trading with the ${esc(tradeLock())} — remove their players to switch teams.`:'Pick a team to trade with — once you add a player, the trade is locked to that club.'}</div>
       <div class="pay-seg pay-posf pay-posrow" id="mPosRow">${segBtns(POS_ROW_T,'posf',f.posf||'')}</div>
@@ -4829,10 +4894,15 @@ function pkgHTML(){
       <div class="pay-browse" id="mBrowse"></div>
       <div id="mGetRows">${f.get.map(getRowHTML).join('')}</div>
       <button class="pay-eat-link" data-m="addmanual">Add a player who isn’t in the list…</button></div>`;
-  return shell(M.editing?'Edit trade':'Make a trade', (f.getFirst ? getSec+sendSec : sendSec+getSec) + `
+  const lk = tradeLock();
+  const html = shell(M.editing?'Edit trade':'Make a trade', `<div class="tr-build">
+      <div class="tr-bcol"><div class="tr-bh">${teamLogo(teamObj().name)}<b>${esc(teamNick())}</b><span>give up</span></div>${sendSec}</div>
+      <div class="tr-bcol"><div class="tr-bh"><span id="mTheirLogo">${teamLogo(lk)}</span><b id="mTheirHdr">${esc(lk||'Other club')}</b><span>give up</span></div>${getSec}</div></div>
     <div class="pay-calc"><span>Net payroll change · ${S.season}</span><b id="mCalc">—</b></div>
+    <div id="mTrImpact"></div>
     ${f.get.length?`<label style="font-size:12.5px;display:flex;gap:7px;align-items:center"><input type="checkbox" id="mRoster" ${f.roster?'checked':''}> Also add incoming players to the roster builder’s player pool</label>`:''}`,
     `<button class="pay-btn" data-m="close">Cancel</button><button class="pay-btn primary" data-m="savePkg">${M.editing?'Save':'Complete trade'}</button>`);
+  return html.replace('class="pay-modal"','class="pay-modal wide"');
 }
 function openPackage(opts={}){
   const f = {send:[], get:[], retOpen:false, retHow:'pct', ret:'', roster:true, getFirst: !opts.send && !opts.edit, sendCollapsed: !!opts.send && !opts.edit};
@@ -4846,7 +4916,7 @@ function openPackage(opts={}){
   if(opts.edit){
     const pkg = opts.edit;
     S.added.filter(a=>a.kind==='trade' && (a.pkg||a.id)===pkg).forEach(a=>{
-      f.get.push({key:'g'+(++GK), id:a.id, name:a.name, from:a.from||'', pos:a.pos||'', ptype:a.type||'H', aav:String(a.aav), start:String(a.start), through:String(a.through), eat:a.eat?String(a.eat):'', eatOpen:!!a.eat, sched:a.sched||null, info:a.info||'', pid:a.pid||null, manual:!a.pid});
+      f.get.push({key:'g'+(++GK), id:a.id, name:a.name, from:a.from||'', pos:a.pos||'', ptype:a.type||'H', aav:String(a.aav), start:String(a.start), through:String(a.through), eat:a.eat?String(a.eat):'', eatOpen:!!a.eat, sched:a.sched||null, info:a.info||'', pid:a.pid||null, cat:a.cat, manual:!a.pid});
     });
     const sts = Object.keys(S.status).filter(k=>S.status[k].tradeId===pkg);
     f.send = sts;
@@ -4891,10 +4961,10 @@ function pkgNet(yy){
   items.forEach(it=>{ const raw = netRaw(it,y); const r = ret[it.id]; const kept = r.pay!=null ? Math.min(raw, r.pay) : raw*(r.frac||0); out += raw-kept; });
   return inc - out;
 }
-function savePackage(){
-  const f = M.f, pkg = M.editing || uid('pk');
+function applyPkg(dry, pkg){
+  const f = M.f; pkg = pkg || M.editing || uid('pk');
   const rows = f.get.filter(g=>g.name.trim() && parseM(g.aav)!=null);
-  if(!rows.length && !f.send.length) return;
+  if(!rows.length && !f.send.length) return false;
   const items = ownItems(), byId = {}; items.forEach(it=>{ byId[it.id]=it; });
   f.send.forEach(id=>{ if(!byId[id] && f.meta && f.meta[id]){ S.extraOrg = S.extraOrg||[]; if(!S.extraOrg.some(e=>e.id===id)) S.extraOrg.push({id, name:f.meta[id].name, pos:f.meta[id].pos||''}); byId[id] = {id, name:f.meta[id].name, cat:'org', kind:'org', base:{}}; } });
   const sendItems = f.send.map(id=>byId[id]).filter(Boolean);
@@ -4902,7 +4972,7 @@ function savePackage(){
   const oldAt = {}; Object.keys(S.status).forEach(k=>{ if(S.status[k].tradeId===pkg) oldAt[k] = S.status[k].at; });
   if(M.editing){
     const keep = new Set(rows.map(g=>g.id).filter(Boolean));
-    S.added.filter(a=>a.kind==='trade' && (a.pkg||a.id)===pkg && !keep.has(a.id)).forEach(a=>rosterRemove(a.id));
+    S.added.filter(a=>a.kind==='trade' && (a.pkg||a.id)===pkg && !keep.has(a.id)).forEach(a=>{ if(!dry) rosterRemove(a.id); });
     S.added = S.added.filter(a=>!(a.kind==='trade' && (a.pkg||a.id)===pkg && !keep.has(a.id)));
     Object.keys(S.status).forEach(k=>{ if(S.status[k].tradeId===pkg) delete S.status[k]; });
   }
@@ -4912,13 +4982,57 @@ function savePackage(){
     const start = +g.start, through = Math.max(start, +g.through), aav = parseM(g.aav);
     const rec = {id:g.id||uid('tr'), pkg, kind:'trade', name:g.name.trim(), pos:(g.pos||'').trim(), type:g.ptype||'H', from:(g.from||'').trim(), aav, eat:Math.max(0,parseM(g.eat)||0), start, through};
     if(g.sched && g.sched[start]!=null && Math.abs(g.sched[start]-aav)<1e-6) rec.sched = g.sched;
-    if(g.info) rec.info = g.info; if(g.pid) rec.pid = g.pid;
+    if(g.info) rec.info = g.info; if(g.pid) rec.pid = g.pid; if(g.cat) rec.cat = g.cat;
     const i = S.added.findIndex(a=>a.id===rec.id); rec.at = i>=0 ? (S.added[i].at||Date.now()) : Date.now();
     if(i>=0) S.added[i] = rec; else S.added.push(rec);
-    if(wantRoster) rosterAdd(rec);
+    if(wantRoster && !dry) rosterAdd(rec);
   });
-  saveState(); closeModal(); renderAll();
+  return true;
 }
+function savePackage(){ if(applyPkg(false)){ saveState(); closeModal(); renderAll(); } }
+function teamByNick(n){ return TEAMS.find(t=>t.name===n || t.name.endsWith(' '+n) || t.name===String(n||'').replace(/^Oakland /,'')); }
+function tradeCardData(pkg){
+  const calc1 = calcAll(), byId = {}; calc1.items.forEach(it=>{ byId[it.id]=it; });
+  const grp = S.added.filter(a=>a.kind==='trade' && (a.pkg||a.id)===pkg);
+  const sentKeys = Object.keys(S.status).filter(k=>S.status[k].tradeId===pkg);
+  const sv = {added:S.added, status:S.status, extraOrg:S.extraOrg}; let calc0;
+  try{ S.added = S.added.filter(a=>!(a.kind==='trade' && (a.pkg||a.id)===pkg)); S.status = {...S.status}; sentKeys.forEach(k=>{ delete S.status[k]; }); calc0 = calcAll(); }
+  finally{ S.added = sv.added; S.status = sv.status; S.extraOrg = sv.extraOrg; }
+  return {grp, sentKeys, byId, c0:calc0, c1:calc1};
+}
+function tradeCardHTML(pkg){
+  const d = tradeCardData(pkg), y = S.season, a0 = d.c0.years[y], a1 = d.c1.years[y], T = a1.T, over = a1.total-T;
+  const them = [...new Set(d.grp.map(a=>a.from).filter(Boolean))], themName = them.join(' / ') || 'The other club', tm = teamByNick(them[0]);
+  const sendLis = d.sentKeys.map(k=>{ const it = d.byId[k], st = S.status[k]; const nm = it?it.name:k; let note = it ? `${fmt(netRaw(it,y),2)} on his ${y} books` : '';
+    if(st.pay>0) note += ` · ${teamNick()} keep paying ${fmt(st.pay,2)}/yr`; else if(st.frac>0) note += ` · ${teamNick()} keep paying ${Math.round(st.frac*100)}%`;
+    return `<li>${esc(nm)}<span>${esc(note)}</span></li>`; }).join('');
+  const getLis = d.grp.map(a=>`<li>${esc(a.name)}<span>${a.sched?'arbitration-eligible':fmt(a.aav,2)+' a year'} · ${a.start===a.through?a.start:a.start+'–'+a.through}${a.eat?` · ${esc(a.from||'they')} pay ${fmt(a.eat,2)}/yr`:''}</span></li>`).join('');
+  const stat = (l,v,c)=>`<div><b class="${c||''}">${v}</b><span>${l}</span></div>`;
+  return `<div class="tc" id="shareCard"><div class="tc-h"><img class="sc-logo" data-tid="${teamObj().id}" src="${logoURL(teamObj().id)}" alt=""><span class="tc-x">⇄</span>${tm?`<img class="sc-logo" data-tid="${tm.id}" src="${logoURL(tm.id)}" alt="">`:''}</div>
+    <div class="tc-t">${esc(teamNick())} · ${esc(themName)}</div><div class="tc-ts">My offseason trade</div>
+    <div class="tc-sides"><div class="tc-side"><h4>${esc(teamNick())} send</h4>${sendLis?`<ul>${sendLis}</ul>`:'<div class="tc-ts" style="text-align:left">Nobody</div>'}</div>
+      <div class="tc-side"><h4>${esc(themName)} send</h4>${getLis?`<ul>${getLis}</ul>`:'<div class="tc-ts" style="text-align:left">Nobody</div>'}</div></div>
+    <div class="tc-imp">${stat(y+' CBT payroll', fmt(a0.total,1)+' → '+fmt(a1.total,1))}${stat(over>0?'over the tax line':'under the tax line', fmt(Math.abs(over),1), over>0?'bad':'ok')}${stat('Est. tax bill', a0.tax>0||a1.tax>0 ? fmt(a0.tax,1)+' → '+fmt(a1.tax,1) : '$0.0M')}</div>
+    <div class="sc-f">mlbrostertool.com/${esc(teamObj().slug)}</div></div>`;
+}
+function openTradeShare(pkg){
+  M = {type:'tradeshare', pkg, html:()=>shell('Share this trade', `<div class="pay-hint">A picture of this one move — download it and post it anywhere.</div><div class="sc-wrap">${tradeCardHTML(pkg)}</div>`,
+    `<button class="pay-btn" data-m="close">Close</button><button class="pay-btn primary" data-m="tradeImg">Download image</button>`)};
+  paint();
+}
+async function tradeImage(){
+  const el = document.getElementById('shareCard'); if(!el || typeof html2canvas==='undefined') return;
+  for(const img of el.querySelectorAll('img.sc-logo')){ try{ const dd = await fetchLogoDataUri(logoURL(img.dataset.tid)); if(dd) img.src = dd; else img.style.visibility='hidden'; }catch(e){} }
+  const w0 = el.style.width; el.style.width = '640px';
+  let canvas; try{ canvas = await html2canvas(el, {backgroundColor:'#ffffff', scale:2}); } finally { el.style.width = w0; }
+  const a = document.createElement('a'); a.download = `${teamObj().slug}-trade.png`; a.href = canvas.toDataURL('image/png'); a.click();
+}
+function tradeImpact(){ // the whole sheet with and without this trade, without saving it
+  const snap = JSON.stringify(S); let c0, c1, f0, f1;
+  try{ c0 = calcAll(); f0 = fortyMan(c0); applyPkg(true); c1 = calcAll(); f1 = fortyMan(c1); } finally { S = JSON.parse(snap); }
+  return {c0, c1, f0, f1};
+}
+
 
 /* --- other payment --- */
 function otherHTML(){
@@ -4994,7 +5108,7 @@ function updateCalc(){
     if(!r){ c.textContent = '—'; if(nt) nt.style.display='none'; }
     else { const s = structCalc(r); c.textContent = `${fmtX(s.aav)} × ${r.years} yr = ${fmtX(s.aav*r.years)}`; if(nt){ nt.innerHTML = s.notes.length ? esc(s.notes.join(' · ')) : ''; nt.style.display = s.notes.length ? '' : 'none'; } }
     updateFaExtras(); }
-  else if(M.type==='pkg'){ c.textContent = fmtEff(pkgNet()); }
+  else if(M.type==='pkg'){ c.textContent = fmtEff(pkgNet()); const ti = document.getElementById('mTrImpact'); if(ti){ const any = M.f.send.length || M.f.get.some(g=>g.name.trim() && parseM(g.aav)!=null); ti.innerHTML = (any && !M.editing && !M.f.confirm) ? tradeImpactHTML() : ''; } }
   else if(M.type==='ext'){ const a = num('mAav'), n = Math.round(num('mYears')||0), st = +(document.getElementById('mStart')||{}).value;
     c.textContent = (a!=null && n>0) ? `${fmtX(a)} × ${n} yr = ${fmtX(a*n)}` : '—'; updateExtSched();
     const nt = document.getElementById('mExtNote'); if(nt){ const it = calcAll().items.find(x=>x.id===M.id); const y = S.season; const sc = extSchedule(); const yv = sc ? sc.reduce((t,x)=>t+x[1],0)/sc.length : null;
@@ -5016,7 +5130,8 @@ function onModalClick(e){
   if(m==='mode'){ readFields(); M.f.mode = v; paint(); return; }
   if(m==='shareCopy'){ const txt = M.link; if(!txt) return; const done = ()=>{ b.textContent = 'Copied ✓'; setTimeout(()=>{ b.textContent = 'Copy link'; }, 1500); };
     if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, ()=>{ const i = document.getElementById('mShareLink'); if(i){ i.select(); } }); else { const i = document.getElementById('mShareLink'); if(i){ i.select(); try{ document.execCommand('copy'); done(); }catch(e){} } } return; }
-  if(m==='shareView'){ M.view = b.dataset.v; const lk = M.link; paint(); const el = document.getElementById('mShareLink'); if(el && lk) el.value = lk; return; }
+  if(m==='shareView'){ M.view = b.dataset.v; const lk = M.link; paint(); const el = document.getElementById('mShareLink'); if(el && lk) el.value = lk; if(M.view==='dc') buildDepthImage(); return; }
+  if(m==='tradeImg'){ b.textContent = 'Preparing…'; tradeImage().finally(()=>{ b.textContent = 'Download image'; }); return; }
   if(m==='shareImg'){ b.textContent = 'Preparing…'; shareImage().finally(()=>{ b.textContent = 'Download image'; }); return; }
   if(m==='dfaPick'){ S.status[M.id] = {mode:v, at:Date.now()}; saveState(); closeModal(); renderAll(); return; }
   if(m==='sendopen'){ readFields(); M.f.sendOpen = true; paint(); return; }
@@ -5169,6 +5284,7 @@ function onClick(e){
     case 'undoExt': if(S.ext) delete S.ext[id]; saveState(); renderAll(); break;
     case 'removeOther': S.customOther = S.customOther.filter(c=>c.id!==id); saveState(); renderAll(); break;
     case 'tradeAway': openPackage({send:[id]}); break;
+    case 'shareTrade': openTradeShare(b.dataset.id); break;
     case 'removePkg': { const pk = b.dataset.id; S.added.filter(a=>a.kind==='trade' && (a.pkg||a.id)===pk).forEach(a=>rosterRemove(a.id)); S.added = S.added.filter(a=>!(a.kind==='trade' && (a.pkg||a.id)===pk)); Object.keys(S.status).forEach(k=>{ if(S.status[k].tradeId===pk) delete S.status[k]; }); saveState(); renderAll(); break; }
     case 'optReset': S.options[id] = 'undecided'; saveState(); renderAll(); break;
     case 'nontender': S.status[id] = {mode:'nontender', at:Date.now()}; saveState(); renderAll(); break;
