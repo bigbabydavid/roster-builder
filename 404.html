@@ -707,6 +707,7 @@
   .roster-section.collapsed > :not(h2.section-title){ display:none !important; }
   .pool-section.collapsed > :not(.pool-header-row){ display:none !important; }
   .pay-plan-head.collapsed > :not(h2){ display:none !important; }
+  .brand{ cursor:pointer; }
   .fill-spot-btn{ display:none; }
 
   /* ---- Move/Add picker popup ---- shared by "tap a tile to move it" and
@@ -5298,7 +5299,7 @@ function mmBuild(){
     <div class="mm-pop" id="mmPop-${m.id}">${m.items.map(it=>`<button type="button" class="mm-item" ${it.go?`data-mm-go="${it.go}"`:`data-mm-act="${it.act}"`}><span class="mm-ico">${it.n}</span><span><b>${it.t}</b><span class="d">${it.d}</span></span></button>`).join('')}
       ${m.id==='depth' ? `<div class="mm-foot mm-foot-sim"><button type="button" data-view="roster">Open Roster Builder →</button></div><div class="mm-foot mm-foot-roster"><button type="button" data-view="payroll">Back to the Offseason Simulator →</button></div>`
         : `<div class="mm-foot"><button type="button" data-mm-go="${m.footer.go}">${m.footer.t} →</button></div>`}</div></div>`).join('');
-  nav.innerHTML = teams + menus;
+  nav.innerHTML = '<div class="mm-menu"><button type="button" class="mm-btn mm-home" data-home="1" title="Back to the welcome screen">Home</button></div>' + teams + menus;
   mmSync(currentTeamId);
 }
 function mmSync(teamId){
@@ -5383,7 +5384,7 @@ document.addEventListener('click', e=>{
     if(id===currentTeamId && PayrollPlanner.isOpen()) updateUrlForTeam(id, {sim:true}); else openPayrollView({teamId:id}); }
   else if(r){ hideWelcome(); if(PayrollPlanner.isOpen()) PayrollPlanner.close(); updateUrlForTeam(currentTeamId); }
 });
-document.addEventListener('click', e=>{ if(e.target.closest('.topbar .brand')){ if(history.pushState){ try{ history.pushState(null,'','/'); }catch(err){} } showWelcome(); } });
+document.addEventListener('click', e=>{ if(e.target.closest('.topbar .brand, [data-home]')){ try{ mmClose(); }catch(err){} if(history.pushState){ try{ history.pushState(null,'','/'); }catch(err){} } showWelcome(); } });
 
 (async function init(){
   // A direct link to a team's own URL (mlbrostertool.com/yankees) wins over
