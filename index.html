@@ -1311,6 +1311,9 @@
   .tr-side{ border:1px solid var(--line,#d9dde3); border-radius:6px; padding:10px 12px; min-width:0; } .tr-side-h{ display:flex; align-items:center; gap:8px; padding-bottom:8px; border-bottom:2px solid var(--navy); margin-bottom:4px; } .tr-side-h b{ display:block; font-family:var(--disp); font-size:19px; line-height:1.1; } .tr-side-h span{ font-size:12px; color:var(--grey); }
   .tr-side ul{ list-style:none; margin:0; padding:0; } .tr-side li{ display:flex; flex-direction:column; padding:6px 0; border-top:1px solid #eef0f2; font-size:14px; } .tr-side li:first-child{ border-top:none; } .tr-side li span{ color:var(--grey); font-size:12.5px; }
   @media (max-width:560px){ .tr-cols{ grid-template-columns:1fr; } .tr-arrow{ transform:rotate(90deg); justify-self:center; } }
+  .tr-p{ display:flex; align-items:baseline; gap:2px; } .tr-p b{ font-weight:700; } .tr-pos{ margin-left:auto; font-style:normal; font-weight:700; font-size:13px; color:var(--grey); padding-left:10px; }
+  .trcard{ background:#fff; } .trcard-h{ display:flex; justify-content:space-between; align-items:baseline; background:var(--navy); color:#fff; padding:10px 16px; margin-bottom:10px; border-bottom:3px solid var(--bubble); border-radius:4px 4px 0 0; } .trcard-h span{ font-family:var(--disp); font-size:20px; font-weight:700; } .trcard-h em{ font-style:normal; font-size:12px; opacity:.8; }
+  .tc-side li .tr-p, .tc-side li .tr-p b{ font-size:15px; } .tc-side .tr-pos{ font-size:12.5px; }
   .pay-modal.wide{ max-width:1060px; }
   .tr-build{ display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start; } .tr-bcol{ min-width:0; }
   .tr-bh{ display:flex; align-items:center; gap:8px; padding:8px 12px; margin-bottom:8px; background:var(--navy); color:#fff; border-radius:6px; } .tr-bh b{ font-family:var(--disp); font-size:20px; } .tr-bh span{ opacity:.8; font-size:13px; } .tr-bh .pay-logo{ width:28px; height:28px; background:#fff; border-radius:50%; padding:2px; }
@@ -3676,7 +3679,7 @@ function renderAll(){
   const yr = calc.years[S.season];
   const rmap = rosterNameMap();
   root.innerHTML = `<div class="pay-wrap">
-    ${sharedBanner()}
+    ${sharedBanner()}${flashBanner()}
     ${topline()}
     ${hero(yr, calc)}
     ${logCard(calc)}
@@ -3902,8 +3905,8 @@ function seasonHeads(){
 function cellHTML(it, y){
   const sel = y===S.season ? ' col-sel' : '';
   const raw = rawCharge(it, y);
-  if(optYear(it, y)){
-    return `<td class="num${sel}">${raw==null?'<span style="color:#c3c8ce">—</span>':fmtCell(raw)}</td>`;
+  if(optYear(it, y) || (!it.added && it.cat==='guaranteed')){
+    return `<td class="num${sel}" title="${it.added?'':'Signed contract — can’t be edited'}">${raw==null?'<span style="color:#c3c8ce">—</span>':fmtCell(raw)}</td>`;
   }
   const ov = S.overrides[it.id] && S.overrides[it.id][y]!=null;
   const est = !ov && (isEst() || y!==2027) && (it.lvl ? lvlOf(it,y) && !(it.mlbtr && it.mlbtr[y]!=null) && !(it.base && it.base[y]!=null) : false);
@@ -4848,6 +4851,25 @@ function tradeImpactHTML(){
   }catch(e){ console.warn('trade impact failed', e); }
   return impact;
 }
+function tradeLi(name, team, pos, note){
+  const bd = prosBadge({n:name, t:team});
+  return `<li><div class="tr-p"><b>${esc(name)}</b>${bd}<em class="tr-pos">${esc(pos||'')}</em></div><span>${esc(note||'')}</span></li>`;
+}
+function copyOrDownload(canvas, filename, btn){
+  return new Promise(res=>{
+    canvas.toBlob(async blob=>{
+      try{ await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]); if(btn){ btn.textContent = 'Copied ✓'; setTimeout(()=>{ btn.textContent = 'Copy image'; }, 1600); } }
+      catch(e){ const a = document.createElement('a'); a.download = filename; a.href = canvas.toDataURL('image/png'); a.click(); if(btn){ btn.textContent = 'Saved instead'; setTimeout(()=>{ btn.textContent = 'Copy image'; }, 1800); } }
+      res();
+    }, 'image/png');
+  });
+}
+async function reviewCanvas(){
+  const el = document.getElementById('trCard'); if(!el || typeof html2canvas==='undefined') return null;
+  for(const img of el.querySelectorAll('img')){ const m = /team-logos\/(\d+)\.svg/.exec(img.src||''); if(m && !String(img.src).startsWith('data:')){ try{ const d = await fetchLogoDataUri(logoURL(m[1])); if(d) img.src = d; }catch(e){} } }
+  const w0 = el.style.width; el.style.width = '720px';
+  try{ return await html2canvas(el, {backgroundColor:'#ffffff', scale:2}); } finally { el.style.width = w0; }
+}
 function confirmHTML(){
   const f = M.f, byId = {}; ownItems().forEach(it=>{ byId[it.id]=it; });
   const items = f.send.map(id=>byId[id]).filter(Boolean), ret = retainedFor(items);
@@ -4856,15 +4878,19 @@ function confirmHTML(){
   const sendLis = f.send.map(id=>{ const it = byId[id]; const nm = it?it.name:((f.meta&&f.meta[id])||{}).name; if(!nm) return '';
     let note = it ? `${fmt(netRaw(it,S.season),2)} on your ${S.season} books` : (String(id).startsWith('x:')?'minor leaguer':'40-man');
     const r = it && ret[it.id]; if(r){ if(r.pay!=null && r.pay>0) note += ` · you keep paying ${fmt(r.pay,2)}/yr`; else if(r.frac>0) note += ` · you keep paying ${Math.round(r.frac*100)}%`; }
-    return `<li><b>${esc(nm)}</b><span>${esc(note)}</span></li>`; }).join('');
+    const pos = it ? (it.pos||'') : ((f.meta&&f.meta[id])||{}).pos||'';
+    return tradeLi(nm, teamNick(), pos, note); }).join('');
   const getLis = rows.map(g=>{ const eat = parseM(g.eat)||0; const yrs = +g.start===+g.through?g.start:g.start+'–'+g.through;
-    return `<li><b>${esc(g.name)}</b><span>${fmt(parseM(g.aav)||0,2)} a year · ${yrs}${eat?` · ${esc(g.from||'they')} pays ${fmt(eat,2)}/yr`:''}</span></li>`; }).join('');
+    const pro = /^Prospect/.test(g.info||''), note = pro ? 'Minor leaguer · '+((g.info||'').split(' · ')[1]||'minors') : `${fmt(parseM(g.aav)||0,2)} a year · ${yrs}${eat?` · ${g.from||'they'} pays ${fmt(eat,2)}/yr`:''}`;
+    return tradeLi(g.name, g.from, g.pos, note); }).join('');
   const side = (logo, name, verb, lis, empty) => `<div class="tr-side"><div class="tr-side-h">${logo}<div><b>${esc(name)}</b><span>${verb}</span></div></div>${lis?`<ul>${lis}</ul>`:`<div class="pay-hint">${empty}</div>`}</div>`;
   const impact = tradeImpactHTML();
-  return shell('Review this trade', `<div class="pay-hint">Nothing is final until you confirm.</div>
+  const ot = teamByNick(rows[0]&&rows[0].from);
+  return shell('Review this trade', `<div class="pay-hint">Nothing is final until you confirm. Copy or download the image to share it.</div>
+    <div id="trCard" class="trcard"><div class="trcard-h"><span>${teamNick()} trade</span><em>mlbrostertool.com/${esc(teamObj().slug)}</em></div>
     <div class="tr-cols">${side(teamLogo(teamObj().name), teamNick(), 'gives up', sendLis, 'Nobody — you’re only taking on players.')}<div class="tr-arrow" aria-hidden="true">⇄</div>${side(teamLogo(rows[0]&&rows[0].from||''), other, 'gives up', getLis, 'Nobody — you’re only sending players.')}</div>
-    ${impact}`,
-    `<button class="pay-btn" data-m="pkgback">Back</button><button class="pay-btn primary" data-m="savePkg">Confirm trade</button>`);
+    ${impact}</div>`,
+    `<button class="pay-btn" data-m="pkgback">Back</button><button class="pay-btn" data-m="trCopy">Copy image</button><button class="pay-btn" data-m="trDl">Download image</button><button class="pay-btn primary" data-m="savePkg">Confirm trade</button>`);
 }
 function pkgHTML(){
   if(M.f.confirm) return confirmHTML();
@@ -5005,8 +5031,8 @@ function tradeCardHTML(pkg){
   const them = [...new Set(d.grp.map(a=>a.from).filter(Boolean))], themName = them.join(' / ') || 'The other club', tm = teamByNick(them[0]);
   const sendLis = d.sentKeys.map(k=>{ const it = d.byId[k], st = S.status[k]; const nm = it?it.name:k; let note = it ? `${fmt(netRaw(it,y),2)} on his ${y} books` : '';
     if(st.pay>0) note += ` · ${teamNick()} keep paying ${fmt(st.pay,2)}/yr`; else if(st.frac>0) note += ` · ${teamNick()} keep paying ${Math.round(st.frac*100)}%`;
-    return `<li>${esc(nm)}<span>${esc(note)}</span></li>`; }).join('');
-  const getLis = d.grp.map(a=>`<li>${esc(a.name)}<span>${a.sched?'arbitration-eligible':fmt(a.aav,2)+' a year'} · ${a.start===a.through?a.start:a.start+'–'+a.through}${a.eat?` · ${esc(a.from||'they')} pay ${fmt(a.eat,2)}/yr`:''}</span></li>`).join('');
+    return tradeLi(nm, teamNick(), it?it.pos:'', note); }).join('');
+  const getLis = d.grp.map(a=>tradeLi(a.name, a.from, a.pos, `${a.sched?'arbitration-eligible':fmt(a.aav,2)+' a year'} · ${a.start===a.through?a.start:a.start+'–'+a.through}${a.eat?` · ${a.from||'they'} pay ${fmt(a.eat,2)}/yr`:''}`)).join('');
   const stat = (l,v,c)=>`<div><b class="${c||''}">${v}</b><span>${l}</span></div>`;
   return `<div class="tc" id="shareCard"><div class="tc-h"><img class="sc-logo" data-tid="${teamObj().id}" src="${logoURL(teamObj().id)}" alt=""><span class="tc-x">⇄</span>${tm?`<img class="sc-logo" data-tid="${tm.id}" src="${logoURL(tm.id)}" alt="">`:''}</div>
     <div class="tc-t">${esc(teamNick())} · ${esc(themName)}</div><div class="tc-ts">My offseason trade</div>
@@ -5131,6 +5157,8 @@ function onModalClick(e){
   if(m==='shareCopy'){ const txt = M.link; if(!txt) return; const done = ()=>{ b.textContent = 'Copied ✓'; setTimeout(()=>{ b.textContent = 'Copy link'; }, 1500); };
     if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, ()=>{ const i = document.getElementById('mShareLink'); if(i){ i.select(); } }); else { const i = document.getElementById('mShareLink'); if(i){ i.select(); try{ document.execCommand('copy'); done(); }catch(e){} } } return; }
   if(m==='shareView'){ M.view = b.dataset.v; const lk = M.link; paint(); const el = document.getElementById('mShareLink'); if(el && lk) el.value = lk; if(M.view==='dc') buildDepthImage(); return; }
+  if(m==='trCopy'){ b.textContent = 'Preparing…'; reviewCanvas().then(c=>c?copyOrDownload(c, `${teamObj().slug}-trade.png`, b):(b.textContent='Copy image')); return; }
+  if(m==='trDl'){ b.textContent = 'Preparing…'; reviewCanvas().then(c=>{ if(c){ const a = document.createElement('a'); a.download = `${teamObj().slug}-trade.png`; a.href = c.toDataURL('image/png'); a.click(); } }).finally(()=>{ b.textContent = 'Download image'; }); return; }
   if(m==='tradeImg'){ b.textContent = 'Preparing…'; tradeImage().finally(()=>{ b.textContent = 'Download image'; }); return; }
   if(m==='shareImg'){ b.textContent = 'Preparing…'; shareImage().finally(()=>{ b.textContent = 'Download image'; }); return; }
   if(m==='dfaPick'){ S.status[M.id] = {mode:v, at:Date.now()}; saveState(); closeModal(); renderAll(); return; }
@@ -5290,6 +5318,7 @@ function onClick(e){
     case 'nontender': S.status[id] = {mode:'nontender', at:Date.now()}; saveState(); renderAll(); break;
     case 'share': openShare(); break;
     case 'openAssume': { const d = root0().querySelector('details.pay-assume'); if(d){ d.open = true; UI.assumeOpen = true; d.scrollIntoView({behavior:'smooth', block:'start'}); } break; }
+    case 'flashOk': UI.flash = null; renderAll(); break;
     case 'sharedKeep': UI.shared = null; renderAll(); break;
     case 'sharedRestore': try{ localStorage.setItem(STORE_KEY(TEAM_ID), localStorage.getItem(STORE_KEY(TEAM_ID)+'_prev')); }catch(e){} loadState(); S.added.forEach(a=>rosterAdd(a)); UI.shared = null; renderAll(); break;
     case 'dfa': { const it = calcAll().items.find(x=>x.id===id); if(it){ M = {type:'dfa', id, name:it.name, cat:it.cat, html:dfaHTML}; paint(); } break; }
@@ -5301,10 +5330,46 @@ function onClick(e){
     case 'resetAll': confirmTwice('all', ()=>{ dropRosterAdds(); S = defaultState(); saveState(); renderAll(); }); break;
   }
 }
+function editContractYear(id, y, v){ // typing a new salary into a year of a deal you signed: re-derive the contract's total and AAV
+  const it = calcAll().items.find(x=>x.id===id); if(!it) return false;
+  const ex = S.ext && S.ext[id], a = it.added;
+  const nm = it.name, fl = m=>{ UI.flash = m; };
+  if(ex && y>=ex.start && y<=ex.through){
+    if(v==null) return true;
+    const yrs = []; for(let k=ex.start;k<=ex.through;k++) yrs.push(k);
+    const cash = {}; yrs.forEach(k=>{ cash[k] = (ex.sched && ex.sched[k]!=null) ? ex.sched[k] : (ex.nom!=null?ex.nom:ex.aav); }); cash[y] = v;
+    const tot = yrs.reduce((t,k)=>t+cash[k],0), avg = tot/yrs.length;
+    ex.nom = Math.round(avg*10000)/10000; ex.aav = ex.nom; ex.shape = 'custom'; ex.sched = {}; yrs.forEach(k=>{ ex.sched[k] = Math.round(cash[k]*10000)/10000; });
+    fl(`${nm}’s extension is now ${fmt(tot,2)} over ${yrs.length} yr — ${fmt(avg,2)} AAV, which is what counts for the tax every year. Cash by year: ${yrs.map(k=>fmt(cash[k],1)).join(' / ')}.`);
+    return true;
+  }
+  if(!a) return false;
+  if(a.kind==='fa'){
+    const n = a.years, y0 = a.start; if(y<y0 || y>=y0+n || v==null) return true; // outside the deal: nothing to change
+    const cash = {}; for(let k=y0;k<y0+n;k++) cash[k] = (a.sched && a.sched[k]!=null) ? a.sched[k] : nomAav(a); cash[y] = v;
+    const tot = Object.values(cash).reduce((t,x)=>t+x,0), nom = tot/n, old = nomAav(a), ratio = old ? a.aav/old : 1;
+    a.aavNom = Math.round(nom*10000)/10000; a.aav = Math.round(nom*ratio*10000)/10000; a.shape = 'custom'; a.sched = {}; Object.keys(cash).forEach(k=>{ a.sched[k] = Math.round(cash[k]*10000)/10000; });
+    fl(`${nm}: new total ${fmt(tot,2)} over ${n} yr — ${fmt(nom,2)} AAV. The tax counts the AAV every year; cash by year: ${Object.keys(cash).map(k=>fmt(cash[k],1)).join(' / ')}.`);
+    return true;
+  }
+  if(a.kind==='trade'){
+    const y0 = a.start, y1 = a.through; if(y<y0 || y>y1 || v==null) return true;
+    const cat = tableCat(it);
+    if(cat==='arb' || cat==='pre'){ a.sched = a.sched ? {...a.sched} : {}; for(let k=y0;k<=y1;k++) if(a.sched[k]==null) a.sched[k] = a.aav; a.sched[y] = v; return true; }
+    const cash = {}; for(let k=y0;k<=y1;k++) cash[k] = (a.cash && a.cash[k]!=null) ? a.cash[k] : a.aav; cash[y] = v;
+    const n = y1-y0+1, tot = Object.values(cash).reduce((t,x)=>t+x,0);
+    a.aav = Math.round(tot/n*10000)/10000; a.cash = {}; Object.keys(cash).forEach(k=>{ a.cash[k] = Math.round(cash[k]*10000)/10000; });
+    fl(`${nm}: new total ${fmt(tot,2)} over ${n} yr — ${fmt(tot/n,2)} AAV, which is what the tax counts every year.`);
+    return true;
+  }
+  return false;
+}
+function flashBanner(){ return UI.flash ? `<div class="pay-banner">${esc(UI.flash)} <button class="pay-btn tiny" data-act="flashOk">OK</button></div>` : ''; }
 function onChange(e){
   const t = e.target; const act = t.dataset && t.dataset.act; if(!act) return;
   if(act==='cell'){
     const id = t.dataset.id, y = +t.dataset.y, v = parseM(t.value);
+    if(editContractYear(id, y, v)){ saveState(); renderAll(); return; }
     S.overrides[id] = S.overrides[id] || {};
     if(v==null) delete S.overrides[id][y]; else S.overrides[id][y] = v;
     if(!Object.keys(S.overrides[id]).length) delete S.overrides[id];
