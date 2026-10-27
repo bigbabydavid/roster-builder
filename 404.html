@@ -3190,10 +3190,17 @@ function faList(){
     out.push({name:r.name, pos:r.pos, pos2:r.pos, type:(r.pos==='SP'||r.pos==='RP')?'P':'H', age:r.age, w:null, l:'F', jp:false, o:'', team:'', note:r.note}); });
   return _FAL = out;
 }
+// Jim Bowden’s (The Athletic) contract predictions for the top 40 free agents, Oct 2026: [years, total $M]. One more data point — blended in, not copied.
+const BOWDEN = {'tarik skubal':[9,400],'freddy peralta':[5,140],'teruaki sato':[5,180],'michael king':[4,118],'randy arozarena':[5,124],'seiya suzuki':[5,120],'jake bauers':[4,56],'jazz chisholm jr.':[6,128],'brandon lowe':[3,45],'clay holmes':[2,44],'adrian morejon':[3,42],'david bednar':[3,55],'nick martinez':[2,48],'foster griffin':[3,67],'trevor rogers':[3,64],'casey mize':[3,54],'luis arraez':[3,60],'kaima taira':[3,30],'ian happ':[2,45],'robbie ray':[2,45],'shota imanaga':[3,69],'raisel iglesias':[1,17],'gleyber torres':[2,42],'alec bohm':[2,30],'kevin gausman':[1,22],'shane bieber':[1,20],'hiromi itoh':[2,22],'trent grisham':[1,12],'taylor ward':[1,10],'daulton varsho':[1,8],'tyler stephenson':[2,16],'ryan jeffers':[2,15.5],'alex vesia':[2,23],'paul blackburn':[2,22],'mauricio dubon':[2,16],'joc pederson':[2,30],'gregory soto':[2,22],'j.p. crawford':[2,20],'jonathan loaisiga':[2,20],'sean newcomb':[1,6.5]};
+function bowBlend(d, hasSpot){ const b = BOWDEN[norm(d.name||'')]; if(!b) return d; const w = hasSpot?0.4:0.5;
+  const aav = d.aav*(1-w) + (b[1]/b[0])*w, years = Math.max(1, Math.round(d.years*(1-w) + b[0]*w));
+  let tot = aav*years; tot = tot>=20?Math.round(tot):Math.round(tot*2)/2; tot = Math.max(1.5,tot);
+  return Object.assign({}, d, {years, total:tot, aav:tot/years, why:d.why+`; nudged toward Jim Bowden’s ${b[0]} yr, ${fmt(b[1],1)} prediction (The Athletic)`}); }
 // Rough starting-point contract from last season's WAR and age (not a projection system — a nudge in the right direction).
 function suggestDeal(p){
   const m = spotracOf(p.name), ov = FA_SUG_SET[norm(p.name)];
-  const blend = (d)=>{ if(m==null) return d; const aav = (d.aav+m)/2; let tot = aav*d.years; tot = tot>=20?Math.round(tot):Math.round(tot*2)/2; tot = Math.max(1.5,tot);
+  const blend = (d)=>bowBlend(Object.assign({name:p.name}, blend1(d)), m!=null);
+  const blend1 = (d)=>{ if(m==null) return d; const aav = (d.aav+m)/2; let tot = aav*d.years; tot = tot>=20?Math.round(tot):Math.round(tot*2)/2; tot = Math.max(1.5,tot);
     return {years:d.years, total:tot, aav:tot/d.years, why:d.why+`; blended with Spotrac’s ${fmt(m,1)} market value`, spot:m}; };
   if(ov) return blend({years:ov[0], total:ov[1], aav:ov[1]/ov[0], why:ov[2]});
   const rp = p.pos==='RP', sp = p.pos==='SP', age = p.age||30;
@@ -3633,7 +3640,7 @@ function minorsHTML(list){
 function mountPlan(){ const slot = planSlot(), sb = document.getElementById('statsBar'), bs = document.getElementById('boardSplit');
   if(slot && sb && bs && REAL){ slot.appendChild(sb); slot.appendChild(bs);
     document.body.classList.add('plan-active');
-    const h = document.getElementById('addPlayerHint'); if(h && !h.dataset.orig){ h.dataset.orig = h.innerHTML; h.textContent = 'To bring someone in, sign a free agent or make a trade from the Transactions menu — they’ll show up here.'; }
+    const h = document.getElementById('addPlayerHint'); if(h && !h.dataset.orig){ h.dataset.orig = h.innerHTML; h.textContent = 'Sign a free agent or make a trade from the Transactions menu and they’ll show up here. Then add them to the depth chart to put them on the 26-man roster.'; }
     let m = document.getElementById('minorsSec'); const list = minorsList();
     if(!m){ m = document.createElement('details'); m.id = 'minorsSec'; m.className = 'minors-sec'; m.innerHTML = '<summary></summary><div class="mn-body"></div>'; }
     if(m.parentNode!==slot) slot.appendChild(m);
