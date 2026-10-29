@@ -1036,6 +1036,18 @@
   .pay-meter .tick.target em{ color:#7DD3FC; opacity:1; }
 
   /* Cards / tables */
+  #welcome .wl-modes{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  #welcome .wl-mode{ text-align:left; background:#fff; border:1.5px solid #d6dbe2; border-radius:8px; padding:12px 14px; cursor:pointer; font:inherit; color:#0c2340; display:flex; flex-direction:column; gap:4px; }
+  #welcome .wl-mode b{ font-size:15px; } #welcome .wl-mode span{ font-size:13px; color:#5b6573; line-height:1.4; }
+  #welcome .wl-mode.on{ border-color:#0c2340; box-shadow:inset 0 0 0 1px #0c2340; background:#f3f6fa; }
+  #welcome .wl-modewarn{ margin:8px 0 0; font-size:13px; color:#9a3412; }
+  @media (max-width:600px){ #welcome .wl-modes{ grid-template-columns:1fr; } }
+  #mmResetPop{ position:fixed; z-index:9999; width:320px; max-width:calc(100vw - 16px); background:#fff; color:#0c2340; border:1px solid #d6dbe2; border-radius:10px; box-shadow:0 10px 30px rgba(12,35,64,.25); padding:12px; display:flex; flex-direction:column; gap:8px; }
+  #mmResetPop h4{ margin:0; font-size:14px; }
+  #mmResetPop button{ text-align:left; background:#f7f8fa; border:1px solid #e1e5ea; border-radius:8px; padding:9px 11px; cursor:pointer; font:inherit; color:inherit; display:flex; flex-direction:column; gap:2px; }
+  #mmResetPop button:hover{ border-color:#0c2340; }
+  #mmResetPop b{ font-size:14px; } #mmResetPop em{ font-style:normal; font-size:11px; color:#2f7d4f; font-weight:600; } #mmResetPop span{ font-size:12.5px; color:#5b6573; line-height:1.35; }
+  #mmResetPop p{ margin:0; font-size:12px; color:#8a5a12; line-height:1.4; }
   .cal-foot{ margin:18px 0 0; border:1px solid #e4e7ec; border-radius:10px; background:#fafbfc; }
   .cal-foot summary{ cursor:pointer; padding:9px 14px; font-size:13px; font-weight:600; color:#5b6573; list-style:none; display:flex; justify-content:space-between; gap:12px; }
   .cal-foot summary::-webkit-details-marker{ display:none; } .cal-foot summary::before{ content:'▸'; margin-right:6px; } .cal-foot[open] summary::before{ content:'▾'; }
@@ -4147,8 +4159,9 @@ function applyFG(d){
 }
 function dataStamp(){
   const t = FG_UPDATED ? new Date(FG_UPDATED) : null;
-  if(t && !isNaN(t)) return 'updated ' + t.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-  return 'as of ' + LEAGUE_DB_DATE;
+  const base = (typeof startMode==='function' && startMode()==='start') ? 'beginning of offseason, ' : '';
+  if(t && !isNaN(t)) return base + 'updated ' + t.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  return base + 'as of ' + LEAGUE_DB_DATE;
 }
 function extraPool(){ return EXTRA40.map(x=>({n:x[0], t:x[1], g:x[2]||null, i:'r:'+x[5], k:'r', pos:x[3]==='P'?'P':x[3], st:x[4], y:['Pre']})); }
 function tradePool(){ return POOL.trade || (POOL.trade = LEAGUE_DB.concat(PROS_POOL, extraPool()).filter(r=>r.k!=='f' && r.t!==teamNick())); }
@@ -4334,7 +4347,7 @@ function dupMsg(name){
 }
 function schedShape(shape, n, total){
   const out = [];
-  for(let i=0;i<n;i++){ let w = 1; if(n>1 && shape!=='flat'){ const t = ((n-1)/2 - i)/((n-1)/2); w = 1 + 0.5*(shape==='front'?t:-t); } out.push(total/n*w); }
+  for(let i=0;i<n;i++){ let w = 1; if(n>1 && shape!=='flat'){ const t = ((n-1)/2 - i)/((n-1)/2); w = 1 + 0.15*(shape==='front'?t:-t); } out.push(total/n*w); }
   const r = out.map(v=>Math.round(v*100)/100); const diff = Math.round((total - r.reduce((a,b)=>a+b,0))*100)/100; r[n-1] = Math.round((r[n-1]+diff)*100)/100; return r;
 }
 function faSchedule(r){ // salary for each season of the deal, in order
@@ -5310,6 +5323,7 @@ function commitAdded(rec, wantRoster){
 
 /* ---------- page events ---------- */
 function disarmSoon(){ clearTimeout(UI.t); UI.t = setTimeout(()=>{ if(UI.armed){ UI.armed=null; renderAll(); } }, 4000); }
+async function resetBuild(){ const wasPlan = !!REAL; if(wasPlan) planExit(); dropRosterAdds(); S = defaultState(); saveState(); try{ await window.storageDelete('mlb_plan_depth_v1_'+currentTeamId); }catch(e){} if(wasPlan) await planEnter(); renderAll(); }
 function confirmTwice(key, fn){
   if(UI.armed===key){ UI.armed=null; clearTimeout(UI.t); fn(); } else { UI.armed=key; renderAll(); disarmSoon(); }
 }
@@ -5365,7 +5379,8 @@ function onClick(e){
     case 'resetRow': if(S.ext) delete S.ext[id]; delete S.overrides[id]; delete S.status[id]; delete S.options[id]; saveState(); renderAll(); break;
     case 'clearAdded': confirmTwice('added', ()=>{ S.added.forEach(a=>rosterRemove(a.id)); S.added=[]; saveState(); renderAll(); }); break;
     case 'resetRules': confirmTwice('rules', ()=>{ S.rules = clone(DEFAULT_RULES); saveState(); renderAll(); }); break;
-    case 'resetAll': confirmTwice('all', async ()=>{ const wasPlan = !!REAL; if(wasPlan) planExit(); dropRosterAdds(); S = defaultState(); saveState(); try{ await window.storageDelete('mlb_plan_depth_v1_'+currentTeamId); }catch(e){} if(wasPlan) await planEnter(); renderAll(); }); break;
+    case 'resetAll': confirmTwice('all', resetBuild); break;
+    case 'resetNow': resetBuild(); break;
   }
 }
 function editContractYear(id, y, v){ // typing a new salary into a year of a deal you signed: re-derive the contract's total and AAV
@@ -5475,10 +5490,17 @@ return {applyFG, open, close, isOpen, useTeam, threshold:()=>DEFAULT_RULES.thres
 })();
 
 
+/* Start points: 'today' = the real offseason as of this visit (the daily FanGraphs feed); 'start' = frozen Oct 28 baseline, before any moves. */
+const MODE_KEY = 'mlb_start_mode_v1', BASELINE_LABEL = 'Oct 28';
+function startMode(){ try{ return localStorage.getItem(MODE_KEY)==='start' ? 'start' : 'today'; }catch(e){ return 'today'; } }
+function setStartMode(m){ try{ localStorage.setItem(MODE_KEY, m); }catch(e){} }
+function buildKeys(){ const out = []; try{ for(let i=0;i<localStorage.length;i++){ const k = localStorage.key(i); if(/^mlb_(payroll_state_v1|plan_depth_v1)_/.test(k)) out.push(k); } }catch(e){} return out; }
+function hasBuilds(){ return buildKeys().some(k=>{ if(k.indexOf('mlb_payroll_state_v1_')!==0) return false; try{ const x = JSON.parse(localStorage.getItem(k)||'{}'); return (x.added&&x.added.length)||Object.keys(x.status||{}).length||Object.keys(x.ext||{}).length||Object.keys(x.overrides||{}).length; }catch(e){ return false; } }); }
+function clearAllBuilds(){ buildKeys().forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} }); }
 // Pull the latest FanGraphs data (refreshed once a day by the GitHub Action). Best effort: any failure keeps the baked-in data.
 (function loadFG(){
   window.__fgReady = Promise.race([
-    fetch('/fg.json', {cache:'no-cache'}).then(r=>r.ok?r.json():null).then(d=>{
+    fetch(startMode()==='start' ? '/fg-baseline.json' : '/fg.json', {cache:'no-cache'}).then(r=>r.ok?r.json():null).then(d=>{
       // never swap the numbers under a simulator that's already open
       if(d && !PayrollPlanner.isOpen()) PayrollPlanner.applyFG(d);
     }).catch(()=>{}),
@@ -5553,6 +5575,22 @@ function mmGo(key){
   el.scrollIntoView({behavior:'smooth', block:'start'});
 }
 let mmResetTimer = null;
+function toggleResetPop(){
+  const old = document.getElementById('mmResetPop'); if(old){ old.remove(); return; }
+  const b = document.getElementById('mmReset'); if(!b) return; const cur = startMode(), team = teamById(currentTeamId);
+  const p = document.createElement('div'); p.id = 'mmResetPop'; p.setAttribute('role','dialog');
+  p.innerHTML = `<h4>Start this build over</h4>
+    <button type="button" data-reset-to="today"><b>Reset to today</b>${cur==='today'?'<em>current</em>':''}<span>Picks up from the real offseason as of today, with moves that have already happened.</span></button>
+    <button type="button" data-reset-to="start"><b>Reset to beginning of offseason</b>${cur==='start'?'<em>current</em>':''}<span>Rosters and contracts as of ${BASELINE_LABEL}, before any moves.</span></button>
+    <p>This clears your moves and depth chart for the ${esc(team.name)}. Switching to the other start point clears every team’s saved build.</p>`;
+  document.body.appendChild(p);
+  const r = b.getBoundingClientRect(); p.style.top = (r.bottom+8)+'px'; p.style.right = Math.max(8, window.innerWidth-r.right)+'px';
+}
+function doResetTo(mode){
+  const pop = document.getElementById('mmResetPop'); if(pop) pop.remove();
+  if(mode===startMode()){ PayrollPlanner.act('resetNow'); return; }
+  setStartMode(mode); clearAllBuilds(); location.reload();
+}
 function mmResetLabel(){
   const b = document.getElementById('mmReset'); if(!b) return;
   const armed = PayrollPlanner.armed()==='all';
@@ -5569,7 +5607,9 @@ document.addEventListener('click', e=>{
   const ac = e.target.closest('[data-mm-act]'); if(ac){ mmClose(); PayrollPlanner.act(ac.dataset.mmAct); return; }
   if(e.target.closest('[data-view]')) mmClose();
   if(e.target.closest('#mmShare')){ PayrollPlanner.act('share'); return; }
-  if(e.target.closest('#mmReset')){ PayrollPlanner.act('resetAll'); mmResetLabel(); clearTimeout(mmResetTimer); mmResetTimer = setTimeout(mmResetLabel, 4500); return; }
+  if(e.target.closest('#mmReset')){ toggleResetPop(); return; }
+  const rs = e.target.closest('[data-reset-to]'); if(rs){ doResetTo(rs.dataset.resetTo); return; }
+  if(!e.target.closest('#mmResetPop')){ const rp = document.getElementById('mmResetPop'); if(rp) rp.remove(); }
   if(e.target.closest('[data-about]')){ showWelcome(); return; }
   if(e.target.closest('#mmScrim')) mmClose();
 });
@@ -5587,6 +5627,10 @@ function showWelcome(){
   const w = document.createElement('div'); w.id = 'welcome';
   w.innerHTML = `<div class="wl" role="dialog" aria-label="Welcome">
     <div><h1>Offseason Simulator</h1><p class="wl-lead">Plan your team’s 2027 offseason against the luxury tax. Sign free agents, make trades and see what every move does to your payroll — then set the lineup you end up with.</p></div>
+    <div><h2>Where do you want to start?</h2><div class="wl-modes" id="wlModes">
+      <button type="button" class="wl-mode" data-start-mode="today"><b>Start from today</b><span>The real offseason as it stands right now: signings, trades and option decisions that have already happened are in.</span></button>
+      <button type="button" class="wl-mode" data-start-mode="start"><b>Start from the beginning of the offseason</b><span>Rosters and contracts as of ${BASELINE_LABEL}, before any moves.</span></button></div>
+      <p class="wl-modewarn" id="wlModeWarn" hidden>Changing the start point starts every team fresh. Your saved builds will be cleared.</p></div>
     <div><h2>Select your team</h2><div class="wl-leagues">${lg('AL')}${lg('NL')}</div></div>
     <ul class="wl-do"><li><b>Make the moves</b>Sign free agents, trade players, release or non-tender anyone on the roster.</li>
       <li><b>Watch the payroll</b>See your payroll against the tax line, the tax bill and your 40-man count after each move.</li>
@@ -5594,11 +5638,14 @@ function showWelcome(){
     <div class="wl-cba"><b>The CBA expires this December.</b> Nothing is set for 2027 yet, so the $${thr}M tax line and the tax rates here carry the 2026 rules forward as an assumption. A new deal, or a salary cap, could change all of it. Every number is editable under Assumptions &amp; tax rules.</div>
     <div class="wl-foot"><button type="button" class="wl-cont" data-welcome-team="${cur.id}">Continue with the ${esc(cur.name)}</button><button type="button" class="wl-link" data-welcome-roster="1">Just want the 26-man roster builder?</button></div>
   </div>`;
-  document.body.appendChild(w); document.body.style.overflow = 'hidden';
+  document.body.appendChild(w); document.body.style.overflow = 'hidden'; w.dataset.mode = startMode(); paintModes(w);
 }
+function paintModes(w){ const m = w.dataset.mode; w.querySelectorAll('[data-start-mode]').forEach(b=>b.classList.toggle('on', b.dataset.startMode===m)); const wn = w.querySelector('#wlModeWarn'); if(wn) wn.hidden = !(m!==startMode() && hasBuilds()); }
 document.addEventListener('click', e=>{
   const w = document.getElementById('welcome'); if(!w) return;
-  const t = e.target.closest('[data-welcome-team]'), r = e.target.closest('[data-welcome-roster]');
+  const t = e.target.closest('[data-welcome-team]'), r = e.target.closest('[data-welcome-roster]'), sm = e.target.closest('[data-start-mode]');
+  if(sm){ w.dataset.mode = sm.dataset.startMode; paintModes(w); return; }
+  if(t && (w.dataset.mode||startMode())!==startMode()){ const id = +t.dataset.welcomeTeam; setStartMode(w.dataset.mode); clearAllBuilds(); hideWelcome(); try{ updateUrlForTeam(id, {sim:true}); }catch(err){} location.reload(); return; }
   if(t){ const id = +t.dataset.welcomeTeam; hideWelcome();
     if(id===currentTeamId && PayrollPlanner.isOpen()) updateUrlForTeam(id, {sim:true}); else openPayrollView({teamId:id}); }
   else if(r){ hideWelcome(); if(PayrollPlanner.isOpen()) PayrollPlanner.close(); updateUrlForTeam(currentTeamId); }
