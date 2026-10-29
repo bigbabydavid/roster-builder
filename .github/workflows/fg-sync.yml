@@ -42,9 +42,27 @@ jobs:
           PY
       - name: Build fg.json
         run: python3 -I build_fg.py
+      - name: Fetch transaction log
+        continue-on-error: true
+        run: |
+          python3 - <<'PY'
+          import json, re, urllib.request, datetime
+          UA = 'Mozilla/5.0 (compatible; mlbrostertool-data-sync; once-daily)'
+          html = urllib.request.urlopen(urllib.request.Request('https://www.fangraphs.com/roster-resource/transaction-tracker', headers={'User-Agent': UA}), timeout=60).read().decode('utf8')
+          m = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', html, re.S)
+          q = json.loads(m.group(1))['props']['pageProps']['dehydratedState']['queries'][0]
+          rows = q['state']['data']
+          if len(rows) < 1000: raise SystemExit('transaction list looks too short - keeping yesterday\'s file')
+          # offseason only: from the day after the regular season ended
+          keep = [[r['transDate'][:10], r['team'], r['playerName'], r.get('mlbamid'), r.get('transCategory'), r.get('transDesc'), r.get('teamChange'), r.get('positionDB') or r.get('position')] for r in rows if r['transDate'] >= '2026-09-28']
+          keep.sort(key=lambda x: (x[0], x[1], x[2]))
+          out = {'updated': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'), 'cols': ['date','team','name','mlbam','category','detail','change','pos'], 'rows': keep}
+          with open('tx.json', 'w') as f: json.dump(out, f, separators=(',', ':'), ensure_ascii=False)
+          print('transactions kept', len(keep))
+          PY
       - name: Commit if changed
         run: |
           git config user.name "fg-sync-bot"
           git config user.email "fg-sync-bot@users.noreply.github.com"
-          git add fg.json
+          git add fg.json tx.json
           if git diff --cached --quiet; then echo "No changes."; else git commit -m "Update FanGraphs data" && git pull --rebase --autostash && git push; fi
