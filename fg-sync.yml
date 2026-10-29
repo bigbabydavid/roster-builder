@@ -1,0 +1,68 @@
+name: FanGraphs data sync
+on:
+  schedule:
+    - cron: '17 9 * * *'   # once a day, ~5:17am Eastern
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: fg-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch FanGraphs payroll pages
+        run: |
+          python3 - <<'PY'
+          import json, os, re, time, urllib.request
+          SLUGS = ['angels','diamondbacks','orioles','red-sox','cubs','reds','guardians','rockies','tigers','astros','royals','dodgers','nationals','mets','athletics','pirates','padres','mariners','giants','cardinals','rays','rangers','blue-jays','twins','phillies','braves','white-sox','marlins','brewers','yankees']
+          UA = 'Mozilla/5.0 (compatible; mlbrostertool-data-sync; once-daily)'
+          os.makedirs('data/fg/raw', exist_ok=True)
+          ok = bad = 0
+          for slug in SLUGS:
+              for season in (2026, 2027):
+                  url = f'https://www.fangraphs.com/roster-resource/payroll/{slug}?season={season}'
+                  try:
+                      html = urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': UA}), timeout=60).read().decode('utf8')
+                      m = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', html, re.S)
+                      q = json.loads(m.group(1))['props']['pageProps']['dehydratedState']['queries'][0]
+                      if q['queryKey'][1].get('season') != season: raise ValueError('wrong season')
+                      data = q['state']['data']
+                      if not data.get('dataContract'): raise ValueError('no contracts')
+                      with open(f'data/fg/raw/{slug}-{season}.json', 'w') as f:
+                          json.dump({'teamid': q['queryKey'][1].get('teamid'), 'season': season, 'data': data}, f, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+                      ok += 1
+                  except Exception as e:
+                      bad += 1; print('FAILED', slug, season, repr(e)[:200])
+                  time.sleep(2)
+          print('fetched', ok, 'failed', bad)
+          if ok < 60: raise SystemExit('some pages failed - keeping yesterday\'s data')
+          PY
+      - name: Build fg.json
+        run: python3 -I build_fg.py
+      - name: Fetch transaction log
+        continue-on-error: true
+        run: |
+          python3 - <<'PY'
+          import json, re, urllib.request, datetime
+          UA = 'Mozilla/5.0 (compatible; mlbrostertool-data-sync; once-daily)'
+          html = urllib.request.urlopen(urllib.request.Request('https://www.fangraphs.com/roster-resource/transaction-tracker', headers={'User-Agent': UA}), timeout=60).read().decode('utf8')
+          m = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', html, re.S)
+          q = json.loads(m.group(1))['props']['pageProps']['dehydratedState']['queries'][0]
+          rows = q['state']['data']
+          if len(rows) < 1000: raise SystemExit('transaction list looks too short - keeping yesterday\'s file')
+          # offseason only: from the day after the regular season ended
+          keep = [[r['transDate'][:10], r['team'], r['playerName'], r.get('mlbamid'), r.get('transCategory'), r.get('transDesc'), r.get('teamChange'), r.get('positionDB') or r.get('position')] for r in rows if r['transDate'] >= '2026-09-28']
+          keep.sort(key=lambda x: (x[0], x[1], x[2]))
+          out = {'updated': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'), 'cols': ['date','team','name','mlbam','category','detail','change','pos'], 'rows': keep}
+          with open('tx.json', 'w') as f: json.dump(out, f, separators=(',', ':'), ensure_ascii=False)
+          print('transactions kept', len(keep))
+          PY
+      - name: Commit if changed
+        run: |
+          git config user.name "fg-sync-bot"
+          git config user.email "fg-sync-bot@users.noreply.github.com"
+          git add fg.json tx.json
+          if git diff --cached --quiet; then echo "No changes."; else git commit -m "Update FanGraphs data" && git pull --rebase --autostash && git push; fi
