@@ -1036,6 +1036,19 @@
   .pay-meter .tick.target em{ color:#7DD3FC; opacity:1; }
 
   /* Cards / tables */
+  .cal-foot{ margin:18px 0 0; border:1px solid #e4e7ec; border-radius:10px; background:#fafbfc; }
+  .cal-foot summary{ cursor:pointer; padding:9px 14px; font-size:13px; font-weight:600; color:#5b6573; list-style:none; display:flex; justify-content:space-between; gap:12px; }
+  .cal-foot summary::-webkit-details-marker{ display:none; } .cal-foot summary::before{ content:'▸'; margin-right:6px; } .cal-foot[open] summary::before{ content:'▾'; }
+  .cal-foot summary span{ font-weight:400; color:#8a93a0; margin-left:auto; text-align:right; }
+  .cal-foot[open] summary{ border-bottom:1px solid #e4e7ec; }
+  .cal-list{ list-style:none; margin:0; padding:4px 0; }
+  .cal-list li{ display:grid; grid-template-columns:150px 1fr; gap:14px; padding:10px 16px; border-top:1px solid #eef0f3; }
+  .cal-list li:first-child{ border-top:0; }
+  .cal-d{ font-weight:700; color:#0c2340; font-size:14px; } .cal-d span{ display:block; margin-top:2px; font-size:12px; font-weight:600; color:#b4232c; }
+  .cal-w b{ font-size:14px; } .cal-w p{ margin:2px 0 0; font-size:13px; color:#5b6573; line-height:1.4; }
+  .cal-next{ background:#fff8e6; box-shadow:inset 3px 0 0 #c4953a; }
+  .cal-past{ opacity:.45; }
+  @media (max-width:600px){ .cal-list li{ grid-template-columns:1fr; gap:2px; } }
   .pay-card{ background:#fff; border:1px solid #dfe3e8; border-radius:12px; overflow:hidden; }
   .pay-card-h{
     display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px;
@@ -3694,6 +3707,7 @@ function renderAll(){
     ${tablesHTML(calc, rmap)}
     ${assumptionsHTML()}
     <div class="pay-plan-head"><h2>Depth chart &amp; lineups</h2><p>Your 2027 roster as you’ve built it — traded, released, non-tendered and unsigned free agents are gone; signings and trade pickups are in the pool. Drag players around exactly like the Roster Builder. This is its own copy: nothing here changes your Roster Builder board. <button class="pay-btn tiny${UI.armed==='plan'?' armed':''}" data-act="planReset">${UI.armed==='plan'?'Click again to confirm':'Reset to my Roster Builder board'}</button></p><div class="pay-key"><b>*</b> = still has a minor-league option, so he can start 2027 in the minors. No asterisk means out of options, can’t be optioned, or no data (FanGraphs, through 2026). Not included in the downloaded image.</div></div><div id="planSlot"></div>
+    ${calendarCard()}
     <div class="pay-foot">Contract data: <a href="https://www.fangraphs.com/roster-resource/payroll/${teamObj().slug}" target="_blank" rel="noopener">FanGraphs RosterResource</a> (export dated ${SOURCE_DATE}). Tax bands/rates checked against <a href="https://www.spotrac.com/mlb/tax" target="_blank" rel="noopener">Spotrac&rsquo;s</a> 2026 table. Free-agent names: <a href="https://www.mlbtraderumors.com/2026-27-mlb-free-agents" target="_blank" rel="noopener">MLB Trade Rumors</a>. 2027 arbitration figures are <a href="https://www.mlbtraderumors.com/2026/10/projected-arbitration-salaries-for-2027.html" target="_blank" rel="noopener">MLB Trade Rumors&rsquo; projections</a> (Matt Swartz&rsquo;s model, Oct 2, 2026); later arbitration years are my own estimates, and CBT payroll counts average annual value plus benefits, not cash paid. Deferred money counts at present value, so enter the CBT AAV directly for heavily deferred deals.</div>
   </div>`;
   const det = root.querySelector('details.pay-assume');
@@ -3858,6 +3872,23 @@ function baselineTotal(y){
 }
 function fmtEff(v){ return v===0 ? '—' : (v>0?'+':'−')+fmt(Math.abs(v),2); }
 function fmtWhen(t){ if(!t) return ''; try{ return new Date(t).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){ return ''; } }
+const OFFSEASON_CAL = [ // league-wide dates for 2026-27 (times ET). end = when the row stops being "upcoming".
+  {d:'Oct 29', end:'2026-10-29T09:00:00-04:00', t:'Free agency opens', n:'Eligible players hit the market at 9am, but can only negotiate with their old club for five days. Trades involving 40-man players resume.'},
+  {d:'Nov 2 · 5pm', end:'2026-11-02T17:00:00-05:00', t:'Open market, qualifying offers and options', n:'Free agents can sign anywhere. Qualifying offers ($23.15M) must be tendered, and most club, player and mutual option decisions are due. Players must be off the 60-day IL.'},
+  {d:'Nov 10–12', end:'2026-11-12T23:59:00-05:00', t:'GM Meetings', n:'A growing source of early trades and waiver claims as clubs clean up their 40-man rosters.'},
+  {d:'Nov 17 · 4pm', end:'2026-11-17T16:00:00-05:00', t:'Qualifying offer decisions', n:'Players accept or decline. Signing a declined-QO free agent costs draft-pick and international bonus pool compensation.'},
+  {d:'Nov 17 · 6pm', end:'2026-11-17T18:00:00-05:00', t:'Rule 5 protection deadline', n:'Clubs add prospects to the 40-man roster or risk losing them in the Rule 5 Draft.'},
+  {d:'Nov 20', end:'2026-11-20T20:00:00-05:00', t:'Non-tender deadline', n:'Clubs must offer 2027 contracts to pre-arb and arbitration-eligible players, or release them. Time not yet announced.'},
+  {d:'Dec 1 · 11:59pm', end:'2026-12-01T23:59:00-05:00', t:'CBA expires', n:'A lockout begins unless a new deal is reached first.'},
+];
+window.UI_calToggle = d=>{ UI.calOpen = d.open; };
+function calendarCard(){
+  const now = Date.now(); let nextI = OFFSEASON_CAL.findIndex(r=>new Date(r.end).getTime()>now);
+  const rows = OFFSEASON_CAL.map((r,i)=>{ const past = new Date(r.end).getTime()<=now; const days = Math.ceil((new Date(r.end).getTime()-now)/864e5);
+    const cd = past?'':(i===nextI? (days<=0?'today':days===1?'tomorrow':`in ${days} days`):'');
+    return `<li class="${past?'cal-past':''}${i===nextI?' cal-next':''}"><div class="cal-d">${esc(r.d)}${cd?`<span>${cd}</span>`:''}</div><div class="cal-w"><b>${esc(r.t)}</b><p>${esc(r.n)}</p></div></li>`; }).join('');
+  return `<details class="cal-foot"${UI.calOpen?' open':''} ontoggle="UI_calToggle(this)"><summary>Offseason calendar<span>${nextI>=0?'next: '+esc(OFFSEASON_CAL[nextI].t)+' · '+esc(OFFSEASON_CAL[nextI].d):'all dates passed'}</span></summary><ul class="cal-list">${rows}</ul></details>`;
+}
 function logCard(calc){
   const L = logEntries(calc);
   const yr = calc.years[S.season];
