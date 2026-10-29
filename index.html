@@ -5334,7 +5334,7 @@ function onClick(e){
     case 'resetRow': if(S.ext) delete S.ext[id]; delete S.overrides[id]; delete S.status[id]; delete S.options[id]; saveState(); renderAll(); break;
     case 'clearAdded': confirmTwice('added', ()=>{ S.added.forEach(a=>rosterRemove(a.id)); S.added=[]; saveState(); renderAll(); }); break;
     case 'resetRules': confirmTwice('rules', ()=>{ S.rules = clone(DEFAULT_RULES); saveState(); renderAll(); }); break;
-    case 'resetAll': confirmTwice('all', ()=>{ dropRosterAdds(); S = defaultState(); saveState(); renderAll(); }); break;
+    case 'resetAll': confirmTwice('all', async ()=>{ const wasPlan = !!REAL; if(wasPlan) planExit(); dropRosterAdds(); S = defaultState(); saveState(); try{ await window.storageDelete('mlb_plan_depth_v1_'+currentTeamId); }catch(e){} if(wasPlan) await planEnter(); renderAll(); }); break;
   }
 }
 function editContractYear(id, y, v){ // typing a new salary into a year of a deal you signed: re-derive the contract's total and AAV
