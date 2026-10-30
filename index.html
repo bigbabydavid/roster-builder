@@ -1328,6 +1328,7 @@
   .sc-m{ padding:14px 22px 6px; } .sc-mh{ font-family:var(--disp); font-size:20px; font-weight:700; margin-bottom:6px; }
   .sc-m ul{ list-style:none; margin:0; padding:0; } .sc-m li{ display:flex; justify-content:space-between; gap:16px; padding:7px 0; border-top:1px solid #eef0f2; font-size:14.5px; } .sc-m li b{ font-family:var(--disp); font-weight:600; font-size:17px; white-space:nowrap; }
   .sc-m li em{ display:block; font-style:normal; color:var(--grey); font-size:12.5px; } .sc-more{ color:var(--grey); }
+  .fx-pay{ margin-left:auto; text-align:right; color:#fff; } .fx-pay b{ display:block; font-family:var(--disp); font-size:34px; line-height:1; } .fx-pay span{ font-size:12px; opacity:.8; }
   .sc-bn{ padding:12px 22px 8px; border-top:1px solid #e3e6ea; } .sc-bl{ display:flex; flex-wrap:wrap; gap:6px 16px; font-size:14px; } .sc-bl s{ text-decoration:none; color:var(--grey); font-size:12px; }
   .sc-mv{ border-top:1px solid #e3e6ea; } .sc-mv li{ justify-content:flex-start; align-items:baseline; gap:10px; padding:5px 0; font-size:13px; } .sc-mv li i{ font-style:normal; font-family:var(--disp); font-weight:700; font-size:11px; letter-spacing:.02em; color:var(--grey); min-width:62px; } .sc-mv li span{ flex:1 1 auto; } .sc-mv li b{ font-size:14px; }
   .sc-f{ padding:10px 22px 14px; font-size:12px; color:var(--grey); }
@@ -2527,7 +2528,7 @@ function buildFullExport(){
         <div>
           <div class="team">${team.name}</div>
           <div class="title">Final 26-Man Roster${lineupSections ? ' &amp; Lineups' : ''}</div>
-        </div>
+        </div>${(()=>{ const pp = (window.__planActive && typeof window.__planPayroll==='function') ? window.__planPayroll() : null; return pp ? `<div class="fx-pay"><b>${pp.total}</b><span>${pp.year} CBT payroll · est. tax ${pp.tax}</span></div>` : ''; })()}
       </div>
     </div>
     <div class="fx-section-title">Final 26-Man Roster</div>
@@ -3752,6 +3753,7 @@ function fortyMan(calc){
   S.added.forEach(a=>{ if(!a.mil && !byName.has(norm(a.name))) n++; });
   return n;
 }
+window.__planPayroll = function(){ try{ const c = calcAll(), y = c.years[S.season]; return {year:S.season, total:fmt(y.total), tax:fmt(y.tax,1)}; }catch(e){ return null; } };
 window.__planForty = function(){ try{ return fortyMan(calcAll()); }catch(e){ return null; } };
 function hero(yr, calc){
   const R = S.rules, T = yr.T, P = yr.total, W = R.bandWidth; const fm = fortyMan(calc);
@@ -4715,16 +4717,16 @@ function lineupCardHTML(){
     <div class="sc-f">Made in the Offseason Simulator · mlbrostertool.com/${esc(teamObj().slug)} · a Jomboy Media production</div></div>`;
 }
 function shareHTML(){
-  const v = M.view==='lu' ? 'lu' : M.view==='dc' ? 'dc' : 'mv';
+  const v = M.view==='lu' ? 'lu' : M.view==='mv' ? 'mv' : 'dc';
   return shell('Share your plan', `<div class="pay-hint">Anyone who opens the link sees these exact payroll moves as their own editable copy. The link doesn’t carry your depth chart — use the Depth chart or Lineup &amp; rotation image to share that.</div>
     <div class="pay-field">Link<div class="pay-linkrow"><input id="mShareLink" readonly value="${esc(M.link||'Building link…')}" onfocus="this.select()"><button class="pay-btn primary" data-m="shareCopy">Copy link</button></div></div>
     <div class="pay-hint" id="mShareNote"></div>
-    <div class="sc-tabs"><button class="pay-btn ${v==='mv'?'on':''}" data-m="shareView" data-v="mv">Payroll moves</button><button class="pay-btn ${v==='dc'?'on':''}" data-m="shareView" data-v="dc">Depth chart</button><button class="pay-btn ${v==='lu'?'on':''}" data-m="shareView" data-v="lu">Lineup &amp; rotation</button></div>
+    <div class="sc-tabs"><button class="pay-btn ${v==='dc'?'on':''}" data-m="shareView" data-v="dc">Depth chart</button><button class="pay-btn ${v==='lu'?'on':''}" data-m="shareView" data-v="lu">Lineup &amp; rotation</button><button class="pay-btn ${v==='mv'?'on':''}" data-m="shareView" data-v="mv">Payroll moves</button></div>
     <div class="sc-wrap">${v==='lu'?lineupCardHTML():v==='dc'?`<div id="dcWrap" class="dc-wrap">${M.dcUrl?`<img src="${M.dcUrl}" alt="Depth chart" style="width:100%;display:block">`:'<div class="pay-hint" style="padding:20px">Building the depth chart image…</div>'}</div>`:summaryCardHTML()}</div>`,
     `<button class="pay-btn" data-m="close">Close</button><button class="pay-btn" data-m="shareImg">Download image</button><button class="pay-btn primary" data-m="shareCopy">Copy link</button>`);
 }
 async function openShare(){
-  M = {type:'share', link:'', html:shareHTML}; paint();
+  M = {type:'share', link:'', view:'dc', html:shareHTML}; paint(); buildDepthImage();
   const str = await packPlan(); if(!M || M.type!=='share') return;
   M.link = `${/^https?:/.test(location.origin)?location.origin:'https://mlbrostertool.com'}/${teamObj().slug}#plan=${str}`;
   const el = document.getElementById('mShareLink'); if(el) el.value = M.link;
