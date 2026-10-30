@@ -1322,11 +1322,14 @@
   .sc-logo{ width:46px; height:46px; border-radius:50%; background:#fff; object-fit:contain; padding:4px; }
   .sc-t{ font-family:var(--disp); font-size:30px; font-weight:700; line-height:1.05; } .sc-s{ font-size:13px; opacity:.8; }
   .sc-stats{ display:flex; flex-wrap:wrap; border-bottom:1px solid #e3e6ea; } .sc-stat{ flex:1 1 120px; padding:14px 18px; border-right:1px solid #e3e6ea; } .sc-stat:last-child{ border-right:none; }
+  .sc-s4{ flex-wrap:nowrap; } .sc-s4 .sc-stat{ flex:1 1 0; padding:12px 14px; min-width:0; } .sc-s4 .sc-v{ font-size:26px; } .sc-s4 .sc-l{ white-space:nowrap; }
   .sc-v{ font-family:var(--disp); font-size:32px; font-weight:600; line-height:1; font-variant-numeric:tabular-nums; } .sc-v.bad{ color:var(--cut); } .sc-v.ok{ color:var(--lock); }
   .sc-l{ font-size:12.5px; color:var(--grey); margin-top:4px; }
   .sc-m{ padding:14px 22px 6px; } .sc-mh{ font-family:var(--disp); font-size:20px; font-weight:700; margin-bottom:6px; }
   .sc-m ul{ list-style:none; margin:0; padding:0; } .sc-m li{ display:flex; justify-content:space-between; gap:16px; padding:7px 0; border-top:1px solid #eef0f2; font-size:14.5px; } .sc-m li b{ font-family:var(--disp); font-weight:600; font-size:17px; white-space:nowrap; }
   .sc-m li em{ display:block; font-style:normal; color:var(--grey); font-size:12.5px; } .sc-more{ color:var(--grey); }
+  .sc-bn{ padding:12px 22px 8px; border-top:1px solid #e3e6ea; } .sc-bl{ display:flex; flex-wrap:wrap; gap:6px 16px; font-size:14px; } .sc-bl s{ text-decoration:none; color:var(--grey); font-size:12px; }
+  .sc-mv{ border-top:1px solid #e3e6ea; } .sc-mv li{ justify-content:flex-start; align-items:baseline; gap:10px; padding:5px 0; font-size:13px; } .sc-mv li i{ font-style:normal; font-family:var(--disp); font-weight:700; font-size:11px; letter-spacing:.02em; color:var(--grey); min-width:62px; } .sc-mv li span{ flex:1 1 auto; } .sc-mv li b{ font-size:14px; }
   .sc-f{ padding:10px 22px 14px; font-size:12px; color:var(--grey); }
   .pay-ro{ font-size:13.5px; padding:2px 0 6px; color:var(--navy); } .pay-ro b{ font-family:var(--disp); font-size:17px; }
   .pay-lock{ font-size:12.5px; color:var(--grey); margin:-2px 0 6px; }
@@ -2145,8 +2148,9 @@ function render(){
   // Relievers (routinely 8-10 deep) doesn't force every position column
   // (usually 1-4 deep) into its own row and get stretched to match it.
   const colHTML = col=>{
+    const roleRank = p=>{ const i = p.role ? RP_ROLE_ORDER.indexOf(p.role) : -1; return i>0 ? i : 99; }; // closer, setup, middle, long, then everyone without a role
     const inCol = players.filter(p=>p.placed==='roster' && p.group===col.key)
-                          .sort((a,b)=>(a.order??0)-(b.order??0));
+                          .sort((a,b)=>(col.key==='RP' ? roleRank(a)-roleRank(b) : 0) || (a.order??0)-(b.order??0));
     const clearGroupBtn = inCol.length
       ? `<button type="button" class="col-clear-btn" data-group="${col.key}" title="Send everyone in ${col.label} back to the pool">Clear</button>`
       : '';
@@ -2529,7 +2533,7 @@ function buildFullExport(){
     <div class="fx-section-title">Final 26-Man Roster</div>
     ${diamondHtml}
     ${lineupsBlockHtml}
-    <div class="fx-watermark">mlbrostertool.com</div>
+    <div class="fx-watermark">Offseason Simulator · mlbrostertool.com · a Jomboy Media production</div>
   `;
 }
 
@@ -4680,7 +4684,7 @@ function summaryCardHTML(){
     <div class="sc-h"><img class="sc-logo" src="${logoURL(TEAM_ID)}" alt=""><div><div class="sc-t">${esc(teamNick())} offseason plan</div><div class="sc-s">${y} payroll for the luxury tax</div></div></div>
     <div class="sc-stats">${stat(y+' CBT payroll', fmt(yr.total))}${stat(over>0?'over the tax line':'under the tax line', fmt(Math.abs(over)), over>0?'bad':'ok')}${stat('Estimated tax', fmt(yr.tax,1))}${stat('Payroll + tax', fmt(yr.totalCost))}</div>
     <div class="sc-m"><div class="sc-mh">${L.length?`${L.length} move${L.length===1?'':'s'}`:'No moves yet'}</div>${L.length?`<ul>${rows}${more}</ul>`:''}</div>
-    <div class="sc-f">mlbrostertool.com/${esc(teamObj().slug)}</div></div>`;
+    <div class="sc-f">Made in the Offseason Simulator · mlbrostertool.com/${esc(teamObj().slug)} · a Jomboy Media production</div></div>`;
 }
 function lineupCardHTML(){
   const y = S.season, hand = p=>{ const h = (typeof battingHand==='function') ? battingHand(p) : null; return h||''; };
@@ -4693,12 +4697,22 @@ function lineupCardHTML(){
   const thr = p=>((p.bt||'').split('/')[1]||'');
   const sp = grp('SP'), rp = grp('RP').sort((a,b)=>RP_ROLE_ORDER.slice(1).concat([null]).indexOf(a.role||null)-RP_ROLE_ORDER.slice(1).concat([null]).indexOf(b.role||null));
   const pit = (p,n)=>`<li>${n?n+'. ':''}${esc(p.name)}${(!n && p.role && RP_ROLES[p.role])?` <s>${RP_ROLES[p.role].label}</s>`:(thr(p)?`<s>${thr(p)}HP</s>`:'')}</li>`;
+  const calc = calcAll(), yr = calc.years[y], fm = fortyMan(calc), active = players.filter(p=>p.placed==='roster').length;
+  const stat = (l,v)=>`<div class="sc-stat"><div class="sc-v">${v}</div><div class="sc-l">${l}</div></div>`;
+  const inLu = new Set([].concat(lineups.RHP, lineups.LHP).map(sl=>sl.playerId).filter(Boolean));
+  const bench = players.filter(p=>p.placed==='roster' && p.group!=='SP' && p.group!=='RP' && !inLu.has(p.id)).sort((a,b)=>(a.order??0)-(b.order??0));
+  const tag = t=> /^(Re-)?[Ss]igned/.test(t)?'Signing' : /^Traded/.test(t)?'Trade' : /^Extended/.test(t)?'Extension' : /^Designated/.test(t)?'DFA' : /^Non-tendered/.test(t)?'Non-tender' : /^Released/.test(t)?'Release' : /^Added/.test(t)?'40-man' : 'Move';
+  const L = logEntries(calc).sort((a,b)=>(a.at||0)-(b.at||0)), CAP = 14;
+  const mv = L.slice(0,CAP).map(e=>`<li><i>${tag(e.text)}</i><span>${esc(e.text)}${e.group?': '+esc(e.group.map(x=>x.who).join(', ')):''}</span><b>${e.eff?fmtEff(e.eff):''}</b></li>`).join('') + (L.length>CAP?`<li class="sc-more"><span>+ ${L.length-CAP} more move${L.length-CAP===1?'':'s'}</span></li>`:'');
   return `<div class="sc" id="shareCard">
     <div class="sc-h"><img class="sc-logo" src="${logoURL(TEAM_ID)}" alt=""><div><div class="sc-t">${esc(teamNick())} ${y} lineup &amp; rotation</div><div class="sc-s">Built in the offseason simulator</div></div></div>
+    <div class="sc-stats sc-s4">${stat(y+' CBT payroll', fmt(yr.total))}${stat('Est. tax', fmt(yr.tax,1))}${stat('40-man', fm==null?'—':fm+' / 40')}${stat('Active', active+' / 26')}</div>
     <div class="sc-lu">${col('RHP','Vs. right-handers')}${col('LHP','Vs. left-handers')}</div>
     <div class="sc-pit"><div><div class="sc-mh">Rotation</div>${sp.length?`<ul>${sp.map((p,i)=>pit(p,i+1)).join('')}</ul>`:'<div class="sc-empty">Not set yet</div>'}</div>
       <div><div class="sc-mh">Bullpen</div>${rp.length?`<ul class="sc-pen">${rp.map(p=>pit(p,0)).join('')}</ul>`:'<div class="sc-empty">Not set yet</div>'}</div></div>
-    <div class="sc-f">mlbrostertool.com/${esc(teamObj().slug)}</div></div>`;
+    ${bench.length?`<div class="sc-bn"><div class="sc-mh">Bench</div><div class="sc-bl">${bench.map(p=>`<span>${esc(p.name)}${hand(p)?` <s>${hand(p)}</s>`:''}</span>`).join('')}</div></div>`:''}
+    ${L.length?`<div class="sc-m sc-mv"><div class="sc-mh">${L.length} move${L.length===1?'':'s'} made</div><ul>${mv}</ul></div>`:''}
+    <div class="sc-f">Made in the Offseason Simulator · mlbrostertool.com/${esc(teamObj().slug)} · a Jomboy Media production</div></div>`;
 }
 function shareHTML(){
   const v = M.view==='lu' ? 'lu' : M.view==='dc' ? 'dc' : 'mv';
@@ -5100,7 +5114,7 @@ function tradeCardHTML(pkg){
     <div class="tc-sides"><div class="tc-side"><h4>${esc(teamNick())} send</h4>${sendLis?`<ul>${sendLis}</ul>`:'<div class="tc-ts" style="text-align:left">Nobody</div>'}</div>
       <div class="tc-side"><h4>${esc(themName)} send</h4>${getLis?`<ul>${getLis}</ul>`:'<div class="tc-ts" style="text-align:left">Nobody</div>'}</div></div>
     <div class="tc-imp">${stat(y+' CBT payroll', fmt(a0.total,1)+' → '+fmt(a1.total,1))}${stat(over>0?'over the tax line':'under the tax line', fmt(Math.abs(over),1), over>0?'bad':'ok')}${stat('Est. tax bill', a0.tax>0||a1.tax>0 ? fmt(a0.tax,1)+' → '+fmt(a1.tax,1) : '$0.0M')}</div>
-    <div class="sc-f">mlbrostertool.com/${esc(teamObj().slug)}</div></div>`;
+    <div class="sc-f">Made in the Offseason Simulator · mlbrostertool.com/${esc(teamObj().slug)} · a Jomboy Media production</div></div>`;
 }
 function openTradeShare(pkg){
   M = {type:'tradeshare', pkg, html:()=>shell('Share this trade', `<div class="pay-hint">A picture of this one move — download it and post it anywhere.</div><div class="sc-wrap">${tradeCardHTML(pkg)}</div>`,
