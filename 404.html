@@ -4974,10 +4974,10 @@ function pkgHTML(){
       <button class="pay-eat-link" data-m="sendmanual">Add someone not in the list (prospect, minor leaguer…)</button>${ret}</div>`;
   const getSec = `<div class="pay-sec"><div class="pay-sec-h">Players you get <span>(optional)</span></div>
       <div class="pay-filters"><select class="pay-in" id="mTeam"${tradeLock()?' disabled':''}><option value="">All teams</option>${teamOpts(f.team)}</select></div>
+      <input class="pay-in" id="mName" placeholder="Search by name (filters apply)…" autocomplete="off" value="${esc(f.q||'')}">
       <div class="pay-lock" id="mLock">${tradeLock()?`Trading with the ${esc(tradeLock())} — remove their players to switch teams.`:'Pick a team to trade with — once you add a player, the trade is locked to that club.'}</div>
       <div class="pay-seg pay-posf pay-posrow" id="mPosRow">${segBtns(POS_ROW_T,'posf',f.posf||'')}</div>
       <div class="pay-seg pay-posf pay-posrow" id="mHandRow">${handRow('handf', f.posf||'', f.handf||'')}</div>
-      <input class="pay-in" id="mName" placeholder="Search by name (filters apply)…" autocomplete="off" value="${esc(f.q||'')}">
       <div class="pay-browse" id="mBrowse"></div>
       <div id="mGetRows">${f.get.map(getRowHTML).join('')}</div>
       <button class="pay-eat-link" data-m="addmanual">Add a player who isn’t in the list…</button></div>`;
