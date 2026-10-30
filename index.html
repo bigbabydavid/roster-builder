@@ -3770,7 +3770,8 @@ function fortyMan(calc){
   return n;
 }
 function moveTag(t){ return /^(Re-)?[Ss]igned/.test(t)?'Signing' : /^Traded/.test(t)?'Trade' : /^Extended/.test(t)?'Extension' : /^Designated/.test(t)?'DFA' : /^Non-tendered/.test(t)?'Non-tender' : /^Released/.test(t)?'Release' : /^Added/.test(t)?'40-man' : 'Move'; }
-function movesList(){ const calc = calcAll(); return logEntries(calc).sort((a,b)=>(a.at||0)-(b.at||0)).map(e=>({tag:moveTag(e.text), text:e.text+(e.group?': '+e.group.map(x=>x.who).join(', '):''), eff:e.eff?fmtEff(e.eff):''})); }
+function isDeal(e){ return /^(Re-)?[Ss]igned|^Traded|^Extended/.test(e.text); } // image summaries list trades and signings only
+function movesList(){ const calc = calcAll(); return logEntries(calc).filter(isDeal).sort((a,b)=>(a.at||0)-(b.at||0)).map(e=>({tag:moveTag(e.text), text:e.text+(e.group?': '+e.group.map(x=>x.who).join(', '):''), eff:e.eff?fmtEff(e.eff):''})); }
 window.__planMoves = function(){ try{ return movesList(); }catch(e){ return []; } };
 window.__planTitle = function(){ try{ return (S.title||'').trim(); }catch(e){ return ''; } };
 window.__planPayroll = function(){ try{ const c = calcAll(), y = c.years[S.season]; return {year:S.season, total:fmt(y.total), tax:fmt(y.tax,1)}; }catch(e){ return null; } };
@@ -4730,7 +4731,7 @@ function lineupCardHTML(){
   const inLu = new Set([].concat(lineups.RHP, lineups.LHP).map(sl=>sl.playerId).filter(Boolean));
   const bench = players.filter(p=>p.placed==='roster' && p.group!=='SP' && p.group!=='RP' && !inLu.has(p.id)).sort((a,b)=>(a.order??0)-(b.order??0));
   const tag = moveTag;
-  const L = logEntries(calc).sort((a,b)=>(a.at||0)-(b.at||0)), CAP = 30;
+  const L = logEntries(calc).filter(isDeal).sort((a,b)=>(a.at||0)-(b.at||0)), CAP = 30;
   const mv = L.slice(0,CAP).map(e=>`<li><i>${tag(e.text)}</i><span>${esc(e.text)}${e.group?': '+esc(e.group.map(x=>x.who).join(', ')):''}</span><b>${e.eff?fmtEff(e.eff):''}</b></li>`).join('') + (L.length>CAP?`<li class="sc-more"><span>+ ${L.length-CAP} more move${L.length-CAP===1?'':'s'}</span></li>`:'');
   return `<div class="sc" id="shareCard">
     <div class="sc-h"><img class="sc-logo" src="${logoURL(TEAM_ID)}" alt=""><div><div class="sc-t">${esc(S.title || `${teamNick()} ${y} lineup & rotation`)}</div><div class="sc-s">${S.title ? esc(`${teamNick()} ${y} lineup & rotation`) : 'Built in the offseason simulator'}</div></div></div>
