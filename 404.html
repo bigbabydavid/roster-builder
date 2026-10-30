@@ -385,6 +385,8 @@
   .mini-toggle.remove:hover{ background:var(--il); border-color:var(--il); color:white; }
   .mini-toggle.to-pool{ color:var(--grey); font-size:10px; }
   .mini-toggle.to-pool:hover{ background:var(--navy); border-color:var(--navy); color:white; }
+  .il-block{ margin-top:14px; } .il-block h3{ margin:0 0 6px; font-size:13px; letter-spacing:.04em; text-transform:uppercase; color:#5b6573; } .il-block h3 .n{ font-weight:700; color:#0c2340; margin-left:4px; }
+  .pool-collapsed-hide{}
   .pool-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   @media (max-width:760px){ .pool-grid{ grid-template-columns:1fr; } }
 
@@ -1328,6 +1330,7 @@
   .sc-m{ padding:14px 22px 6px; } .sc-mh{ font-family:var(--disp); font-size:20px; font-weight:700; margin-bottom:6px; }
   .sc-m ul{ list-style:none; margin:0; padding:0; } .sc-m li{ display:flex; justify-content:space-between; gap:16px; padding:7px 0; border-top:1px solid #eef0f2; font-size:14.5px; } .sc-m li b{ font-family:var(--disp); font-weight:600; font-size:17px; white-space:nowrap; }
   .sc-m li em{ display:block; font-style:normal; color:var(--grey); font-size:12.5px; } .sc-more{ color:var(--grey); }
+  .fx-moves{ list-style:none; margin:0; padding:0 24px 40px; columns:2; column-gap:22px; font-size:10.5px; line-height:1.35; color:#1c2733; } .fx-moves li{ break-inside:avoid; display:flex; gap:6px; padding:3px 0; border-top:1px solid #e8ebef; } .fx-moves i{ font-style:normal; font-weight:700; color:#5b6573; min-width:50px; font-size:9.5px; } .fx-moves span{ flex:1 1 auto; } .fx-moves b{ font-weight:600; white-space:nowrap; } .fx-more{ color:#5b6573; }
   .fx-pay{ margin-left:auto; text-align:right; color:#fff; } .fx-pay b{ display:block; font-family:var(--disp); font-size:34px; line-height:1; } .fx-pay span{ font-size:12px; opacity:.8; }
   .sc-bn{ padding:12px 22px 8px; border-top:1px solid #e3e6ea; } .sc-bl{ display:flex; flex-wrap:wrap; gap:6px 16px; font-size:14px; } .sc-bl s{ text-decoration:none; color:var(--grey); font-size:12px; }
   .sc-mv{ border-top:1px solid #e3e6ea; } .sc-mv li{ justify-content:flex-start; align-items:baseline; gap:10px; padding:5px 0; font-size:13px; } .sc-mv li i{ font-style:normal; font-family:var(--disp); font-weight:700; font-size:11px; letter-spacing:.02em; color:var(--grey); min-width:62px; } .sc-mv li span{ flex:1 1 auto; } .sc-mv li b{ font-size:14px; }
@@ -1480,6 +1483,11 @@
       <h3>Position Players</h3>
       <div class="pool-lane" data-place="pool" data-type="H"></div>
     </div>
+  </div>
+  <div class="il-block">
+    <h3>Injured List <span class="n" id="ilCount">0</span></h3>
+    <p class="hint" style="margin:0 0 8px 0; padding:0;">Park anyone who starts the year on the 60-day IL or restricted list here. They stay on the 40-man but don’t take a spot on the 26-man roster. Drag a player in, or on a phone tap him and choose Injured list.</p>
+    <div class="pool-lane il-lane" data-place="il"></div>
   </div>
 </section>
 
@@ -1928,6 +1936,11 @@ function moveToSpot(id, value){
     placePlayer(id, 'pool', null);
     return;
   }
+  if(value === 'il'){
+    const il = players.filter(pl=>pl.placed==='il');
+    placePlayer(id, 'il', null, il.reduce((m,pl)=>Math.max(m, pl.order||0), 0) + 10);
+    return;
+  }
   const dest = players.filter(pl=>pl.placed==='roster' && pl.group===value);
   const maxOrder = dest.reduce((m,pl)=>Math.max(m, pl.order||0), 0);
   placePlayer(id, 'roster', value, maxOrder + 10);
@@ -1966,8 +1979,8 @@ function openMovePopupForTile(id){
   const destColumns = p.type === 'P'
     ? ROSTER_COLUMNS.filter(c=>c.key==='SP'||c.key==='RP')
     : ROSTER_COLUMNS.filter(c=>c.key!=='SP'&&c.key!=='RP');
-  const current = p.placed === 'pool' ? 'pool' : p.group;
-  const items = [{label:'Pool', value:'pool', current:current==='pool'}]
+  const current = (p.placed === 'pool' || p.placed === 'il') ? p.placed : p.group;
+  const items = [{label:'Pool', value:'pool', current:current==='pool'}, {label:'Injured list', value:'il', current:current==='il'}]
     .concat(destColumns.map(c=>({label:c.label, value:c.key, current:current===c.key})));
   openPicker(`Move ${p.name}`, items, value=>moveToSpot(id, value));
 }
@@ -2168,10 +2181,11 @@ function render(){
 
   // Pool (pitchers left, position players right)
   document.querySelectorAll('.pool-lane').forEach(lane=>{
-    const type = lane.dataset.type;
-    const inLane = players.filter(p=>p.placed==='pool' && p.type===type)
+    const type = lane.dataset.type, isIL = lane.dataset.place==='il';
+    const inLane = players.filter(p=>isIL ? p.placed==='il' : (p.placed==='pool' && p.type===type))
                            .sort((a,b)=>(a.order??0)-(b.order??0));
     lane.innerHTML = inLane.map(tileHTML).join('');
+    if(isIL){ const c = document.getElementById('ilCount'); if(c) c.textContent = inLane.length; }
   });
 
   // Injured status is now just a toggle on each tile — no separate section to render.
@@ -2527,13 +2541,15 @@ function buildFullExport(){
         <div class="fx-team-logo"><img src="${logoSrc(team.id)}" alt="${team.name}" onerror="this.remove();"></div>
         <div>
           <div class="team">${team.name}</div>
-          <div class="title">Final 26-Man Roster${lineupSections ? ' &amp; Lineups' : ''}</div>
+          <div class="title">${(()=>{ const ct = (window.__planActive && typeof window.__planTitle==='function') ? window.__planTitle() : ''; return ct ? ct.replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])) : 'Final 26-Man Roster' + (lineupSections ? ' &amp; Lineups' : ''); })()}</div>
         </div>${(()=>{ const pp = (window.__planActive && typeof window.__planPayroll==='function') ? window.__planPayroll() : null; return pp ? `<div class="fx-pay"><b>${pp.total}</b><span>${pp.year} CBT payroll · est. tax ${pp.tax}</span></div>` : ''; })()}
       </div>
     </div>
     <div class="fx-section-title">Final 26-Man Roster</div>
     ${diamondHtml}
     ${lineupsBlockHtml}
+    ${(()=>{ const mv = (window.__planActive && typeof window.__planMoves==='function') ? window.__planMoves() : []; if(!mv.length) return ''; const e = x=>String(x).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); const CAP = 30;
+      return `<div class="fx-section-title">Moves made</div><ul class="fx-moves">${mv.slice(0,CAP).map(m=>`<li><i>${e(m.tag)}</i><span>${e(m.text)}</span><b>${e(m.eff)}</b></li>`).join('')}${mv.length>CAP?`<li class="fx-more"><span>+ ${mv.length-CAP} more</span></li>`:''}</ul>`; })()}
     <div class="fx-watermark">Offseason Simulator · mlbrostertool.com · a Jomboy Media production</div>
   `;
 }
@@ -3720,9 +3736,9 @@ function renderAll(){
     ${topline()}
     ${hero(yr, calc)}
     ${logCard(calc)}
-    <div class="pay-two">${breakdownCard(yr)}${outlookCard(calc)}</div>
     ${tablesHTML(calc, rmap)}
     ${assumptionsHTML()}
+    <div class="pay-two">${breakdownCard(yr)}${outlookCard(calc)}</div>
     <div class="pay-plan-head"><h2>Depth chart &amp; lineups</h2><p>Your 2027 roster as you’ve built it — traded, released, non-tendered and unsigned free agents are gone; signings and trade pickups are in the pool. Drag players around exactly like the Roster Builder. This is its own copy: nothing here changes your Roster Builder board. <button class="pay-btn tiny${UI.armed==='plan'?' armed':''}" data-act="planReset">${UI.armed==='plan'?'Click again to confirm':'Reset to my Roster Builder board'}</button></p><div class="pay-key"><b>*</b> = still has a minor-league option, so he can start 2027 in the minors. No asterisk means out of options, can’t be optioned, or no data (FanGraphs, through 2026). Not included in the downloaded image.</div></div><div id="planSlot"></div>
     ${realMovesCard()}${calendarCard()}
     <div class="pay-foot">Contract data: <a href="https://www.fangraphs.com/roster-resource/payroll/${teamObj().slug}" target="_blank" rel="noopener">FanGraphs RosterResource</a> (export dated ${SOURCE_DATE}). Tax bands/rates checked against <a href="https://www.spotrac.com/mlb/tax" target="_blank" rel="noopener">Spotrac&rsquo;s</a> 2026 table. Free-agent names: <a href="https://www.mlbtraderumors.com/2026-27-mlb-free-agents" target="_blank" rel="noopener">MLB Trade Rumors</a>. 2027 arbitration figures are <a href="https://www.mlbtraderumors.com/2026/10/projected-arbitration-salaries-for-2027.html" target="_blank" rel="noopener">MLB Trade Rumors&rsquo; projections</a> (Matt Swartz&rsquo;s model, Oct 2, 2026); later arbitration years are my own estimates, and CBT payroll counts average annual value plus benefits, not cash paid. Deferred money counts at present value, so enter the CBT AAV directly for heavily deferred deals.</div>
@@ -3753,6 +3769,10 @@ function fortyMan(calc){
   S.added.forEach(a=>{ if(!a.mil && !byName.has(norm(a.name))) n++; });
   return n;
 }
+function moveTag(t){ return /^(Re-)?[Ss]igned/.test(t)?'Signing' : /^Traded/.test(t)?'Trade' : /^Extended/.test(t)?'Extension' : /^Designated/.test(t)?'DFA' : /^Non-tendered/.test(t)?'Non-tender' : /^Released/.test(t)?'Release' : /^Added/.test(t)?'40-man' : 'Move'; }
+function movesList(){ const calc = calcAll(); return logEntries(calc).sort((a,b)=>(a.at||0)-(b.at||0)).map(e=>({tag:moveTag(e.text), text:e.text+(e.group?': '+e.group.map(x=>x.who).join(', '):''), eff:e.eff?fmtEff(e.eff):''})); }
+window.__planMoves = function(){ try{ return movesList(); }catch(e){ return []; } };
+window.__planTitle = function(){ try{ return (S.title||'').trim(); }catch(e){ return ''; } };
 window.__planPayroll = function(){ try{ const c = calcAll(), y = c.years[S.season]; return {year:S.season, total:fmt(y.total), tax:fmt(y.tax,1)}; }catch(e){ return null; } };
 window.__planForty = function(){ try{ return fortyMan(calcAll()); }catch(e){ return null; } };
 function hero(yr, calc){
@@ -4132,6 +4152,12 @@ function readFields(){ // snapshot inputs into M.f before re-painting
 }
 function onModalInput(e){
   const t = e && e.target; if(!t || !M) return;
+  if(M.type==='share' && t.id==='mTitle'){
+    S.title = t.value.slice(0,48); saveState(); clearTimeout(M.titleT);
+    M.titleT = setTimeout(()=>{ if(!M || M.type!=='share') return; M.dcUrl = null; const lk = M.link; paint(); const li = document.getElementById('mShareLink'); if(li && lk) li.value = lk;
+      const ti = document.getElementById('mTitle'); if(ti){ ti.focus(); ti.setSelectionRange(ti.value.length, ti.value.length); } if(M.view==='dc' || !M.view) buildDepthImage(); }, 450);
+    return;
+  }
   if(M.type==='pkg'){
     if(t.dataset && t.dataset.g){
       const g = M.f.get.find(x=>x.key===t.dataset.k); if(g){ g[t.dataset.g] = t.value; if(t.dataset.g==='aav' && g.sched){ g.sched = null; } }
@@ -4680,10 +4706,10 @@ function sharedBanner(){
 function summaryCardHTML(){
   const calc = calcAll(), y = S.season, yr = calc.years[y], T = S.rules.threshold[y], over = yr.total - T, L = logEntries(calc);
   const stat = (l,v,cls='')=>`<div class="sc-stat"><div class="sc-v ${cls}">${v}</div><div class="sc-l">${l}</div></div>`;
-  const rows = L.slice(0,9).map(e=>`<li><span>${esc(e.text)}${e.group?': '+esc(e.group.map(x=>x.who).join(', ')):''}${e.sub?`<em>${esc(e.sub)}</em>`:''}</span><b>${e.eff?fmtEff(e.eff):''}</b></li>`).join('');
-  const more = L.length>9 ? `<li class="sc-more">+ ${L.length-9} more move${L.length-9===1?'':'s'}</li>` : '';
+  const rows = L.slice(0,30).map(e=>`<li><span>${esc(e.text)}${e.group?': '+esc(e.group.map(x=>x.who).join(', ')):''}${e.sub?`<em>${esc(e.sub)}</em>`:''}</span><b>${e.eff?fmtEff(e.eff):''}</b></li>`).join('');
+  const more = L.length>30 ? `<li class="sc-more">+ ${L.length-30} more move${L.length-30===1?'':'s'}</li>` : '';
   return `<div class="sc" id="shareCard">
-    <div class="sc-h"><img class="sc-logo" src="${logoURL(TEAM_ID)}" alt=""><div><div class="sc-t">${esc(teamNick())} offseason plan</div><div class="sc-s">${y} payroll for the luxury tax</div></div></div>
+    <div class="sc-h"><img class="sc-logo" src="${logoURL(TEAM_ID)}" alt=""><div><div class="sc-t">${esc(S.title || `${teamNick()} offseason plan`)}</div><div class="sc-s">${S.title ? esc(`${teamNick()} offseason plan · ${y} payroll for the luxury tax`) : `${y} payroll for the luxury tax`}</div></div></div>
     <div class="sc-stats">${stat(y+' CBT payroll', fmt(yr.total))}${stat(over>0?'over the tax line':'under the tax line', fmt(Math.abs(over)), over>0?'bad':'ok')}${stat('Estimated tax', fmt(yr.tax,1))}${stat('Payroll + tax', fmt(yr.totalCost))}</div>
     <div class="sc-m"><div class="sc-mh">${L.length?`${L.length} move${L.length===1?'':'s'}`:'No moves yet'}</div>${L.length?`<ul>${rows}${more}</ul>`:''}</div>
     <div class="sc-f">Made in the Offseason Simulator · mlbrostertool.com/${esc(teamObj().slug)} · a Jomboy Media production</div></div>`;
@@ -4703,11 +4729,11 @@ function lineupCardHTML(){
   const stat = (l,v)=>`<div class="sc-stat"><div class="sc-v">${v}</div><div class="sc-l">${l}</div></div>`;
   const inLu = new Set([].concat(lineups.RHP, lineups.LHP).map(sl=>sl.playerId).filter(Boolean));
   const bench = players.filter(p=>p.placed==='roster' && p.group!=='SP' && p.group!=='RP' && !inLu.has(p.id)).sort((a,b)=>(a.order??0)-(b.order??0));
-  const tag = t=> /^(Re-)?[Ss]igned/.test(t)?'Signing' : /^Traded/.test(t)?'Trade' : /^Extended/.test(t)?'Extension' : /^Designated/.test(t)?'DFA' : /^Non-tendered/.test(t)?'Non-tender' : /^Released/.test(t)?'Release' : /^Added/.test(t)?'40-man' : 'Move';
-  const L = logEntries(calc).sort((a,b)=>(a.at||0)-(b.at||0)), CAP = 14;
+  const tag = moveTag;
+  const L = logEntries(calc).sort((a,b)=>(a.at||0)-(b.at||0)), CAP = 30;
   const mv = L.slice(0,CAP).map(e=>`<li><i>${tag(e.text)}</i><span>${esc(e.text)}${e.group?': '+esc(e.group.map(x=>x.who).join(', ')):''}</span><b>${e.eff?fmtEff(e.eff):''}</b></li>`).join('') + (L.length>CAP?`<li class="sc-more"><span>+ ${L.length-CAP} more move${L.length-CAP===1?'':'s'}</span></li>`:'');
   return `<div class="sc" id="shareCard">
-    <div class="sc-h"><img class="sc-logo" src="${logoURL(TEAM_ID)}" alt=""><div><div class="sc-t">${esc(teamNick())} ${y} lineup &amp; rotation</div><div class="sc-s">Built in the offseason simulator</div></div></div>
+    <div class="sc-h"><img class="sc-logo" src="${logoURL(TEAM_ID)}" alt=""><div><div class="sc-t">${esc(S.title || `${teamNick()} ${y} lineup & rotation`)}</div><div class="sc-s">${S.title ? esc(`${teamNick()} ${y} lineup & rotation`) : 'Built in the offseason simulator'}</div></div></div>
     <div class="sc-stats sc-s4">${stat(y+' CBT payroll', fmt(yr.total))}${stat('Est. tax', fmt(yr.tax,1))}${stat('40-man', fm==null?'—':fm+' / 40')}${stat('Active', active+' / 26')}</div>
     <div class="sc-lu">${col('RHP','Vs. right-handers')}${col('LHP','Vs. left-handers')}</div>
     <div class="sc-pit"><div><div class="sc-mh">Rotation</div>${sp.length?`<ul>${sp.map((p,i)=>pit(p,i+1)).join('')}</ul>`:'<div class="sc-empty">Not set yet</div>'}</div>
@@ -4719,6 +4745,7 @@ function lineupCardHTML(){
 function shareHTML(){
   const v = M.view==='lu' ? 'lu' : M.view==='mv' ? 'mv' : 'dc';
   return shell('Share your plan', `<div class="pay-hint">Anyone who opens the link sees these exact payroll moves as their own editable copy. The link doesn’t carry your depth chart — use the Depth chart or Lineup &amp; rotation image to share that.</div>
+    <div class="pay-field">Roster title <span style="font-weight:400;opacity:.7">(optional — shows on all three images)</span><input class="pay-in" id="mTitle" maxlength="48" placeholder="e.g. My 2027 Yankees" value="${esc(S.title||'')}" autocomplete="off"></div>
     <div class="pay-field">Link<div class="pay-linkrow"><input id="mShareLink" readonly value="${esc(M.link||'Building link…')}" onfocus="this.select()"><button class="pay-btn primary" data-m="shareCopy">Copy link</button></div></div>
     <div class="pay-hint" id="mShareNote"></div>
     <div class="sc-tabs"><button class="pay-btn ${v==='dc'?'on':''}" data-m="shareView" data-v="dc">Depth chart</button><button class="pay-btn ${v==='lu'?'on':''}" data-m="shareView" data-v="lu">Lineup &amp; rotation</button><button class="pay-btn ${v==='mv'?'on':''}" data-m="shareView" data-v="mv">Payroll moves</button></div>
