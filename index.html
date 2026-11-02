@@ -385,6 +385,7 @@
   .mini-toggle.remove:hover{ background:var(--il); border-color:var(--il); color:white; }
   .mini-toggle.to-pool{ color:var(--grey); font-size:10px; }
   .mini-toggle.to-pool:hover{ background:var(--navy); border-color:var(--navy); color:white; }
+  .pay-opt-final b{ color:#0c2340; } .pay-opt-final span{ color:#2f7d4f; font-size:12px; margin-left:4px; }
   .il-block{ margin-top:14px; } .il-block h3{ margin:0 0 6px; font-size:13px; letter-spacing:.04em; text-transform:uppercase; color:#5b6573; } .il-block h3 .n{ font-weight:700; color:#0c2340; margin-left:4px; }
   .pool-collapsed-hide{}
   .pool-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
@@ -3458,7 +3459,7 @@ function rawCharge(it, y){
   const ov = S.overrides[it.id];
   if(ov && ov[y]!=null) return ov[y];
   if(it.option && optYear(it, y)){
-    const st = S.options[it.id] || 'undecided';
+    const st = optState(it);
     return st==='exercise' ? it.option.salary : st==='decline' ? (y===it.option.year && it.option.buyout ? it.option.buyout : null) : null;
   }
   return baseFor(it, y);
@@ -3611,7 +3612,7 @@ function rosterRemove(id){
 function goneNames(){
   const gone = new Set(); const items = calcAll().items;
   items.forEach(it=>{ const st = S.status[it.id]; if(st && !st.assumed && ['traded','released','nontender','claimed','outright'].includes(st.mode)) gone.add(norm(it.name)); });
-  items.forEach(it=>{ if(it.option && it.option.year===2027 && S.options[it.id]==='decline') gone.add(norm(it.name)); }); // a declined 2027 option / opt-out means he's gone
+  items.forEach(it=>{ if(it.option && it.option.year===2027 && optState(it)==='decline') gone.add(norm(it.name)); }); // a declined 2027 option / opt-out means he's gone
   Object.keys(S.walked||{}).forEach(nm=>gone.add(norm(nm)));
   const signed = new Set(S.added.map(a=>norm(a.name)));
   PENDING_FA.forEach(p=>{ if(!signed.has(norm(p.name))) gone.add(norm(p.name)); }); // contract ends after 2026 — not on the 2027 board unless re-signed
@@ -3763,7 +3764,7 @@ function fortyMan(calc){
   const byName = new Set(real.map(p=>norm(p.name)));
   let n = real.length; const gone = new Set();
   calc.items.forEach(it=>{ const st = S.status[it.id]; if(st && !st.assumed && ['traded','released','nontender','claimed','outright'].includes(st.mode)) gone.add(norm(it.name)); });
-  calc.items.forEach(it=>{ if(it.option && it.option.year===2027 && S.options[it.id]==='decline') gone.add(norm(it.name)); });
+  calc.items.forEach(it=>{ if(it.option && it.option.year===2027 && optState(it)==='decline') gone.add(norm(it.name)); });
   Object.keys(S.walked||{}).forEach(nm=>gone.add(norm(nm)));
   gone.forEach(nm=>{ if(byName.has(nm)) n--; });
   S.added.forEach(a=>{ if(!a.mil && !byName.has(norm(a.name))) n++; });
@@ -3882,7 +3883,7 @@ function logEntries(calc){
     L.push({kind:'add', acts:[['extend','Edit',{id:k}],['undoExt','Undo',{id:k}]], at:ex.at||0, eff:extDelta(it,y), text:`Extended ${it.name}`, sub:`${fmt(ex.aav,2)} a year${ex.shape&&ex.shape!=='flat'?' AAV, '+(ex.shape==='custom'?'custom structure':ex.shape+'-loaded')+' ('+Object.keys(ex.sched||{}).map(y=>fmt(ex.sched[y],1)).join(' / ')+')':''}, ${ex.start===ex.through?ex.start:ex.start+'–'+ex.through} (${yrs} yr, ${fmt(tot,1)} total)`});
   });
   Object.keys(S.options).forEach(k=>{
-    const v = S.options[k]; const it = byId[k]; if(!it || !it.option || v==='undecided') return;
+    const v = S.options[k]; const it = byId[k]; if(!it || !it.option || v==='undecided' || realOpt(it)) return;
     L.push({kind:'other', acts:[['optReset','Undo',{id:k}]], at:(S.optAt&&S.optAt[k])||0, eff: optYear(it,y) ? (rawCharge(it,y)||0) : 0, text:(()=>{ const ol = optLabels(it), pl = (it.option.kind||'club')==='player'; return pl ? `${it.name} ${v==='exercise'?'stays':'opts out'} (${optYears(it)} player option)` : `${v==='exercise'?'Exercised':'Declined'} ${optYears(it)} ${(it.option.kind||'club')==='mutual'?'mutual':'club'} option on ${it.name}`; })(), sub:v==='exercise'?`${fmt(it.option.salary,2)}${it.option.years&&it.option.years.length>1?'/yr':''}`:(it.option.buyout?`${fmt(it.option.buyout,2)} buyout`:'no buyout')});
   });
   S.added.forEach(a=>{
@@ -3979,6 +3980,13 @@ function outlookCard(calc){
     <div class="pay-empty">Later seasons only include contracts already on the books plus anything you add, so they fall off fast — the point is to see commitments, not a forecast.</div></div>`;
 }
 
+let _ROsrc = null, _RO = {};
+function realOpt(it){ // a 2027 option that was already decided in real life (from the daily transaction log) — final, not editable
+  const tx = window.__tx; if(!tx || !tx.rows || !it || !it.option || it.option.year!==2027 || startMode()!=='today') return null;
+  if(_ROsrc!==tx){ _ROsrc = tx; _RO = {}; tx.rows.forEach(r=>{ const d = String(r[5]||''); if(!/option (exercised|declined)/i.test(d)) return; const v = /exercised/i.test(d) ? 'exercise' : 'decline'; _RO[norm(r[2])+'|'+(TX_ABBR[r[1]]||r[1])] = {v, d:r[0], txt:d}; }); }
+  return _RO[norm(it.name)+'|'+teamObj().abbr] || null;
+}
+function optState(it){ const r = realOpt(it); return r ? r.v : (S.options[it.id] || 'undecided'); }
 function optYears(it){ const o = it.option, ys = o.years && o.years.length ? o.years : [o.year]; return ys.length>1 ? `${ys[0]}–${String(ys[ys.length-1]).slice(2)}` : String(ys[0]); }
 function optLabels(it){
   const o = it.option, k = o.kind||'club', yl = optYears(it), bo = o.buyout ? `, ${fmt(o.buyout)} buyout` : '';
@@ -4018,7 +4026,9 @@ function rowHTML(it, rmap){
   let opt = '';
   if(it.option){
     const v = S.options[it.id]||'undecided';
-    const ol = optLabels(it);
+    const ol = optLabels(it), ro = realOpt(it);
+    if(ro){ const dt = new Date(ro.d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      opt = `<div class="pay-opt pay-opt-final">${ol.head}: <b>${ro.v==='exercise'?ol.verbYes:ol.verbNo}</b> <span>${esc(dt)} · decided in real life, so it's final</span></div>`; } else
     opt = `<div class="pay-opt">${ol.head}:
       <select data-act="option" data-id="${esc(it.id)}"><option value="undecided"${v==='undecided'?' selected':''}>Undecided (not counted)</option><option value="exercise"${v==='exercise'?' selected':''}>${ol.yes}</option><option value="decline"${v==='decline'?' selected':''}>${ol.no}</option></select></div>`;
   }
