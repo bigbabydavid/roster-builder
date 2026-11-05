@@ -1173,6 +1173,9 @@
   #welcome .wl-link{ appearance:none; background:none; border:none; font:inherit; color:inherit; text-decoration:underline; cursor:pointer; padding:0; }
   .fa-steps{ display:flex; gap:6px; } .fa-steps button{ flex:1; appearance:none; border:1px solid #cfd5dc; background:#fff; font:inherit; font-size:12.5px; font-weight:700; color:var(--grey); padding:7px 10px; border-radius:8px; cursor:pointer; text-align:left; }
   .fa-steps button.on{ background:var(--navy); border-color:var(--navy); color:#fff; }
+  .fa-bio{ font-size:12.5px; font-weight:400; color:var(--grey); margin-top:2px; display:flex; align-items:center; gap:6px; }
+  details.fa-sched-d>summary{ cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px; } details.fa-sched-d>summary::-webkit-details-marker{ display:none; }
+  details.fa-sched-d>summary::before{ content:'▸'; font-size:11px; transition:transform .15s; } details.fa-sched-d[open]>summary::before{ transform:rotate(90deg); }
   .fa-who{ display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:15px; } .fa-who button{ font-size:12px; }
   .fa-warn{ border-radius:9px; padding:8px 11px; font-size:12.5px; line-height:1.45; } .fa-warn.red{ background:#fdecea; border:1px solid #f0b8b2; color:#8a1f14; } .fa-warn.amber{ background:#fff6e0; border:1px solid #f0dca0; color:#6b4a00; }
   .fa-impact{ border:1px solid #d9dee5; border-radius:10px; padding:10px 12px; background:#fafbfc; display:flex; flex-direction:column; gap:8px; }
@@ -1735,6 +1738,17 @@ select,.lineup-player-select{ background:#0B1630 !important; color:var(--gm-fg) 
 #welcome .wl-cont{ background:var(--gm-accent) !important; color:#1A0A00 !important; border-radius:12px !important; }
 #welcome .wl-link{ color:var(--gm-fg2) !important; }
 
+
+/* signing/trade windows: impact panel, bio line, schedule */
+.pay-modal .fa-impact{ background:var(--gm-card) !important; border-color:var(--gm-line) !important; color:var(--gm-fg) !important; }
+.pay-modal .fa-imp-grid span, .pay-modal .fa-imp-grid em{ color:var(--gm-mut) !important; }
+.pay-modal .fa-imp-grid b{ color:var(--gm-fg) !important; font-family:var(--gm-disp) !important; font-size:18px !important; }
+.pay-modal .fa-imp-grid .bad{ color:#FF8A80 !important; } .pay-modal .fa-imp-grid .good{ color:#6FE3A1 !important; }
+.pay-modal .fa-imp-t th, .pay-modal .fa-imp-t td{ border-top-color:var(--gm-line) !important; color:var(--gm-fg2) !important; background:transparent !important; }
+.pay-modal .fa-imp-t th{ color:var(--gm-mut) !important; }
+.pay-modal .fa-bio{ color:var(--gm-mut) !important; }
+.pay-modal details.fa-sched-d{ background:var(--gm-card) !important; border-color:var(--gm-line) !important; }
+.pay-modal details.fa-sched-d>summary span{ color:var(--gm-mut) !important; font-weight:500; }
 </style>
 </head>
 <body>
@@ -3614,7 +3628,7 @@ const FA_CROWD_DATE = 'Nov 4, 2026';
 const FA_CROWD = {"Randy Arozarena":[4,96.0],"Tarik Skubal":[8,336.0],"Brandon Lowe":[3,63.0],"Seiya Suzuki":[4,96.0],"Luis Arraez":[3,48.0],"Trevor Rogers":[5,120.0],"Jake Bauers":[3,51.0],"Ty France":[2,24.0],"Jazz Chisholm Jr.":[4,92.0],"Sonny Gray":[2,52.0],"Kevin Gausman":[2,44.0],"Nick Martinez":[2,34.0],"Adrian Morejon":[4,64.0],"Dustin May":[3,48.0],"Michael Soroka":[2,36.0],"Michael King":[4,100.0],"Ian Happ":[3,60.0],"Foster Griffin":[3,48.0],"Ryan Jeffers":[3,48.0],"Mauricio Dubón":[2,20.0],"Casey Mize":[3,54.0],"Tyler Mahle":[2,32.0],"Freddy Peralta":[4,96.0],"David Bednar":[3,45.0],"Shota Imanaga":[2,37.5],"Clay Holmes":[3,51.0],"David Peterson":[2,22.0],"Randal Grichuk":[1,3.38],"Sean Newcomb":[1,7.0],"Carson Kelly":[2,20.0],"Matthew Boyd":[2,30.0],"Paul Goldschmidt":[1,4.5],"Cal Quantrill":[1,5.0],"Tyrone Taylor":[1,6.0],"Martín Pérez":[1,6.0],"Walker Buehler":[1,10.0],"Joc Pederson":[1,10.0],"Gregory Soto":[2,16.0],"Nick Pivetta":[3,60.0],"Jack Flaherty":[2,24.0],"Patrick Sandoval":[2,24.0],"Tyler Stephenson":[2,18.0],"Alex Vesia":[2,16.0],"Steven Okert":[1,5.0],"J.P. Crawford":[2,24.0],"Tyler Alexander":[1,4.0],"Brandon Woodruff":[1,16.0],"Raisel Iglesias":[1,14.0],"Jonathan Loáisiga":[1,6.0],"Cedric Mullins":[1,7.0],"Isiah Kiner-Falefa":[1,6.5],"Taylor Ward":[1,10.0],"Chris Bassitt":[1,10.0],"Kris Bubic":[2,24.0],"Gleyber Torres":[2,30.0],"George Springer":[1,10.0],"Austin Hedges":[1,5.0],"Robbie Ray":[1,12.0],"Gary Sánchez":[1,3.0],"Brock Burke":[1,5.0],"Aaron Civale":[1,6.0],"Michael Conforto":[1,4.0],"Kevin Ginkel":[1,5.0],"Edmundo Sosa":[1,5.0],"Daulton Varsho":[2,24.0],"Myles Straw":[1,4.0],"Trent Grisham":[1,14.0],"Josh Bell":[1,6.0],"Ryan Yarbrough":[1,3.0],"Lane Thomas":[1,5.0],"Paul Blackburn":[1,6.0],"Mark Leiter Jr.":[1,3.0],"José Alvarado":[1,7.0],"Nathaniel Lowe":[1,4.0],"Taylor Clarke":[1,2.0],"Elias Díaz":[1,2.0],"Luis Robert Jr.":[1,11.0],"José Urquidy":[1,3.0],"James McCann":[1,3.0],"Victor Robles":[1,5.0],"Brooks Raley":[1,4.0],"Andrew Kittredge":[1,6.0],"Eugenio Suárez":[1,8.0],"Evan Phillips":[1,6.8],"Ramón Laureano":[1,5.0],"JoJo Romero":[1,6.0],"Alec Bohm":[1,10.0],"Trevor Williams":[1,5.0],"Jordan Montgomery":[1,4.0],"Brady Singer":[1,10.0],"A.J. Minter":[1,6.0],"Ryan Mountcastle":[1,3.0],"Pete Fairbanks":[1,7.0],"Zach Eflin":[1,8.0],"Ryne Stanek":[1,3.0],"Enrique Hernández":[1,3.0],"Zac Gallen":[1,8.0],"Bryan Abreu":[1,8.0],"Teruaki Sato":[5,100.0],"Hiromi Itoh":[3,37.5],"Gavin Lux":[1,5.0],"Joe Jiménez":[1,5.0]};
 let _FACN = null; const crowdOf = n => { if(!_FACN){ _FACN = {}; Object.keys(FA_CROWD).forEach(k=>{ _FACN[norm(k)] = FA_CROWD[k]; }); } return _FACN[norm(n||'')]; };
 const BOWDEN = {'tarik skubal':[9,400],'freddy peralta':[5,140],'teruaki sato':[5,180],'michael king':[4,118],'randy arozarena':[5,124],'seiya suzuki':[5,120],'jake bauers':[4,56],'jazz chisholm jr.':[6,128],'brandon lowe':[3,45],'clay holmes':[2,44],'adrian morejon':[3,42],'david bednar':[3,55],'nick martinez':[2,48],'foster griffin':[3,67],'trevor rogers':[3,64],'casey mize':[3,54],'luis arraez':[3,60],'kaima taira':[3,30],'ian happ':[2,45],'robbie ray':[2,45],'shota imanaga':[3,69],'raisel iglesias':[1,17],'gleyber torres':[2,42],'alec bohm':[2,30],'kevin gausman':[1,22],'shane bieber':[1,20],'hiromi itoh':[2,22],'trent grisham':[1,12],'taylor ward':[1,10],'daulton varsho':[1,8],'tyler stephenson':[2,16],'ryan jeffers':[2,15.5],'alex vesia':[2,23],'paul blackburn':[2,22],'mauricio dubon':[2,16],'joc pederson':[2,30],'gregory soto':[2,22],'j.p. crawford':[2,20],'jonathan loaisiga':[2,20],'sean newcomb':[1,6.5]};
-function crowdBlend(d){ const c = crowdOf(d.name); if(!c) return d; const w = 0.6;
+function crowdBlend(d){ const c = crowdOf(d.name); if(!c) return d; const w = 0.8;
   const aav = d.aav*(1-w) + (c[1]/c[0])*w, years = Math.max(1, Math.round(d.years*(1-w) + c[0]*w));
   let tot = aav*years; tot = tot>=20?Math.round(tot):Math.round(tot*2)/2; tot = Math.max(1.5,tot);
   return Object.assign({}, d, {years, total:tot, aav:tot/years, why:d.why+`; nudged toward the FanGraphs crowd median of ${c[0]} yr, ${fmt(c[1],1)}`}); }
@@ -4300,6 +4314,7 @@ const OFFSEASON_CAL = [ // league-wide dates for 2026-27 (times ET). end = when 
   {d:'Nov 17 · 6pm', end:'2026-11-17T18:00:00-05:00', t:'Rule 5 protection deadline', n:'Clubs add prospects to the 40-man roster or risk losing them in the Rule 5 Draft.'},
   {d:'Nov 20', end:'2026-11-20T20:00:00-05:00', t:'Non-tender deadline', n:'Clubs must offer 2027 contracts to pre-arb and arbitration-eligible players, or release them. Time not yet announced.'},
   {d:'Dec 1 · 11:59pm', end:'2026-12-01T23:59:00-05:00', t:'CBA expires', n:'A lockout begins unless a new deal is reached first.'},
+  {d:'Dec 6', end:'2026-12-06T23:59:00-05:00', t:'Hall of Fame: Contemporary Era vote', n:'The Contemporary Baseball Era Committee (managers, executives and umpires, mostly since 1980) announces its results, lockout or not. The ballot: Sandy Alderson, Dusty Baker, Bruce Bochy, Joe Maddon, Lou Piniella, Brian Sabean, Ted Turner and Bill White. It takes 12 of 16 votes to get in.'},
 ];
 window.UI_calToggle = d=>{ UI.calOpen = d.open; };
 window.UI_movesToggle = d=>{ UI.realOpen = d.open; };
@@ -4622,6 +4637,7 @@ function paint(){
   const el = modalRoot();
   const old = document.getElementById('mBrowse'); const bst = old ? old.scrollTop : 0; const ost = el.scrollTop; const olds = document.getElementById('mSendSugg'); const sst = olds ? olds.scrollTop : 0; const oldf = document.getElementById('mFaBrowse'); const fst = oldf ? oldf.scrollTop : 0;
   el.innerHTML = M.html(); el.classList.add('open'); updateCalc();
+  { const dt = document.getElementById('mSchedSec'); if(dt && dt.tagName==='DETAILS' && M.f) dt.addEventListener('toggle', ()=>{ M.f.schedOpen = dt.open; }); }
   if(M.type==='fa' && !M.editing){ updateFaBrowse(); const nf = document.getElementById('mFaBrowse'); if(nf) nf.scrollTop = fst; el.scrollTop = ost; if(M.picked){ const p = faPool().find(x=>norm(x.name)===norm(M.picked.name)); if(p) faApply(p,false); } }
   if(M.type==='promo'){ updateFarm(); updateMulti(); ensureFarm(); }
   if(M.type==='pkg'){ updateBrowse(); const nb = document.getElementById('mBrowse'); if(nb) nb.scrollTop = bst; el.scrollTop = ost; ensurePositions(); updateSendSugg(); const ns = document.getElementById('mSendSugg'); if(ns) ns.scrollTop = sst; }
@@ -4819,7 +4835,7 @@ function faHTML(){
     `<button class="pay-btn" data-m="close">Cancel</button><button class="pay-btn primary" data-m="fanext">Next: contract terms</button>`);
   }
   return shell(M.editing?'Edit signing':'Sign a free agent', `${steps}
-    <div class="fa-who"><b>${esc(f.name)}</b>${M.editing?'':`<button class="pay-btn tiny ghost" data-m="faback">Change player</button>`}</div>
+    <div class="fa-who"><div><b>${esc(f.name)}</b><div class="fa-bio" id="mBio"></div></div>${M.editing?'':`<button class="pay-btn tiny ghost" data-m="faback">Change player</button>`}</div>
     <div class="pay-pickinfo" id="mPickInfo" style="display:none"></div>
     <div class="pay-seg"><button data-m="dealtype" data-v="" class="${f.mil?'':'active'}">Major-league contract</button><button data-m="dealtype" data-v="mil" class="${f.mil?'active':''}">Minor-league deal</button></div>
     ${f.mil ? `<div class="pay-hint">A minor-league deal takes no 40-man spot and doesn’t count toward the tax unless he’s added to the 40-man later (edit the signing to turn it into a 40-man contract).</div>
@@ -4841,10 +4857,10 @@ function faHTML(){
     ${sxHTML(f)}
     <div class="pay-calc"><span>CBT hit per year</span><b id="mCalc">—</b></div>
     <div class="pay-hint" id="mSxNote" style="display:none"></div>
-    <div class="pay-sec" id="mSchedSec" style="display:none"><div class="pay-sec-h">Salary by year</div>
+    <details class="pay-sec fa-sched-d" id="mSchedSec" style="display:none"${(f.schedOpen!=null?f.schedOpen:(f.shape&&f.shape!=='flat'))?' open':''}><summary class="pay-sec-h">Salary by year <span>${({flat:'flat',front:'front-loaded',back:'back-loaded',custom:'custom'})[f.shape||'flat']}</span></summary>
       <div class="pay-hint">Front- or back-loading changes what he’s paid each year, not the tax number — the CBT counts the average annual value.</div>
       <div class="pay-seg" id="mShape">${[['flat','Flat'],['front','Front-loaded'],['back','Back-loaded'],['custom','Custom']].map(([v,l])=>`<button type="button" data-m="shape" data-v="${v}" class="${(f.shape||'flat')===v?'active':''}">${l}</button>`).join('')}</div>
-      <div class="fa-sched" id="mSchedBox"></div><div class="pay-hint" id="mSchedNote"></div></div>
+      <div class="fa-sched" id="mSchedBox"></div><div class="pay-hint" id="mSchedNote"></div></details>
     ${err}
     <div class="fa-impact" id="mImpact" style="display:none"></div>`}
     <label style="font-size:12.5px;display:flex;gap:7px;align-items:center"><input type="checkbox" id="mRoster" ${f.roster?'checked':''}> Also add to the roster builder’s player pool</label>`,
@@ -5030,7 +5046,8 @@ function faApply(p, force){
   const s = suggestDeal(p);
   if(force){ const r2 = Math.round(s.aav*100)/100; Object.assign(M.f,{years:String(s.years), total:String(s.total), aav:String(r2), qo:false}); setVal('mYears',String(s.years)); setVal('mTotal',String(s.total)); setVal('mAav',String(r2)); }
   const bio = [p.pos2||p.pos, p.age?'age '+p.age:'', p.bats&&p.thr?`bats ${p.bats}, throws ${p.thr}`:'', p.w!=null?'2026 WAR '+p.w.toFixed(1):'', p.jp?'from NPB':(p.team?'2026 with '+p.team:'')].filter(Boolean).join(' · ');
-  setInfo(`${p.team?teamLogo(p.team):''}<b>${esc(p.name)}</b> · ${esc(bio)}<br><b>Suggested starting point: ${s.years} yr / ${fmt(s.total)}</b> (~${fmt(s.aav,1)} AAV) — ${esc(s.why)}. Adjust freely.${p.l&&p.l!=='F'?`<br>FanGraphs: ${esc(FA_LIKE[p.l])}.`:''}${qoDecl(p.name)?`<br><b>${esc(QO_NOTE)}.</b>`:''}${p.jp?'<br>Posting fee (paid to his Japanese club) is not included in the payroll figures here.':''}${p.note?'<br>'+esc(p.note):''}${p.c?'<br>'+esc(p.c):''}`);
+  const bioEl = document.getElementById('mBio'); if(bioEl) bioEl.innerHTML = `${p.team?teamLogo(p.team):''}${esc(bio)}`;
+  setInfo(`<b>Suggested starting point: ${s.years} yr / ${fmt(s.total)}</b> (~${fmt(s.aav,1)} AAV)${p.l&&p.l!=='F'?`<br>FanGraphs: ${esc(FA_LIKE[p.l])}.`:''}${qoDecl(p.name)?`<br><b>${esc(QO_NOTE)}.</b>`:''}${p.jp?'<br>Posting fee (paid to his Japanese club) is not included in the payroll figures here.':''}${p.note?'<br>'+esc(p.note):''}${p.c?'<br>'+esc(p.c):''}`);
   matchFA(); updateCalc(); updateFaBrowse();
 }
 function openFA(opts={}){
@@ -5850,7 +5867,7 @@ function onModalClick(e){
       commitAdded(rm, document.getElementById('mRoster').checked); closeModal(); return; }
     if(!r){ (document.getElementById(M.f.mode==='terms'?'mTotal':'mAav')).focus(); return; }
     matchFA();
-    if(M.schedBad){ faErr('Salary by year has to add up to the deal total before you can add it.'); return; }
+    if(M.schedBad){ const dd = document.getElementById('mSchedSec'); if(dd) dd.open = true; faErr('Salary by year has to add up to the deal total before you can add it.'); return; }
     if(M.belowFloor && !M.ack){ M.ack = true; const bt = document.getElementById('mSaveFA'); if(bt) bt.textContent = 'Add anyway'; faErr('This offer is below what he’d realistically sign for. Click again to add it anyway.'); return; }
     const rec = {id: M.editing || uid('fa'), kind:'fa', name, pos: M.fa?M.fa.pos:'', type: M.fa?(M.fa.type||((M.fa.pos==='SP'||M.fa.pos==='RP')?'P':'H')):'H',
       aav: Math.round(r.aav*1000)/1000, years:r.years, start:+M.f.start};
