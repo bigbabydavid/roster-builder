@@ -3610,7 +3610,14 @@ function faList(){
   return _FAL = out;
 }
 // Jim Bowden’s (The Athletic) contract predictions for the top 40 free agents, Oct 2026: [years, total $M]. One more data point — blended in, not copied.
+const FA_CROWD_DATE = 'Nov 4, 2026';
+const FA_CROWD = {"Randy Arozarena":[4,96.0],"Tarik Skubal":[8,336.0],"Brandon Lowe":[3,63.0],"Seiya Suzuki":[4,96.0],"Luis Arraez":[3,48.0],"Trevor Rogers":[5,120.0],"Jake Bauers":[3,51.0],"Ty France":[2,24.0],"Jazz Chisholm Jr.":[4,92.0],"Sonny Gray":[2,52.0],"Kevin Gausman":[2,44.0],"Nick Martinez":[2,34.0],"Adrian Morejon":[4,64.0],"Dustin May":[3,48.0],"Michael Soroka":[2,36.0],"Michael King":[4,100.0],"Ian Happ":[3,60.0],"Foster Griffin":[3,48.0],"Ryan Jeffers":[3,48.0],"Mauricio Dubón":[2,20.0],"Casey Mize":[3,54.0],"Tyler Mahle":[2,32.0],"Freddy Peralta":[4,96.0],"David Bednar":[3,45.0],"Shota Imanaga":[2,37.5],"Clay Holmes":[3,51.0],"David Peterson":[2,22.0],"Randal Grichuk":[1,3.38],"Sean Newcomb":[1,7.0],"Carson Kelly":[2,20.0],"Matthew Boyd":[2,30.0],"Paul Goldschmidt":[1,4.5],"Cal Quantrill":[1,5.0],"Tyrone Taylor":[1,6.0],"Martín Pérez":[1,6.0],"Walker Buehler":[1,10.0],"Joc Pederson":[1,10.0],"Gregory Soto":[2,16.0],"Nick Pivetta":[3,60.0],"Jack Flaherty":[2,24.0],"Patrick Sandoval":[2,24.0],"Tyler Stephenson":[2,18.0],"Alex Vesia":[2,16.0],"Steven Okert":[1,5.0],"J.P. Crawford":[2,24.0],"Tyler Alexander":[1,4.0],"Brandon Woodruff":[1,16.0],"Raisel Iglesias":[1,14.0],"Jonathan Loáisiga":[1,6.0],"Cedric Mullins":[1,7.0],"Isiah Kiner-Falefa":[1,6.5],"Taylor Ward":[1,10.0],"Chris Bassitt":[1,10.0],"Kris Bubic":[2,24.0],"Gleyber Torres":[2,30.0],"George Springer":[1,10.0],"Austin Hedges":[1,5.0],"Robbie Ray":[1,12.0],"Gary Sánchez":[1,3.0],"Brock Burke":[1,5.0],"Aaron Civale":[1,6.0],"Michael Conforto":[1,4.0],"Kevin Ginkel":[1,5.0],"Edmundo Sosa":[1,5.0],"Daulton Varsho":[2,24.0],"Myles Straw":[1,4.0],"Trent Grisham":[1,14.0],"Josh Bell":[1,6.0],"Ryan Yarbrough":[1,3.0],"Lane Thomas":[1,5.0],"Paul Blackburn":[1,6.0],"Mark Leiter Jr.":[1,3.0],"José Alvarado":[1,7.0],"Nathaniel Lowe":[1,4.0],"Taylor Clarke":[1,2.0],"Elias Díaz":[1,2.0],"Luis Robert Jr.":[1,11.0],"José Urquidy":[1,3.0],"James McCann":[1,3.0],"Victor Robles":[1,5.0],"Brooks Raley":[1,4.0],"Andrew Kittredge":[1,6.0],"Eugenio Suárez":[1,8.0],"Evan Phillips":[1,6.8],"Ramón Laureano":[1,5.0],"JoJo Romero":[1,6.0],"Alec Bohm":[1,10.0],"Trevor Williams":[1,5.0],"Jordan Montgomery":[1,4.0],"Brady Singer":[1,10.0],"A.J. Minter":[1,6.0],"Ryan Mountcastle":[1,3.0],"Pete Fairbanks":[1,7.0],"Zach Eflin":[1,8.0],"Ryne Stanek":[1,3.0],"Enrique Hernández":[1,3.0],"Zac Gallen":[1,8.0],"Bryan Abreu":[1,8.0],"Teruaki Sato":[5,100.0],"Hiromi Itoh":[3,37.5],"Gavin Lux":[1,5.0],"Joe Jiménez":[1,5.0]};
+let _FACN = null; const crowdOf = n => { if(!_FACN){ _FACN = {}; Object.keys(FA_CROWD).forEach(k=>{ _FACN[norm(k)] = FA_CROWD[k]; }); } return _FACN[norm(n||'')]; };
 const BOWDEN = {'tarik skubal':[9,400],'freddy peralta':[5,140],'teruaki sato':[5,180],'michael king':[4,118],'randy arozarena':[5,124],'seiya suzuki':[5,120],'jake bauers':[4,56],'jazz chisholm jr.':[6,128],'brandon lowe':[3,45],'clay holmes':[2,44],'adrian morejon':[3,42],'david bednar':[3,55],'nick martinez':[2,48],'foster griffin':[3,67],'trevor rogers':[3,64],'casey mize':[3,54],'luis arraez':[3,60],'kaima taira':[3,30],'ian happ':[2,45],'robbie ray':[2,45],'shota imanaga':[3,69],'raisel iglesias':[1,17],'gleyber torres':[2,42],'alec bohm':[2,30],'kevin gausman':[1,22],'shane bieber':[1,20],'hiromi itoh':[2,22],'trent grisham':[1,12],'taylor ward':[1,10],'daulton varsho':[1,8],'tyler stephenson':[2,16],'ryan jeffers':[2,15.5],'alex vesia':[2,23],'paul blackburn':[2,22],'mauricio dubon':[2,16],'joc pederson':[2,30],'gregory soto':[2,22],'j.p. crawford':[2,20],'jonathan loaisiga':[2,20],'sean newcomb':[1,6.5]};
+function crowdBlend(d){ const c = crowdOf(d.name); if(!c) return d; const w = 0.6;
+  const aav = d.aav*(1-w) + (c[1]/c[0])*w, years = Math.max(1, Math.round(d.years*(1-w) + c[0]*w));
+  let tot = aav*years; tot = tot>=20?Math.round(tot):Math.round(tot*2)/2; tot = Math.max(1.5,tot);
+  return Object.assign({}, d, {years, total:tot, aav:tot/years, why:d.why+`; nudged toward the FanGraphs crowd median of ${c[0]} yr, ${fmt(c[1],1)}`}); }
 function bowBlend(d, hasSpot){ const b = BOWDEN[norm(d.name||'')]; if(!b) return d; const w = hasSpot?0.4:0.5;
   const aav = d.aav*(1-w) + (b[1]/b[0])*w, years = Math.max(1, Math.round(d.years*(1-w) + b[0]*w));
   let tot = aav*years; tot = tot>=20?Math.round(tot):Math.round(tot*2)/2; tot = Math.max(1.5,tot);
@@ -3618,7 +3625,7 @@ function bowBlend(d, hasSpot){ const b = BOWDEN[norm(d.name||'')]; if(!b) return
 // Rough starting-point contract from last season's WAR and age (not a projection system — a nudge in the right direction).
 function suggestDeal(p){
   const m = spotracOf(p.name), ov = FA_SUG_SET[norm(p.name)];
-  const blend = (d)=>bowBlend(Object.assign({name:p.name}, blend1(d)), m!=null);
+  const blend = (d)=>crowdBlend(bowBlend(Object.assign({name:p.name}, blend1(d)), m!=null));
   const blend1 = (d)=>{ if(m==null) return d; const aav = (d.aav+m)/2; let tot = aav*d.years; tot = tot>=20?Math.round(tot):Math.round(tot*2)/2; tot = Math.max(1.5,tot);
     return {years:d.years, total:tot, aav:tot/d.years, why:d.why+`; blended with Spotrac’s ${fmt(m,1)} market value`, spot:m}; };
   if(ov) return blend({years:ov[0], total:ov[1], aav:ov[1]/ov[0], why:ov[2]});
@@ -4466,27 +4473,27 @@ function tableCat(it){ // which table a row lives in: signings and trades sit wi
   return 'guaranteed';
 }
 function tabBar(){
-  const T = [['roster','Roster view'],['lineups','Lineup editor'],['rotation','Rotation builder'],['depth','Depth chart']];
+  const T = [['roster','Roster view'],['lineups','Lineup editor'],['depth','Depth chart']];
   return `<div class="gm-tabbar"><nav class="gm-tabs" aria-label="Views">${T.map(t=>`<button type="button" class="gm-tab${UI.tab===t[0]?' on':''}" data-act="tab" data-v="${t[0]}" aria-current="${UI.tab===t[0]}">${t[1]}</button>`).join('')}</nav></div>`;
 }
 function railRows(){
-  let P = []; try{ P = realP(); }catch(e){}
+  let P = []; try{ P = players; }catch(e){}
   const hand = (p,pit)=>{ const b = String(p.bt||'').split('/'); return (pit ? b[1] : b[0]) || ''; };
   const ro = {closer:0,setup:1,middle:2,long:3};
   const roleName = {closer:'Closer',setup:'Setup',middle:'Middle',long:'Long'};
   const on = P.filter(p=>p.placed==='roster');
-  const fill = (filled, labels, total)=>{ const out = filled.slice(); for(let i=filled.length;i<Math.max(total,filled.length);i++) out.push({n:i+1, empty:true, r:labels[i]||''}); return out; };
+  const fill = (filled, labels, total)=>{ const out = filled.slice(); for(let i=filled.length;i<Math.max(total,filled.length);i++) out.push({n:i+1, i, empty:true, r:labels[i]||''}); return out; };
   if(UI.rail==='rot'){
-    const rows = on.filter(p=>p.group==='SP').map((p,i)=>({n:i+1, h:hand(p,true), name:p.name, r:p.hurt?'IL':'SP'+(i+1)}));
+    const rows = on.filter(p=>p.group==='SP').sort((a,b)=>(a.order??0)-(b.order??0)).map((p,i)=>({n:i+1, i, id:p.id, h:hand(p,true), name:p.name, r:p.hurt?'IL':'SP'+(i+1)}));
     return {slot:'starter', rows: fill(rows, ['SP1','SP2','SP3','SP4','SP5'], 5)};
   }
   if(UI.rail==='pen'){
-    const rows = on.filter(p=>p.group==='RP').sort((a,b)=>((ro[a.role]??4)-(ro[b.role]??4))||a.name.localeCompare(b.name)).map((p,i)=>({n:i+1, h:hand(p,true), name:p.name, r:p.role?roleName[p.role]:(p.hurt?'IL':'')}));
+    const rows = on.filter(p=>p.group==='RP').sort((a,b)=>((ro[a.role]??4)-(ro[b.role]??4))||a.name.localeCompare(b.name)).map((p,i)=>({n:i+1, i, id:p.id, h:hand(p,true), name:p.name, r:p.role?roleName[p.role]:(p.hurt?'IL':'')}));
     return {slot:'reliever', rows: fill(rows, ['Closer','Setup','Setup','Middle','Middle','Middle','Long','Long'], 8)};
   }
-  let L = []; try{ L = (lineups[UI.side]||[]).map((sl,i)=>{ const q = sl.playerId && P.find(x=>x.id===sl.playerId); return q ? {n:i+1, h:hand(q,false), name:q.name, r:sl.position||''} : {n:i+1, empty:true, r:'Pos'}; }); }catch(e){}
+  let L = []; try{ L = (lineups[UI.side]||[]).map((sl,i)=>{ const q = sl.playerId && P.find(x=>x.id===sl.playerId); return q ? {n:i+1, i, id:q.id, h:hand(q,false), name:q.name, r:sl.position||''} : {n:i+1, i, empty:true, r:'Pos'}; }); }catch(e){}
   if(L.length && L.some(x=>!x.empty)) return {slot:'hitter', rows:L};
-  const hit = on.filter(p=>p.type==='H').slice(0,9).map((p,i)=>({n:i+1, h:hand(p,false), name:p.name, r:(p.group==='IF'||p.group==='OF'||p.group==='C')?p.group:''}));
+  const hit = on.filter(p=>p.type==='H').slice(0,9).map((p,i)=>({n:i+1, i, id:p.id, h:hand(p,false), name:p.name, r:(p.group==='IF'||p.group==='OF'||p.group==='C')?p.group:''}));
   return {slot:'hitter', draft:hit.length>0, rows: fill(hit, [], 9)};
 }
 function railHTML(){
@@ -4494,15 +4501,19 @@ function railHTML(){
   const tabs = [['lu','Lineups'],['rot','Rotation'],['pen','Bullpen']];
   const go = UI.rail==='lu' ? ['lineups','Open lineup editor'] : ['rotation','Open rotation builder'];
   const verb = {hitter:'Add a hitter', starter:'Add a starter', reliever:'Add a reliever'}[R.slot] || 'Add a player';
-  const li = r => r.empty
-    ? `<li><button type="button" class="gm-slot empty" data-act="tab" data-v="${go[0]}" aria-label="${verb}, slot ${r.n}"><span class="gm-rn off">${r.n}</span><span class="gm-rh"></span><span class="gm-rname">+ ${verb}</span><span class="gm-rp">${esc(r.r)}</span></button></li>`
-    : `<li><button type="button" class="gm-slot" data-act="tab" data-v="${go[0]}"><span class="gm-rn">${r.n}</span><span class="gm-rh">${esc(r.h)}</span><span class="gm-rname">${esc(r.name)}</span><span class="gm-rp">${esc(r.r)}</span></button></li>`;
+  const hit = R.slot==='hitter';
+  const li = r => {
+    const act = `data-act="slotPick" data-i="${r.i}"`;
+    const tag = act ? 'button type="button"' : 'div', end = act ? 'button' : 'div';
+    return r.empty
+    ? `<li><${tag} class="gm-slot empty" ${act} aria-label="${verb}, slot ${r.n}"><span class="gm-rn off">${r.n}</span><span class="gm-rh"></span><span class="gm-rname">+ ${verb}</span><span class="gm-rp">${esc(r.r)}</span></${end}></li>`
+    : `<li><${tag} class="gm-slot" ${act}><span class="gm-rn">${r.n}</span><span class="gm-rh">${esc(r.h)}</span><span class="gm-rname">${esc(r.name)}</span><span class="gm-rp">${esc(r.r)}</span></${end}></li>`; };
   return `<aside class="gm-rail" aria-label="Lineups and staff">
     <button type="button" class="gm-share" data-act="share">Share your club</button>
     <div class="gm-rtabs" role="tablist">${tabs.map(t=>`<button type="button" role="tab" class="${UI.rail===t[0]?'on':''}" aria-selected="${UI.rail===t[0]}" data-act="railTab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>
     ${UI.rail==='lu'?`<div class="gm-seg gm-sides" role="group" aria-label="Opposing starter">${['RHP','LHP'].map(x=>`<button type="button" class="${UI.side===x?'on':''}" data-act="railSide" data-v="${x}">vs ${x}</button>`).join('')}</div>`:''}
     <ol class="gm-rlist">${R.rows.map(li).join('')}</ol>
-    ${R.draft?'<p class="gm-rnote">Suggested from your depth chart. Open the editor to make it yours.</p>':''}
+    ${R.draft?'<p class="gm-rnote">Suggested from your depth chart. Click a slot to fill it, or open the editor for the full view.</p>':''}
     <button type="button" class="pay-btn gm-rgo" data-act="tab" data-v="${go[0]}">${go[1]}</button>
   </aside>`;
 }
@@ -4597,7 +4608,7 @@ function modalRoot(){
   }
   return el;
 }
-function closeModal(){ M = null; const el = document.getElementById('payModal'); if(el){ el.classList.remove('open'); el.innerHTML=''; } }
+function closeModal(){ const wasPromo = M && M.type==='promo'; M = null; const el = document.getElementById('payModal'); if(el){ el.classList.remove('open'); el.innerHTML=''; } if(wasPromo && UI.pend) setTimeout(resolvePend, 50); }
 function uid(p){ return p + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
 function val(id){ const el = document.getElementById(id); return el ? el.value : ''; }
 function num(id){ return parseM(val(id)); }
@@ -5683,6 +5694,55 @@ function extPickList(){
     return `<button type="button" class="pay-sugg-item${has?' added':''}" data-m="extpick" data-id="${esc(it.id)}">${has?'<i class="chk">✓</i>':''}<b>${esc(it.name)}</b><span>${esc([it.pos||'', last?'under contract through '+last:'no money beyond this season', has?'extended':''].filter(Boolean).join(' · '))}</span></button>`; }).join('')
     : '<div class="pay-hint" style="padding:10px 12px">Nobody on your roster matches.</div>';
 }
+const SLOT_ROLE = {Closer:'closer', Setup:'setup', Middle:'middle', 'Long':'long'};
+function slotGroupOf(p){ if(LINEUP_POSITIONS.includes(p.group)) return p.group; let a = null; try{ a = (posOf(p)||{}).abbr; }catch(e){} return LINEUP_POSITIONS.includes(a) ? a : 'DH'; }
+function slotWhere(p){ return p.placed==='roster' ? 'on your roster' : p.placed==='il' ? 'injured list' : 'in your pool'; }
+function slotCands(R, i){
+  const pit = R.slot!=='hitter';
+  const taken = new Set(R.rows.filter(r=>!r.empty && r.i!==i).map(r=>r.id)); // already in this lineup / rotation / bullpen
+  return players.filter(p=>(pit ? p.type==='P' : p.type==='H') && !taken.has(p.id));
+}
+function openSlotPick(i){
+  const R = railRows(); const row = R.rows.find(r=>r.i===i);
+  const cur = row && !row.empty ? row.id : null;
+  const list = slotCands(R, i).sort((a,b)=>((a.id===cur?-1:0)-(b.id===cur?-1:0))||((a.placed==='roster'?0:1)-(b.placed==='roster'?0:1))||a.name.localeCompare(b.name));
+  const title = R.slot==='hitter' ? `Batting ${i+1} vs ${UI.side}` : R.slot==='starter' ? `Starter ${i+1}` : `Bullpen slot ${i+1}`;
+  const hint = cur ? 'Pick a replacement.' : 'Pick who goes here.';
+  const more = R.slot==='hitter' ? '' : (cur ? ' The pitcher you replace moves to your pool.' : '');
+  M = {type:'slot', i,
+    html:()=>shell(title, `<div class="pay-hint">${hint} Everyone listed is on your 40-man.${more}</div><div class="pay-browse" style="max-height:360px">${list.length?list.map(p=>`<button type="button" class="pay-sugg-item${p.id===cur?' added':''}" data-m="slotset" data-id="${esc(p.id)}">${p.id===cur?'<i class="chk">✓</i>':''}<b>${esc(p.name)}</b><span>${esc([p.group&&p.group!=='x'?p.group:'', p.hurt?'injured':'', slotWhere(p)].filter(Boolean).join(' · '))}</span></button>`).join(''):'<div class="pay-hint" style="padding:10px 12px">Nobody else on your 40-man fits. Promote someone from the minors below.</div>'}</div>`,
+      `${cur&&R.slot==='hitter'?'<button class="pay-btn" data-m="slotset">Clear slot</button> ':''}<button class="pay-btn" data-m="slotpromo">Promote from the minors</button> <button class="pay-btn" data-m="close">Cancel</button>`)};
+  paint();
+}
+function placeInSlot(kind, i, pid){
+  const R = railRows(); const row = R.rows.find(r=>r.i===i);
+  const X = row && !row.empty ? players.find(p=>p.id===row.id) : null;
+  const Y = pid ? players.find(p=>p.id===pid) : null;
+  if(R.slot==='hitter'){
+    const arr = lineups[UI.side]; if(!arr) return;
+    const put = (k, q)=>{ arr[k].playerId = q ? q.id : null; arr[k].position = q ? slotGroupOf(q) : null; };
+    if(R.draft && !arr.some(sl=>sl.playerId)) R.rows.forEach(r=>{ if(!r.empty) put(r.i, players.find(p=>p.id===r.id)); }); // make the suggested order real first
+    if(Y){ if(Y.placed!=='roster'){ const mx = players.filter(p=>p.placed==='roster').reduce((m,p)=>Math.max(m,p.order||0),0); Y.placed='roster'; Y.group = slotGroupOf(Y); Y.order = mx+10; } else if(!Y.group){ Y.group = slotGroupOf(Y); } }
+    put(i, Y); return;
+  }
+  if(!Y) return;
+  const grp = R.slot==='starter' ? 'SP' : 'RP';
+  const mx = players.filter(p=>p.placed==='roster' && p.group===grp).reduce((m,p)=>Math.max(m,p.order||0),0);
+  const role = R.slot==='reliever' ? (X ? X.role : (SLOT_ROLE[row && row.r] || null)) : null;
+  const ord = X ? (X.order||0) : mx+10;
+  if(X && X!==Y){ X.placed='pool'; X.group=null; X.role=null; }
+  Y.placed='roster'; Y.group=grp; Y.order=ord; Y.role = role || null;
+}
+function slotSet(i, id){ placeInSlot(UI.rail, i, id); closeModal(); try{ window.saveState(); }catch(e){} renderAll(); }
+function resolvePend(){ // a minor-leaguer was just promoted from the slot picker: drop him straight into that slot
+  const q = UI.pend; if(!q) return; UI.pend = null;
+  try{ if(REAL) planSync(); }catch(e){}
+  const before = new Set(q.before), fresh = players.filter(p=>!before.has(p.id));
+  if(!fresh.length) return;
+  UI.rail = q.kind; UI.side = q.side;
+  const R = railRows(), pit = R.slot!=='hitter', Y = fresh.find(p=>pit ? p.type==='P' : p.type==='H') || fresh[0];
+  placeInSlot(q.kind, q.i, Y.id); try{ window.saveState(); }catch(e){} renderAll();
+}
 function openExtPick(){
   M = {type:'extpick', f:{}, html:()=>shell('Extend a player', `<div class="pay-hint">Pick anyone on your roster — veterans, arbitration or pre-arb players, and players you’ve signed or traded for.</div>
     <input class="pay-in" id="mExtQ" placeholder="Search your players…" autocomplete="off"><div class="pay-browse" id="mExtList" style="max-height:340px"></div>`, `<button class="pay-btn" data-m="close">Cancel</button>`)};
@@ -5819,6 +5879,8 @@ function onModalClick(e){
   if(m==='addmanual'){ const nm = (document.getElementById('mName')||{}).value||''; M.f.get.push({key:'g'+(++GK), id:null, name:nm.trim(), from:'', pos:'', ptype:'H', aav:'', start:String(S.season), through:String(S.season), eat:'', eatOpen:false, sched:null, info:'', pid:null, manual:true}); paint(); return; }
   if(m==='xshape'){ readFields(); if(v==='custom'){ const sc = extSchedule(); M.f.xs = {}; if(sc) sc.forEach(([y,x])=>{ M.f.xs[y] = String(Math.round(x*100)/100); }); } M.f.shape = v; document.querySelectorAll('#mXShape button').forEach(x=>x.classList.toggle('active', x.dataset.v===v)); updateExtSched(true); return; }
   if(m==='extpick'){ openExt(b.dataset.id); return; }
+  if(m==='slotset'){ slotSet(M.i, b.dataset.id||null); return; }
+  if(m==='slotpromo'){ const q = {kind:UI.rail, i:M.i, side:UI.side, before:players.map(x=>x.id), at:Date.now()}; closeModal(); UI.pend = q; openPromo(); return; }
   if(m==='saveExt'){ readFields(); const f = M.f, a = parseM(f.aav), n = Math.round(parseM(f.years)||0), st = +f.start;
     if(a==null || a<=0){ const e = document.getElementById('mAav'); if(e) e.focus(); return; }
     if(n<1){ const e = document.getElementById('mYears'); if(e) e.focus(); return; }
@@ -5865,6 +5927,7 @@ function onClick(e){
     case 'target': if(b.dataset.v==='none') S.target.on=false; else { S.target.on=true; S.target.value=+b.dataset.v; } saveState(); renderAll(); break;
     case 'tab': UI.tab = b.dataset.v; UI.sel = null; renderAll(); { const tb = document.querySelector('.gm-tabbar'); if(tb){ const h = (document.querySelector('header.topbar')||{}).offsetHeight||90; window.scrollTo({top: Math.max(0, tb.getBoundingClientRect().top + window.scrollY - h - 8), behavior:'auto'}); } } break;
     case 'railTab': UI.rail = b.dataset.v; renderAll(); break;
+    case 'slotPick': openSlotPick(+b.dataset.i); break;
     case 'railSide': UI.side = b.dataset.v; renderAll(); break;
     case 'sel': UI.sel = (UI.sel===id) ? null : id; renderAll(); break;
     case 'selClose': UI.sel = null; renderAll(); break;
