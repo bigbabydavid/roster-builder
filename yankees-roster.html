@@ -1658,8 +1658,10 @@ select,.lineup-player-select{ background:#0B1630 !important; color:var(--gm-fg) 
   .gm-bar{ flex:none !important; width:calc(100% + 28px) !important; max-width:none !important; margin:0 -14px !important; box-sizing:border-box; padding:0 14px 0 14px !important; padding-right:112px !important; }
   .mm-right{ top:4px !important; }
   .gm-seg button,.gm-tab{ min-height:44px; }
-  .gm-tabs{ width:100%; display:grid; grid-template-columns:1fr 1fr; }
-  .gm-tab{ padding:0 8px; font-size:14px; }
+  .gm-tabs{ width:100%; display:grid; grid-template-columns:repeat(3,1fr); flex-wrap:nowrap; }
+  .gm-tab{ padding:0 4px; font-size:13.5px; }
+  .mm-nav{ flex-wrap:wrap !important; overflow:visible !important; margin:0 !important; max-width:100% !important; }
+  .mm-btn{ height:40px !important; font-size:14px !important; padding:0 9px !important; }
   .gm-rail{ order:-1; }
   .pay-hero .pay-bignum{ font-size:52px !important; }
 }
@@ -1749,6 +1751,10 @@ select,.lineup-player-select{ background:#0B1630 !important; color:var(--gm-fg) 
 .pay-modal .fa-bio{ color:var(--gm-mut) !important; }
 .pay-modal details.fa-sched-d{ background:var(--gm-card) !important; border-color:var(--gm-line) !important; }
 .pay-modal details.fa-sched-d>summary span{ color:var(--gm-mut) !important; font-weight:500; }
+
+.pay-plan-head p{ color:var(--gm-mut) !important; }
+.pay-plan-head .pay-btn{ background:var(--gm-card2) !important; color:var(--gm-fg) !important; border:1px solid var(--gm-line) !important; }
+.pay-plan-head .pay-btn.armed{ background:#b3261e !important; border-color:#b3261e !important; }
 </style>
 </head>
 <body>
