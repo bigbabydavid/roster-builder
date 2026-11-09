@@ -1760,6 +1760,9 @@ select,.lineup-player-select{ background:#0B1630 !important; color:var(--gm-fg) 
 #mWarn.fa-warn.red,#mErr.fa-warn.red{ background:rgba(255,107,120,.14) !important; border:1px solid rgba(255,107,120,.45) !important; color:#FFB3BA !important; }
 #mWarn.fa-warn.amber{ background:rgba(255,194,75,.13) !important; border:1px solid rgba(255,194,75,.4) !important; color:#FFE3A8 !important; }
 #mWarn.fa-warn.red *,#mErr.fa-warn.red *{ color:#FFB3BA !important; } #mWarn.fa-warn.amber *{ color:#FFE3A8 !important; }
+
+.gm-clear{ appearance:none; background:transparent; border:1px dashed var(--gm-line); color:var(--gm-mut); font:inherit; font-size:12.5px; font-weight:700; min-height:34px; border-radius:10px; cursor:pointer; }
+.gm-clear:hover{ color:var(--gm-fg); border-color:var(--gm-mut); }
 </style>
 <style id="gm-theme-light">
 /* ===== light mode ===== */
@@ -4697,9 +4700,8 @@ function railRows(){
     return {slot:'reliever', rows: fill(rows, ['Closer','Setup','Setup','Middle','Middle','Middle','Long','Long'], 8)};
   }
   let L = []; try{ L = (lineups[UI.side]||[]).map((sl,i)=>{ const q = sl.playerId && P.find(x=>x.id===sl.playerId); return q ? {n:i+1, i, id:q.id, h:hand(q,false), name:q.name, r:sl.position||''} : {n:i+1, i, empty:true, r:'Pos'}; }); }catch(e){}
-  if(L.length && L.some(x=>!x.empty)) return {slot:'hitter', rows:L};
-  const hit = on.filter(p=>p.type==='H').slice(0,9).map((p,i)=>({n:i+1, i, id:p.id, h:hand(p,false), name:p.name, r:(p.group==='IF'||p.group==='OF'||p.group==='C')?p.group:''}));
-  return {slot:'hitter', draft:hit.length>0, rows: fill(hit, [], 9)};
+  if(L.length) return {slot:'hitter', rows:L};  // lineups start empty; they only fill when you place players
+  return {slot:'hitter', rows: fill([], [], 9)};
 }
 function railHTML(){
   const R = railRows();
@@ -4718,7 +4720,8 @@ function railHTML(){
     <div class="gm-rtabs" role="tablist">${tabs.map(t=>`<button type="button" role="tab" class="${UI.rail===t[0]?'on':''}" aria-selected="${UI.rail===t[0]}" data-act="railTab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>
     ${UI.rail==='lu'?`<div class="gm-seg gm-sides" role="group" aria-label="Opposing starter">${['RHP','LHP'].map(x=>`<button type="button" class="${UI.side===x?'on':''}" data-act="railSide" data-v="${x}">vs ${x}</button>`).join('')}</div>`:''}
     <ol class="gm-rlist">${R.rows.map(li).join('')}</ol>
-    ${R.draft?'<p class="gm-rnote">Suggested from your depth chart. Click a slot to fill it, or open the editor for the full view.</p>':''}
+    ${hit && R.rows.some(r=>!r.empty) ? `<button type="button" class="gm-clear" data-act="clearLU">${UI.armed==='clearlu'?'Click again to clear':'Clear this lineup'}</button>` : ''}
+    ${hit && !R.rows.some(r=>!r.empty) ? '<p class="gm-rnote">Click a slot to build your lineup. Clearing a lineup never changes your signings or trades.</p>' : ''}
     <button type="button" class="pay-btn gm-rgo" data-act="tab" data-v="${go[0]}">${go[1]}</button>
   </aside>`;
 }
@@ -6127,7 +6130,7 @@ const root0 = () => document.getElementById('payrollView');
 function onClick(e){
   const b = e.target.closest('[data-act]'); if(!b || b.tagName==='INPUT' || b.tagName==='SELECT') return;
   const act = b.dataset.act, id = b.dataset.id;
-  if(UI.armed && !['resetAll','clearAdded','resetRules','planReset'].includes(act)){ UI.armed=null; }
+  if(UI.armed && !['resetAll','clearAdded','resetRules','planReset','clearLU'].includes(act)){ UI.armed=null; }
   switch(act){
     case 'basis': S.rules.basis = b.dataset.v; saveState(); renderAll(); break;
     case 'season': S.season = +b.dataset.y; saveState(); renderAll(); break;
@@ -6135,6 +6138,7 @@ function onClick(e){
     case 'tab': UI.tab = b.dataset.v; UI.sel = null; renderAll(); { const tb = document.querySelector('.gm-tabbar'); if(tb){ const h = (document.querySelector('header.topbar')||{}).offsetHeight||90; window.scrollTo({top: Math.max(0, tb.getBoundingClientRect().top + window.scrollY - h - 8), behavior:'auto'}); } } break;
     case 'railTab': UI.rail = b.dataset.v; renderAll(); break;
     case 'slotPick': openSlotPick(+b.dataset.i); break;
+    case 'clearLU': confirmTwice('clearlu', ()=>{ (lineups[UI.side]||[]).forEach(sl=>{ sl.playerId = null; sl.position = null; }); try{ window.saveState(); }catch(e){} renderAll(); }); break;
     case 'railSide': UI.side = b.dataset.v; renderAll(); break;
     case 'sel': UI.sel = (UI.sel===id) ? null : id; renderAll(); break;
     case 'selClose': UI.sel = null; renderAll(); break;
