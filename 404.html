@@ -1763,6 +1763,14 @@ select,.lineup-player-select{ background:#0B1630 !important; color:var(--gm-fg) 
 
 .gm-clear{ appearance:none; background:transparent; border:1px dashed var(--gm-line); color:var(--gm-mut); font:inherit; font-size:12.5px; font-weight:700; min-height:34px; border-radius:10px; cursor:pointer; }
 .gm-clear:hover{ color:var(--gm-fg); border-color:var(--gm-mut); }
+
+/* the share image preview is its own white card in either theme: keep its colours */
+#payModal .sc-wrap{ background:#fff !important; color:#0E1A30 !important; border-color:#d9dde3 !important; }
+#payModal .sc-wrap *{ color:inherit !important; background-color:transparent; }
+#payModal .sc-wrap .sc-h{ background:var(--navy) !important; } #payModal .sc-wrap .sc-h *{ color:#fff !important; }
+#payModal .sc-wrap .sc-logo{ background:#fff !important; }
+#payModal .sc-wrap .sc-l,#payModal .sc-wrap .sc-f,#payModal .sc-wrap .sc-m li em,#payModal .sc-wrap .sc-more,#payModal .sc-wrap .sc-bl s,#payModal .sc-wrap .sc-empty{ color:var(--grey) !important; }
+#payModal .sc-wrap .sc-v.bad{ color:var(--cut) !important; } #payModal .sc-wrap .sc-v.ok{ color:var(--lock) !important; }
 </style>
 <style id="gm-theme-light">
 /* ===== light mode ===== */
