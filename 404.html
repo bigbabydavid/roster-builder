@@ -6117,7 +6117,7 @@ function commitAdded(rec, wantRoster){
 
 /* ---------- page events ---------- */
 function disarmSoon(){ clearTimeout(UI.t); UI.t = setTimeout(()=>{ if(UI.armed){ UI.armed=null; renderAll(); } }, 4000); }
-async function resetBuild(){ const wasPlan = !!REAL; if(wasPlan) planExit(); dropRosterAdds(); S = defaultState(); saveState(); try{ await window.storageDelete('mlb_plan_depth_v1_'+currentTeamId); }catch(e){} if(wasPlan) await planEnter(); renderAll(); }
+async function resetBuild(){ const id = currentTeamId; await wipeTeamBuild(id); location.reload(); }
 function confirmTwice(key, fn){
   if(UI.armed===key){ UI.armed=null; clearTimeout(UI.t); fn(); } else { UI.armed=key; renderAll(); disarmSoon(); }
 }
@@ -6297,8 +6297,11 @@ return {setTab:t=>{ UI.tab = t; UI.sel = null; if(isOpen()) renderAll(); }, appl
 const MODE_KEY = 'mlb_start_mode_v1', BASELINE_LABEL = 'Oct 28';
 function startMode(){ try{ return localStorage.getItem(MODE_KEY)==='start' ? 'start' : 'today'; }catch(e){ return 'today'; } }
 function setStartMode(m){ try{ localStorage.setItem(MODE_KEY, m); }catch(e){} }
-function buildKeys(){ const out = []; try{ for(let i=0;i<localStorage.length;i++){ const k = localStorage.key(i); if(/^mlb_(payroll_state_v1|plan_depth_v1)_/.test(k)) out.push(k); } }catch(e){} return out; }
+function buildKeys(){ const out = []; try{ for(let i=0;i<localStorage.length;i++){ const k = localStorage.key(i); if(/^mlb_(payroll_state_v1|plan_depth_v1|roster_state_v8)_/.test(k)) out.push(k); } }catch(e){} return out; }
 function hasBuilds(){ return buildKeys().some(k=>{ if(k.indexOf('mlb_payroll_state_v1_')!==0) return false; try{ const x = JSON.parse(localStorage.getItem(k)||'{}'); return (x.added&&x.added.length)||Object.keys(x.status||{}).length||Object.keys(x.ext||{}).length||Object.keys(x.overrides||{}).length; }catch(e){ return false; } }); }
+const teamBuildKeys = id => [`mlb_payroll_state_v1_${id}`, `mlb_plan_depth_v1_${id}`, `mlb_roster_state_v8_${id}`];
+function hasTeamSaved(id){ try{ return teamBuildKeys(id).some(k=>localStorage.getItem(k)!=null); }catch(e){ return false; } }
+async function wipeTeamBuild(id){ for(const k of teamBuildKeys(id)){ try{ await storageDelete(k); }catch(e){} try{ localStorage.removeItem(k); }catch(e){} } }
 function clearAllBuilds(){ buildKeys().forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} }); }
 // Pull the latest FanGraphs data (refreshed once a day by the GitHub Action). Best effort: any failure keeps the baked-in data.
 (function loadFG(){
@@ -6392,7 +6395,7 @@ function toggleResetPop(){
   p.innerHTML = `<h4>Start this build over</h4>
     <button type="button" data-reset-to="today"><b>Reset to today</b>${cur==='today'?'<em>current</em>':''}<span>Picks up from the real offseason as of today, with moves that have already happened.</span></button>
     <button type="button" data-reset-to="start"><b>Reset to beginning of offseason</b>${cur==='start'?'<em>current</em>':''}<span>Rosters and contracts as of ${BASELINE_LABEL}, before any moves.</span></button>
-    <p>This clears your moves and depth chart for the ${esc(team.name)}. Switching to the other start point clears every team’s saved build.</p>`;
+    <p>This clears your moves, depth chart and lineups for the ${esc(team.name)}. Switching to the other start point clears every team’s saved build.</p>`;
   document.body.appendChild(p);
   const r = b.getBoundingClientRect(); p.style.top = (r.bottom+8)+'px'; p.style.right = Math.max(8, window.innerWidth-r.right)+'px';
 }
@@ -6447,7 +6450,7 @@ function showWelcome(){
       <li><b>Watch the payroll</b>See your payroll against the tax line, the tax bill and your 40-man count after each move.</li>
       <li><b>Build the roster</b>Set the depth chart and lineups for the team you built, then share the plan.</li></ul>
     <div class="wl-cba"><b>The CBA expires this December.</b> Nothing is set for 2027 yet, so the $${thr}M tax line and the tax rates here carry the 2026 rules forward as an assumption. A new deal, or a salary cap, could change all of it. Every number is editable under Assumptions &amp; tax rules.</div>
-    <div class="wl-foot"><button type="button" class="wl-cont" data-welcome-team="${cur.id}">Continue with the ${esc(cur.name)}</button></div>
+    ${hasBuilds()||hasTeamSaved(cur.id)?'<p class="wl-modewarn wl-fresh">Picking a team starts a fresh build. Anything you saved for that team is cleared.</p>':''}<div class="wl-foot"><button type="button" class="wl-cont" data-welcome-team="${cur.id}">Continue with the ${esc(cur.name)}</button></div>
   </div>`;
   document.body.appendChild(w); document.body.style.overflow = 'hidden'; w.dataset.mode = startMode(); paintModes(w);
 }
@@ -6457,6 +6460,7 @@ document.addEventListener('click', e=>{
   const t = e.target.closest('[data-welcome-team]'), r = e.target.closest('[data-welcome-roster]'), sm = e.target.closest('[data-start-mode]');
   if(sm){ w.dataset.mode = sm.dataset.startMode; paintModes(w); return; }
   if(t && (w.dataset.mode||startMode())!==startMode()){ const id = +t.dataset.welcomeTeam; setStartMode(w.dataset.mode); clearAllBuilds(); hideWelcome(); try{ updateUrlForTeam(id, {sim:true}); }catch(err){} location.reload(); return; }
+  if(t && hasTeamSaved(+t.dataset.welcomeTeam)){ const id = +t.dataset.welcomeTeam; wipeTeamBuild(id).then(()=>{ hideWelcome(); try{ updateUrlForTeam(id, {sim:true}); }catch(err){} location.reload(); }); return; }
   if(t){ const id = +t.dataset.welcomeTeam; hideWelcome();
     if(id===currentTeamId && PayrollPlanner.isOpen()) updateUrlForTeam(id, {sim:true}); else openPayrollView({teamId:id}); }
   else if(r){ hideWelcome(); if(PayrollPlanner.isOpen()) PayrollPlanner.close(); updateUrlForTeam(currentTeamId); }
