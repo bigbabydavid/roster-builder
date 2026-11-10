@@ -5359,9 +5359,24 @@ function pkRename(o, map){
   if(o && typeof o==='object'){ const r = {}; Object.keys(o).forEach(k=>{ r[map[k]||k] = pkRename(o[k], map); }); return r; }
   return o;
 }
+// the depth chart and lineups ride along in the link: who's placed where, and the two batting orders
+const dpEnc = id => String(id).startsWith('pay_') ? '@'+String(id).slice(4) : id;
+const dpDec = id => (typeof id==='string' && id[0]==='@') ? 'pay_'+id.slice(1) : id;
+function packDepth(){
+  const pl = players.filter(p=>p.placed && p.placed!=='pool').map(p=>[dpEnc(p.id), p.placed, p.group||null, p.role||null, p.order==null?null:p.order]);
+  const lu = k=>lineups[k].map(sl=>[sl.playerId?dpEnc(sl.playerId):null, sl.position||null]);
+  return {p:pl, r:lu('RHP'), l:lu('LHP')};
+}
+function applyDepth(d){
+  if(!d) return;
+  const by = new Map(players.map(p=>[p.id,p]));
+  (d.p||[]).forEach(([id,placed,group,role,order])=>{ const p = by.get(dpDec(id)); if(!p) return; p.placed = placed; p.group = group; p.role = role; if(order!=null) p.order = order; });
+  const fill = arr=>Array.from({length:9},(_,i)=>{ const e = (arr||[])[i]||[]; const id = e[0]?dpDec(e[0]):null; return {playerId: id&&by.has(id)?id:null, position: e[1]||null}; });
+  lineups = {RHP:fill(d.r), LHP:fill(d.l)};
+}
 async function packPlan(){
   const diff = {}; Object.keys(S.rules).forEach(k=>{ if(JSON.stringify(S.rules[k])!==JSON.stringify(DEFAULT_RULES[k])) diff[k] = S.rules[k]; });
-  const o = {v:2, t:TEAM_ID, s:S.season, tg:S.target.on?S.target.value:null, r:diff, ov:S.overrides, op:S.options, a:S.added, c:S.customOther, w:S.walked, x:S.extraOrg, st:S.status, om:S.optManual, ex:S.ext};
+  const o = {v:2, t:TEAM_ID, s:S.season, tg:S.target.on?S.target.value:null, r:diff, ov:S.overrides, op:S.options, a:S.added, c:S.customOther, w:S.walked, x:S.extraOrg, st:S.status, om:S.optManual, ex:S.ext, dpl:packDepth()};
   let json = JSON.stringify(pkRename(pkStrip(o,true), PK_ENC));
   // timestamps -> seconds since the earliest one
   const atk = PK_ENC.at, atRe = new RegExp('"'+atk+'":(\\d{9,14})\\b','g');
@@ -5405,7 +5420,7 @@ async function importPlan(str){
     lineups = blankLineups();
     S = {...defaultState(), season:o.s||2027, target:(o.tg!=null?{on:true,value:o.tg}:{on:false,value:300}), rules:{...clone(DEFAULT_RULES), ...(o.r||{})},
       overrides:o.ov||{}, options:o.op||{}, added:o.a||[], customOther:o.c||[], walked:o.w||{}, extraOrg:o.x||[], status:o.st||{}, optManual:o.om||{}, ext:o.ex||{}};
-    saveState(); S.added.forEach(a=>rosterAdd(a)); UI.shared = {had}; renderAll();
+    saveState(); S.added.forEach(a=>rosterAdd(a)); applyDepth(o.dpl); if(o.dpl){ window.saveState(); window.__planActive = true; try{ window.saveState(); }finally{ window.__planActive = false; } } // saved for the board and for the depth chart, so both open with the shared lineups UI.shared = {had}; renderAll();
   }catch(e){ console.warn('Could not read the shared plan', e); UI.shared = {bad:true}; renderAll(); }
 }
 function sharedBanner(){
@@ -5454,7 +5469,7 @@ function lineupCardHTML(){
 }
 function shareHTML(){
   const v = M.view==='lu' ? 'lu' : M.view==='mv' ? 'mv' : 'dc';
-  return shell('Share your plan', `<div class="pay-hint">Anyone who opens the link sees these exact payroll moves as their own editable copy. The link doesn’t carry your depth chart — use the Depth chart or Lineup &amp; rotation image to share that.</div>
+  return shell('Share your plan', `<div class="pay-hint">Anyone who opens the link sees your payroll moves, depth chart and lineups exactly as they are right now, as their own editable copy.</div>
     <div class="pay-field">Roster title <span style="font-weight:400;opacity:.7">(optional — shows on all three images)</span><input class="pay-in" id="mTitle" maxlength="48" placeholder="e.g. My 2027 Yankees" value="${esc(S.title||'')}" autocomplete="off"></div>
     <div class="pay-field">Link<div class="pay-linkrow"><input id="mShareLink" readonly value="${esc(M.link||'Building link…')}" onfocus="this.select()"><button class="pay-btn primary" data-m="shareCopy">Copy link</button></div></div>
     <div class="pay-hint" id="mShareNote"></div>
