@@ -1947,7 +1947,7 @@ select,.lineup-player-select{ background:#0B1630 !important; color:var(--gm-fg) 
 
 @media (max-width:700px){ .gm-bar{ padding-right:130px !important; } }
 </style>
-<script>(function(){try{var t=localStorage.getItem('mlb_theme_v1'); if(t==='light'||t==='dark') document.documentElement.setAttribute('data-theme',t);}catch(e){}
+<script>(function(){try{var t=localStorage.getItem('mlb_theme_v1'); document.documentElement.setAttribute('data-theme',(t==='dark')?'dark':'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}
 document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-theme-toggle]'); if(!b) return; var r=document.documentElement, n=r.getAttribute('data-theme')==='light'?'dark':'light'; r.setAttribute('data-theme',n); try{localStorage.setItem('mlb_theme_v1',n);}catch(x){} sync(); });
 function sync(){ var d=document.documentElement.getAttribute('data-theme')!=='light'; document.querySelectorAll('[data-theme-toggle]').forEach(function(b){ b.setAttribute('aria-checked', d?'true':'false'); b.setAttribute('aria-label', d?'Dark mode':'Light mode'); }); }
 sync(); document.addEventListener('DOMContentLoaded',sync); new MutationObserver(sync).observe(document.documentElement,{childList:true,subtree:true,attributes:false});})();</script>
@@ -3616,7 +3616,7 @@ document.getElementById('downloadLineupBtn').addEventListener('click', async ()=
       const dataUri = await fetchLogoDataUri(logoURL(currentTeamId));
       if(dataUri) logoImg.src = dataUri;
     }
-    const canvas = await html2canvas(exportEl, {backgroundColor:'#ffffff', scale:2});
+    const canvas = await html2canvas(exportEl, H2C);
     openPreviewModal(canvas.toDataURL('image/png'));
   }catch(e){
     console.error('Could not generate roster/lineups image', e);
@@ -3665,6 +3665,8 @@ document.addEventListener('click', e=>{
 /* Data note: Yankees contracts come from FanGraphs RosterResource (export dated Oct 12, 2026).
    Dollar amounts are in millions. Arbitration/pre-arb figures are estimates unless noted. */
 // A shared plan arrives as #plan=… on the URL; grab it before anything rewrites the address.
+// html2canvas can't read modern color() values (what color-mix() computes to), so images are drawn from a clone with the page theme stripped — the cards carry their own colors
+const H2C = {backgroundColor:'#ffffff', scale:2, onclone:d=>{ ['gm-theme','gm-theme-light'].forEach(id=>{ const e = d.getElementById(id); if(e) e.remove(); }); d.documentElement.removeAttribute('data-theme'); d.documentElement.style.background = '#fff'; d.body.style.background = '#fff'; }};
 window.__bootPlan = /^#plan=/.test(location.hash) ? location.hash.slice(6) : null;
 const PayrollPlanner = (function(){
 'use strict';
@@ -4220,6 +4222,10 @@ function planSync(){
   const keep = players.filter(p=>!gone.has(norm(p.name)) && !(p.via==='payroll' && !realIds.has(p.id)));
   if(keep.length!==players.length){ players = keep; changed = true; }
   REAL.players.forEach(rp=>{ if(gone.has(norm(rp.name)) || players.some(p=>p.id===rp.id)) return; players.push({...rp}); changed = true; });
+  // a re-signed player always lands in the pool, even if the Roster Builder board no longer has his base entry
+  S.added.forEach(a=>{ const k = norm(a.name); if(gone.has(k) || players.some(p=>norm(p.name)===k) || !PENDING_FA.some(f=>norm(f.name)===k)) return;
+    const d = DEFAULTS.find(x=>norm(x.name)===k); if(!d) return;
+    players.push({...d, placed:'pool', group:null, role:null, order:players.reduce((m,p)=>Math.max(m,p.order||0),0)+10}); changed = true; });
   // injury status & IL label come from the live roster feed unless you've toggled them yourself — keep the copy in step
   const realById = new Map(REAL.players.map(p=>[p.id,p]));
   players.forEach(p=>{ const rp = realById.get(p.id); if(!rp || !rp.pid) return;
@@ -5464,7 +5470,7 @@ async function buildDepthImage(){
     const el = document.getElementById('fullExport'); if(!el || typeof html2canvas==='undefined') throw new Error('no export target');
     const logo = el.querySelector('.fx-team-logo img');
     if(logo){ try{ const d = await fetchLogoDataUri(logoURL(TEAM_ID)); if(d) logo.src = d; }catch(e){} }
-    const canvas = await html2canvas(el, {backgroundColor:'#ffffff', scale:2});
+    const canvas = await html2canvas(el, H2C);
     if(!M || M.type!=='share') return; M.dcUrl = canvas.toDataURL('image/png');
   }catch(e){ console.warn('depth chart image failed', e); if(M && M.type==='share') M.dcErr = true; }
   finally{ if(M) M.dcBusy = false; }
@@ -5477,7 +5483,7 @@ async function shareImage(){
   const img = el.querySelector('.sc-logo');
   try{ const d = await fetchLogoDataUri(logoURL(TEAM_ID)); if(d) img.src = d; else img.style.visibility='hidden'; }catch(e){}
   const w0 = el.style.width; el.style.width = '640px';
-  let canvas; try{ canvas = await html2canvas(el, {backgroundColor:'#ffffff', scale:2}); } finally { el.style.width = w0; }
+  let canvas; try{ canvas = await html2canvas(el, H2C); } finally { el.style.width = w0; }
   const a = document.createElement('a'); a.download = `${teamObj().slug}-${M&&M.view==='lu'?'lineup-rotation':'offseason-plan'}.png`; a.href = canvas.toDataURL('image/png'); a.click();
 }
 function dfaHTML(){
@@ -5670,7 +5676,7 @@ async function reviewCanvas(){
   const el = document.getElementById('trCard'); if(!el || typeof html2canvas==='undefined') return null;
   for(const img of el.querySelectorAll('img')){ const m = /team-logos\/(\d+)\.svg/.exec(img.src||''); if(m && !String(img.src).startsWith('data:')){ try{ const d = await fetchLogoDataUri(logoURL(m[1])); if(d) img.src = d; }catch(e){} } }
   const w0 = el.style.width; el.style.width = '720px';
-  try{ return await html2canvas(el, {backgroundColor:'#ffffff', scale:2}); } finally { el.style.width = w0; }
+  try{ return await html2canvas(el, H2C); } finally { el.style.width = w0; }
 }
 function confirmHTML(){
   const f = M.f, byId = {}; ownItems().forEach(it=>{ byId[it.id]=it; });
@@ -5852,7 +5858,7 @@ async function tradeImage(){
   const el = document.getElementById('shareCard'); if(!el || typeof html2canvas==='undefined') return;
   for(const img of el.querySelectorAll('img.sc-logo')){ try{ const dd = await fetchLogoDataUri(logoURL(img.dataset.tid)); if(dd) img.src = dd; else img.style.visibility='hidden'; }catch(e){} }
   const w0 = el.style.width; el.style.width = '640px';
-  let canvas; try{ canvas = await html2canvas(el, {backgroundColor:'#ffffff', scale:2}); } finally { el.style.width = w0; }
+  let canvas; try{ canvas = await html2canvas(el, H2C); } finally { el.style.width = w0; }
   const a = document.createElement('a'); a.download = `${teamObj().slug}-trade.png`; a.href = canvas.toDataURL('image/png'); a.click();
 }
 function tradeImpact(){ // the whole sheet with and without this trade, without saving it
