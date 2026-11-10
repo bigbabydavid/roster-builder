@@ -3668,6 +3668,8 @@ document.addEventListener('click', e=>{
 // html2canvas can't read modern color() values (what color-mix() computes to), so images are drawn from a clone with the page theme stripped — the cards carry their own colors
 const H2C = {backgroundColor:'#ffffff', scale:2, onclone:d=>{ ['gm-theme','gm-theme-light'].forEach(id=>{ const e = d.getElementById(id); if(e) e.remove(); }); d.documentElement.removeAttribute('data-theme'); d.documentElement.style.background = '#fff'; d.body.style.background = '#fff'; }};
 window.__bootPlan = /^#plan=/.test(location.hash) ? location.hash.slice(6) : null;
+// pasting a plan link into a tab that's already open only changes the #hash, so reload to load it as a fresh start
+window.addEventListener('hashchange',()=>{ if(/^#plan=/.test(location.hash)) location.reload(); });
 const PayrollPlanner = (function(){
 'use strict';
 
@@ -5143,7 +5145,7 @@ function updateFaExtras(){
   if(!imp) return;
   const I = impactFor(rec), yrs = YEARS.filter(y=>y>=rec.start && y<rec.start+rec.years);
   if(!yrs.length){ imp.style.display = 'none'; return; }
-  const hy = yrs.includes(S.season) ? S.season : yrs[0], a0 = I.c0.years[hy], a1 = I.c1.years[hy], T = a1.T, over = a1.total-T;
+  const hy = yrs.includes(S.season) ? S.season : yrs[0], a0 = I.c0.years[hy], a1 = I.c1.years[hy];
   const tgt = S.target.on ? S.target.value : null;
   const cell = (l, b, em, cls) => `<div><span>${l}</span><b class="${cls||''}">${b}</b>${em?`<em>${em}</em>`:''}</div>`;
   imp.innerHTML = `<div class="fa-imp-h">After this signing · ${hy}</div><div class="fa-imp-grid">
@@ -5397,6 +5399,10 @@ async function importPlan(str){
     const o = await unpackPlan(str);
     let had = false;
     try{ const prev = localStorage.getItem(STORE_KEY(TEAM_ID)); if(prev){ localStorage.setItem(STORE_KEY(TEAM_ID)+'_prev', prev); had = true; } }catch(e){}
+    // a shared plan stands alone: nothing from whatever was built here before (signings, trade pickups, depth chart, lineups) carries into it
+    for(const k of [`mlb_plan_depth_v1_${currentTeamId}`]){ try{ await storageDelete(k); }catch(e){} try{ localStorage.removeItem(k); }catch(e){} }
+    players = players.filter(p=>p.via!=='payroll').map(p=>({...p, placed:'pool', group:null, role:null}));
+    lineups = blankLineups();
     S = {...defaultState(), season:o.s||2027, target:(o.tg!=null?{on:true,value:o.tg}:{on:false,value:300}), rules:{...clone(DEFAULT_RULES), ...(o.r||{})},
       overrides:o.ov||{}, options:o.op||{}, added:o.a||[], customOther:o.c||[], walked:o.w||{}, extraOrg:o.x||[], status:o.st||{}, optManual:o.om||{}, ext:o.ex||{}};
     saveState(); S.added.forEach(a=>rosterAdd(a)); UI.shared = {had}; renderAll();
@@ -5835,18 +5841,20 @@ function tradeCardData(pkg){
   return {grp, sentKeys, byId, c0:calc0, c1:calc1};
 }
 function tradeCardHTML(pkg){
-  const d = tradeCardData(pkg), y = S.season, a0 = d.c0.years[y], a1 = d.c1.years[y], T = a1.T, over = a1.total-T;
+  const d = tradeCardData(pkg), y = S.season, a0 = d.c0.years[y], a1 = d.c1.years[y];
   const them = [...new Set(d.grp.map(a=>a.from).filter(Boolean))], themName = them.join(' / ') || 'The other club', tm = teamByNick(them[0]);
   const sendLis = d.sentKeys.map(k=>{ const it = d.byId[k], st = S.status[k]; const nm = it?it.name:k; let note = it ? `${fmt(netRaw(it,y),2)} on his ${y} books` : '';
     if(st.pay>0) note += ` · ${teamNick()} keep paying ${fmt(st.pay,2)}/yr`; else if(st.frac>0) note += ` · ${teamNick()} keep paying ${Math.round(st.frac*100)}%`;
     return tradeLi(nm, teamNick(), it?it.pos:'', note); }).join('');
   const getLis = d.grp.map(a=>tradeLi(a.name, a.from, a.pos, `${a.sched?'arbitration-eligible':fmt(a.aav,2)+' a year'} · ${a.start===a.through?a.start:a.start+'–'+a.through}${a.eat?` · ${a.from||'they'} pay ${fmt(a.eat,2)}/yr`:''}`)).join('');
+  const sg = v=> (v>0.005?'+':v<-0.005?'−':'')+fmt(Math.abs(v),1);
+  const yrs = Object.keys(d.c1.years).filter(k=>d.c0.years[k]&&+k>=y), nYrs = yrs.length, netAll = nYrs>1 ? yrs.reduce((t,k)=>t+(d.c1.years[k].total-d.c0.years[k].total),0) : null;
   const stat = (l,v,c)=>`<div><b class="${c||''}">${v}</b><span>${l}</span></div>`;
   return `<div class="tc" id="shareCard"><div class="tc-h"><img class="sc-logo" data-tid="${teamObj().id}" src="${logoURL(teamObj().id)}" alt=""><span class="tc-x">⇄</span>${tm?`<img class="sc-logo" data-tid="${tm.id}" src="${logoURL(tm.id)}" alt="">`:''}</div>
     <div class="tc-t">${esc(teamNick())} · ${esc(themName)}</div><div class="tc-ts">My offseason trade</div>
     <div class="tc-sides"><div class="tc-side"><h4>${esc(teamNick())} send</h4>${sendLis?`<ul>${sendLis}</ul>`:'<div class="tc-ts" style="text-align:left">Nobody</div>'}</div>
       <div class="tc-side"><h4>${esc(themName)} send</h4>${getLis?`<ul>${getLis}</ul>`:'<div class="tc-ts" style="text-align:left">Nobody</div>'}</div></div>
-    <div class="tc-imp">${stat(y+' CBT payroll', fmt(a0.total,1)+' → '+fmt(a1.total,1))}${stat(over>0?'over the tax line':'under the tax line', fmt(Math.abs(over),1), over>0?'bad':'ok')}${stat('Est. tax bill', a0.tax>0||a1.tax>0 ? fmt(a0.tax,1)+' → '+fmt(a1.tax,1) : '$0.0M')}</div>
+    <div class="tc-imp">${stat(y+' payroll change', sg(a1.total-a0.total), (a1.total-a0.total)>0.005?'bad':(a1.total-a0.total)<-0.005?'ok':'')}${netAll!=null?stat('Over '+nYrs+' seasons', sg(netAll), netAll>0.005?'bad':netAll<-0.005?'ok':''):''}${Math.abs(a1.tax-a0.tax)>0.005?stat('Tax bill change', sg(a1.tax-a0.tax), (a1.tax-a0.tax)>0?'bad':'ok'):''}</div>
     <div class="sc-f">Made in the Offseason Simulator · mlbrostertool.com/${esc(teamObj().slug)} · a Jomboy Media production</div></div>`;
 }
 function openTradeShare(pkg){
