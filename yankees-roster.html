@@ -5854,7 +5854,8 @@ function tradeCardHTML(pkg){
     <div class="tc-t">${esc(teamNick())} · ${esc(themName)}</div><div class="tc-ts">My offseason trade</div>
     <div class="tc-sides"><div class="tc-side"><h4>${esc(teamNick())} send</h4>${sendLis?`<ul>${sendLis}</ul>`:'<div class="tc-ts" style="text-align:left">Nobody</div>'}</div>
       <div class="tc-side"><h4>${esc(themName)} send</h4>${getLis?`<ul>${getLis}</ul>`:'<div class="tc-ts" style="text-align:left">Nobody</div>'}</div></div>
-    <div class="tc-imp">${stat(y+' payroll change', sg(a1.total-a0.total), (a1.total-a0.total)>0.005?'bad':(a1.total-a0.total)<-0.005?'ok':'')}${netAll!=null?stat('Over '+nYrs+' seasons', sg(netAll), netAll>0.005?'bad':netAll<-0.005?'ok':''):''}${Math.abs(a1.tax-a0.tax)>0.005?stat('Tax bill change', sg(a1.tax-a0.tax), (a1.tax-a0.tax)>0?'bad':'ok'):''}</div>
+    <div class="tc-imp">${stat(esc(teamNick()), sg(a1.total-a0.total), '')}${stat(esc(themName), sg(a0.total-a1.total), '')}</div>
+    <div class="tc-ts" style="padding:0 18px 12px">Net ${y} payroll from this trade</div>
     <div class="sc-f">Made in the Offseason Simulator · mlbrostertool.com/${esc(teamObj().slug)} · a Jomboy Media production</div></div>`;
 }
 function openTradeShare(pkg){
