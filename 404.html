@@ -3573,23 +3573,31 @@ if(statsBarToggleBtn){
 // canvas is actually allowed to read. If that fetch fails for any reason,
 // callers just get null back and fall through to the plain (blank-in-export)
 // logo rather than blocking the download entirely.
+const _logoCache = {};
+// Team logos for the saved images: draw MLB's own SVG straight to a PNG (no third party), fall back to the image proxy, retry once, and remember the result
 async function fetchLogoDataUri(url){
-  try{
-    const bare = url.replace(/^https?:\/\//, '');
-    const proxied = `https://images.weserv.nl/?url=${encodeURIComponent(bare)}`;
-    const res = await fetch(proxied);
-    if(!res.ok) throw new Error('logo proxy fetch failed: ' + res.status);
-    const blob = await res.blob();
-    return await new Promise((resolve, reject)=>{
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }catch(e){
-    console.error('Could not load team logo for export', e);
-    return null;
+  if(_logoCache[url]) return _logoCache[url];
+  const blobToUri = blob => new Promise((resolve, reject)=>{ const r = new FileReader(); r.onload = ()=>resolve(r.result); r.onerror = reject; r.readAsDataURL(blob); });
+  const direct = async ()=>{
+    const res = await fetch(url); if(!res.ok) throw new Error('logo fetch failed: '+res.status);
+    const svg = await res.blob(); const obj = URL.createObjectURL(svg);
+    try{
+      const img = await new Promise((ok,no)=>{ const im = new Image(); im.onload = ()=>ok(im); im.onerror = no; im.src = obj; });
+      const h = 256, w = Math.max(1, Math.round(h*((img.naturalWidth||h)/(img.naturalHeight||h))));
+      const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h);
+      return c.toDataURL('image/png');
+    } finally { URL.revokeObjectURL(obj); }
+  };
+  const proxied = async ()=>{
+    const res = await fetch('https://images.weserv.nl/?url='+encodeURIComponent(url.replace(/^https?:\/\//,'')));
+    if(!res.ok) throw new Error('logo proxy fetch failed: '+res.status);
+    return blobToUri(await res.blob());
+  };
+  for(const attempt of [direct, proxied, direct, proxied]){
+    try{ const d = await attempt(); if(d && d.length>200){ _logoCache[url] = d; return d; } }catch(e){}
   }
+  console.error('Could not load team logo for export', url);
+  return null;
 }
 
 let previewDataUrl = null;
