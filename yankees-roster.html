@@ -3573,6 +3573,13 @@ if(statsBarToggleBtn){
 // canvas is actually allowed to read. If that fetch fails for any reason,
 // callers just get null back and fall through to the plain (blank-in-export)
 // logo rather than blocking the download entirely.
+// logos go into a square badge and the image exporter stretches to the box, so bake each logo onto a square canvas at its true proportions
+function squareUri(img){
+  const S = 256, iw = img.naturalWidth||S, ih = img.naturalHeight||S, k = Math.min(S/iw, S/ih), w = iw*k, h = ih*k;
+  const c = document.createElement('canvas'); c.width = S; c.height = S;
+  c.getContext('2d').drawImage(img, (S-w)/2, (S-h)/2, w, h);
+  return c.toDataURL('image/png');
+}
 const _logoCache = {};
 // Team logos for the saved images: draw MLB's own SVG straight to a PNG (no third party), fall back to the image proxy, retry once, and remember the result
 async function fetchLogoDataUri(url){
@@ -3583,15 +3590,15 @@ async function fetchLogoDataUri(url){
     const svg = await res.blob(); const obj = URL.createObjectURL(svg);
     try{
       const img = await new Promise((ok,no)=>{ const im = new Image(); im.onload = ()=>ok(im); im.onerror = no; im.src = obj; });
-      const h = 256, w = Math.max(1, Math.round(h*((img.naturalWidth||h)/(img.naturalHeight||h))));
-      const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h);
-      return c.toDataURL('image/png');
+      return squareUri(img);
     } finally { URL.revokeObjectURL(obj); }
   };
   const proxied = async ()=>{
     const res = await fetch('https://images.weserv.nl/?url='+encodeURIComponent(url.replace(/^https?:\/\//,'')));
     if(!res.ok) throw new Error('logo proxy fetch failed: '+res.status);
-    return blobToUri(await res.blob());
+    const obj = URL.createObjectURL(await res.blob());
+    try{ const img = await new Promise((ok,no)=>{ const im = new Image(); im.onload = ()=>ok(im); im.onerror = no; im.src = obj; }); return squareUri(img); }
+    finally { URL.revokeObjectURL(obj); }
   };
   for(const attempt of [direct, proxied, direct, proxied]){
     try{ const d = await attempt(); if(d && d.length>200){ _logoCache[url] = d; return d; } }catch(e){}
@@ -4471,7 +4478,10 @@ function logEntries(calc){
       const teams = [...new Set(grp.map(x=>x.from).filter(Boolean))];
       const stS = sentKeys.map(k=>S.status[k]), payTot = stS.reduce((t,x)=>t+(x.pay||0),0);
       const fracs = stS.filter(x=>x.pay==null && x.frac>0).map(x=>Math.round(x.frac*100)), multi = sentKeys.some(k=>byId[k] && YEARS.filter(yy=>(rawCharge(byId[k],yy)||0)>0).length>1);
-      const cash = payTot>0 ? ` + ${fmt(payTot,payTot%1?2:1)}${multi?'/yr':''}` : (fracs.length ? ` + ${[...new Set(fracs)].join('/')}% of salary` : '');
+      // a share-of-salary deal reads as dollars here, same as one entered in dollars
+      const fracUsd = sentKeys.reduce((t,k)=>{ const st = S.status[k]; return t + (st.pay==null && st.frac>0 && byId[k] ? st.frac*(rawCharge(byId[k],y)||0) : 0); }, 0);
+      const cashTot = payTot + fracUsd;
+      const cash = cashTot>0 ? ` + ${fmt(cashTot,cashTot%1?2:1)}${multi?'/yr':''}` : '';
       L.push({kind: sent.length?'swap':'add', acts:[['shareTrade','Share',{id:pkg}],['editAdded','Edit',{id:a.id}],['removePkg','Undo',{id:pkg}]], at:a.at||0, eff:inc+sentEff, text:`Traded for ${grp.map(x=>x.name).join(', ')}${teams.length?' ('+teams.join(', ')+')':''}${sent.length?` — sending ${sent.join(', ')}${cash}`:''}`,
         sub: grp.map(x=>`${x.name}: ${x.sched?'arbitration schedule':fmt(x.aav,2)+' AAV'} through ${x.through}${x.eat?` (other team pays ${fmt(x.eat,2)}/yr)`:''}`).join(' · ')});
     }
