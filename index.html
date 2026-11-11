@@ -5164,7 +5164,7 @@ function updateFaExtras(){
   const mk = f.qo ? null : marketFor(f.name);
   if(mk){
     const ratio = r.aav/mk.aav, proj = `${fmt(mk.aav,1)} AAV (${mk.years} yr / ${fmt(mk.total)})`;
-    if(ratio<FA_FLOOR){ M.belowFloor = true; warn.className = 'fa-warn red'; warn.innerHTML = `<b>Unrealistic offer.</b> His projected deal is about ${proj}. ${fmt(r.aav,1)} a year is ${Math.round((1-ratio)*100)}% under that — he wouldn’t sign for less than roughly ${fmt(mk.aav*FA_FLOOR,1)}.`; warn.style.display = ''; }
+    if(ratio<FA_FLOOR && mk.aav>=6){ M.belowFloor = true; warn.className = 'fa-warn red'; warn.innerHTML = `<b>Unrealistic offer.</b> His projected deal is about ${proj}. ${fmt(r.aav,1)} a year is ${Math.round((1-ratio)*100)}% under that — he wouldn’t sign for less than roughly ${fmt(mk.aav*FA_FLOOR,1)}.`; warn.style.display = ''; }
     else if(ratio>FA_CEIL){ warn.className = 'fa-warn amber'; warn.innerHTML = `<b>Well above market.</b> His projected deal is about ${proj}; ${fmt(r.aav,1)} a year is ${Math.round((ratio-1)*100)}% over it.`; warn.style.display = ''; }
     else warn.style.display = 'none';
   } else warn.style.display = 'none';
