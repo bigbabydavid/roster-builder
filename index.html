@@ -4901,7 +4901,7 @@ function onModalInput(e){
   if(M.type==='pkg'){
     if(t.dataset && t.dataset.g){
       const g = M.f.get.find(x=>x.key===t.dataset.k); if(g){ g[t.dataset.g] = t.value; if(t.dataset.g==='aav' && g.sched){ g.sched = null; } }
-    } else if(t.id==='mRet'){ M.f.ret = t.value; }
+    } else if(t.dataset && t.dataset.rid){ M.f.retBy = M.f.retBy||{}; (M.f.retBy[t.dataset.rid] = M.f.retBy[t.dataset.rid]||{how:'pct',val:''}).val = t.value; }
     else if(t.id==='mRoster'){ M.f.roster = t.checked; }
     else if(t.id==='mSendQ'){ updateSendSugg(); }
   }
@@ -5760,10 +5760,13 @@ function pkgHTML(){
   if(M.f.confirm) return confirmHTML();
   const f = M.f, byId = {}; ownItems().forEach(it=>{ byId[it.id]=it; });
   const pills = f.send.map(id=>{ const it = byId[id] || (f.meta && f.meta[id]); return it ? `<span class="pay-pill">${esc(it.name)} <em>${byId[id]?fmt(rawCharge(byId[id],S.season)||0):(String(id).startsWith('x:')?'minors':'40-man')}</em><button type="button" data-m="unsend" data-id="${esc(id)}" aria-label="Remove">×</button></span>` : ''; }).join('');
+  const nameOf = id=>{ const it = byId[id] || (f.meta && f.meta[id]); return it ? it.name : id; };
+  f.retBy = f.retBy || {};
   const ret = !f.send.length ? '' : f.retOpen
-    ? `<div class="pay-eat-box"><div class="pay-seg"><button data-m="rethow" data-v="pct" class="${f.retHow==='usd'?'':'active'}">% of salary</button><button data-m="rethow" data-v="usd" class="${f.retHow==='usd'?'active':''}">$ per year</button></div>
-        <label class="pay-field">${f.retHow==='usd'?'Total you still pay ($M per year, across everyone you send)':'Share of salary you still pay (%)'}<input id="mRet" value="${esc(f.ret)}" inputmode="decimal" placeholder="0"></label>
-        ${f.retHow==='usd'?'':`<div class="row">${[0,25,50,75].map(p=>`<button class="pay-chip small" data-m="retpct" data-v="${p}">${p===0?'None':p+'%'}</button>`).join(' ')}</div>`}</div>`
+    ? `<div class="pay-eat-box">${f.send.map(id=>{ const r = f.retBy[id] || (f.retBy[id] = {how:'pct', val:''}); return `<div class="ret-row" style="margin:0 0 10px"><div style="font-weight:600;margin-bottom:4px">${esc(nameOf(id))} <span style="font-weight:400;opacity:.7">— you still pay</span></div>
+        <div class="pay-seg"><button data-m="rethow" data-id="${esc(id)}" data-v="pct" class="${r.how==='usd'?'':'active'}">% of salary</button><button data-m="rethow" data-id="${esc(id)}" data-v="usd" class="${r.how==='usd'?'active':''}">$M per year</button></div>
+        <label class="pay-field"><input data-rid="${esc(id)}" value="${esc(r.val)}" inputmode="decimal" placeholder="${r.how==='usd'?'$M per year':'0'}"></label>
+        ${r.how==='usd'?'':`<div class="row">${[0,25,50,75].map(p=>`<button class="pay-chip small" data-m="retpct" data-id="${esc(id)}" data-v="${p}">${p===0?'None':p+'%'}</button>`).join(' ')}</div>`}</div>`; }).join('')}</div>`
     : `<button class="pay-eat-link" data-m="retopen">You’re paying part of their salary?</button>`;
   const sendCollapsed = f.sendCollapsed && f.send.length && !f.sendOpen;
   const sendSec = sendCollapsed ? `<div class="pay-sec"><div class="pay-sec-h">Players you send</div>
@@ -5794,14 +5797,12 @@ function pkgHTML(){
     `<button class="pay-btn" data-m="close">Cancel</button><button class="pay-btn primary" data-m="savePkg">${M.editing?'Save':'Complete trade'}</button>`);
   return html.replace('class="pay-modal"','class="pay-modal wide"');
 }
+function stToRet(st){ if(st.pay!=null) return {how:'usd', val:String(st.pay)}; if(st.frac>0) return {how:'pct', val:String(Math.round(st.frac*100))}; return {how:'pct', val:''}; }
 function openPackage(opts={}){
-  const f = {send:[], get:[], retOpen:false, retHow:'pct', ret:'', roster:true, getFirst: !opts.send && !opts.edit, sendCollapsed: !!opts.send && !opts.edit};
+  const f = {send:[], get:[], retOpen:false, retBy:{}, roster:true, getFirst: !opts.send && !opts.edit, sendCollapsed: !!opts.send && !opts.edit};
   if(opts.send){ f.send = [...opts.send];
-    const st0 = opts.send.length===1 ? S.status[opts.send[0]] : null;
-    if(st0 && st0.mode==='traded' && !st0.tradeId){
-      if(st0.pay!=null){ f.retOpen=true; f.retHow='usd'; f.ret=String(st0.pay); }
-      else if(st0.frac>0){ f.retOpen=true; f.retHow='pct'; f.ret=String(Math.round(st0.frac*100)); }
-    }
+    opts.send.forEach(id=>{ const st0 = S.status[id];
+      if(st0 && st0.mode==='traded' && !st0.tradeId){ f.retBy[id] = stToRet(st0); if(f.retBy[id].val) f.retOpen = true; } });
   }
   if(opts.edit){
     const pkg = opts.edit;
@@ -5810,10 +5811,7 @@ function openPackage(opts={}){
     });
     const sts = Object.keys(S.status).filter(k=>S.status[k].tradeId===pkg);
     f.send = sts;
-    const pays = sts.map(k=>S.status[k]).filter(s=>s.pay!=null).reduce((x,s)=>x+s.pay,0);
-    const fr = sts.length ? S.status[sts[0]].frac : 0;
-    if(pays>0){ f.retOpen = true; f.retHow='usd'; f.ret=String(Math.round(pays*100)/100); }
-    else if(fr>0){ f.retOpen = true; f.retHow='pct'; f.ret=String(Math.round(fr*100)); }
+    sts.forEach(k=>{ f.retBy[k] = stToRet(S.status[k]); if(f.retBy[k].val) f.retOpen = true; });
   }
   M = {type:'pkg', f, editing:opts.edit||null, html:pkgHTML}; paint();
 }
@@ -5832,12 +5830,11 @@ function updateSendSugg(){
   const qv = inp.value.trim();
   if(qv.length>2 && !list.some(it=>norm(it.name)===norm(qv))) box.innerHTML = `<button type="button" class="pay-addnew" data-m="sendmanual"><i>+</i> Add “${esc(qv)}” — not in the list</button>` + box.innerHTML;
 }
-function retainedFor(items){ // -> {id: {frac|pay}}
-  const out = {}; const f = M.f; const v = f.retOpen ? (parseM(f.ret)||0) : 0;
-  const raw = {}; let sum = 0; items.forEach(it=>{ raw[it.id] = netRaw(it, S.season); sum += raw[it.id]; });
-  items.forEach(it=>{
+function retainedFor(items){ // -> {id: {frac|pay}} (each player on his own)
+  const out = {}; const f = M.f; f.retBy = f.retBy || {};
+  items.forEach(it=>{ const r = f.retOpen ? f.retBy[it.id] : null; const v = r ? (parseM(r.val)||0) : 0;
     if(!v) out[it.id] = {frac:0};
-    else if(f.retHow==='usd') out[it.id] = {frac:0, pay: Math.round(v*(sum? raw[it.id]/sum : 1/items.length)*100)/100};
+    else if(r.how==='usd') out[it.id] = {frac:0, pay: Math.round(v*100)/100};
     else out[it.id] = {frac: Math.max(0,Math.min(100,v))/100};
   });
   return out;
@@ -6164,8 +6161,8 @@ function onModalClick(e){
   if(m==='geatopen'){ const g = M.f.get.find(x=>x.key===b.dataset.k); if(g){ g.eatOpen = true; paint(); } return; }
   if(m==='geatpct'){ const g = M.f.get.find(x=>x.key===b.dataset.k); const a = g && parseM(g.aav); if(g && a){ g.eat = String(Math.round(a*(+v)/100*100)/100); paint(); } return; }
   if(m==='retopen'){ M.f.retOpen = true; paint(); return; }
-  if(m==='rethow'){ M.f.retHow = v; paint(); return; }
-  if(m==='retpct'){ M.f.ret = String(v); const el = document.getElementById('mRet'); if(el) el.value = v; updateCalc(); return; }
+  if(m==='rethow'){ M.f.retBy = M.f.retBy||{}; const r = M.f.retBy[b.dataset.id] = M.f.retBy[b.dataset.id]||{how:'pct',val:''}; r.how = v; r.val = ''; paint(); return; }
+  if(m==='retpct'){ M.f.retBy = M.f.retBy||{}; (M.f.retBy[b.dataset.id] = M.f.retBy[b.dataset.id]||{how:'pct',val:''}).val = String(v); paint(); return; }
   if(m==='addmanual'){ const nm = (document.getElementById('mName')||{}).value||''; M.f.get.push({key:'g'+(++GK), id:null, name:nm.trim(), from:'', pos:'', ptype:'H', aav:'', start:String(S.season), through:String(S.season), eat:'', eatOpen:false, sched:null, info:'', pid:null, manual:true}); paint(); return; }
   if(m==='xshape'){ readFields(); if(v==='custom'){ const sc = extSchedule(); M.f.xs = {}; if(sc) sc.forEach(([y,x])=>{ M.f.xs[y] = String(Math.round(x*100)/100); }); } M.f.shape = v; document.querySelectorAll('#mXShape button').forEach(x=>x.classList.toggle('active', x.dataset.v===v)); updateExtSched(true); return; }
   if(m==='extpick'){ openExt(b.dataset.id); return; }
