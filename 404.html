@@ -3595,6 +3595,8 @@ function squareUri(img){
   c.getContext('2d').drawImage(img, (S-w)/2, (S-h)/2, w, h);
   return c.toDataURL('image/png');
 }
+// set a logo and wait until it's decoded, so the image exporter never snapshots a half-loaded badge
+async function setLogoSrc(img, uri){ img.src = uri; try{ await img.decode(); }catch(e){} await new Promise(r=>setTimeout(r,60)); }
 const _logoCache = {};
 // Team logos for the saved images: draw MLB's own SVG straight to a PNG (no third party), fall back to the image proxy, retry once, and remember the result
 async function fetchLogoDataUri(url){
@@ -3644,7 +3646,7 @@ document.getElementById('downloadLineupBtn').addEventListener('click', async ()=
     const logoImg = exportEl.querySelector('.fx-team-logo img');
     if(logoImg){
       const dataUri = await fetchLogoDataUri(logoURL(currentTeamId));
-      if(dataUri) logoImg.src = dataUri;
+      if(dataUri) await setLogoSrc(logoImg, dataUri);
     }
     const canvas = await html2canvas(exportEl, H2C);
     openPreviewModal(canvas.toDataURL('image/png'));
@@ -5523,7 +5525,7 @@ async function buildDepthImage(){
     try{ window.render(); }catch(e){}
     const el = document.getElementById('fullExport'); if(!el || typeof html2canvas==='undefined') throw new Error('no export target');
     const logo = el.querySelector('.fx-team-logo img');
-    if(logo){ try{ const d = await fetchLogoDataUri(logoURL(TEAM_ID)); if(d) logo.src = d; }catch(e){} }
+    if(logo){ try{ const d = await fetchLogoDataUri(logoURL(TEAM_ID)); if(d) await setLogoSrc(logo, d); }catch(e){} }
     const canvas = await html2canvas(el, H2C);
     if(!M || M.type!=='share') return; M.dcUrl = canvas.toDataURL('image/png');
   }catch(e){ console.warn('depth chart image failed', e); if(M && M.type==='share') M.dcErr = true; }
@@ -5535,7 +5537,7 @@ async function shareImage(){
   if(M && M.view==='dc'){ if(!M.dcUrl) return; const a = document.createElement('a'); a.download = `${teamObj().slug}-depth-chart.png`; a.href = M.dcUrl; a.click(); return; }
   const el = document.getElementById('shareCard'); if(!el || typeof html2canvas==='undefined') return;
   const img = el.querySelector('.sc-logo');
-  try{ const d = await fetchLogoDataUri(logoURL(TEAM_ID)); if(d) img.src = d; else img.style.visibility='hidden'; }catch(e){}
+  try{ const d = await fetchLogoDataUri(logoURL(TEAM_ID)); if(d) await setLogoSrc(img, d); else img.style.visibility='hidden'; }catch(e){}
   const w0 = el.style.width; el.style.width = '640px';
   let canvas; try{ canvas = await html2canvas(el, H2C); } finally { el.style.width = w0; }
   const a = document.createElement('a'); a.download = `${teamObj().slug}-${M&&M.view==='lu'?'lineup-rotation':'offseason-plan'}.png`; a.href = canvas.toDataURL('image/png'); a.click();
@@ -5728,7 +5730,7 @@ function copyOrDownload(canvas, filename, btn){
 }
 async function reviewCanvas(){
   const el = document.getElementById('trCard'); if(!el || typeof html2canvas==='undefined') return null;
-  for(const img of el.querySelectorAll('img')){ const m = /team-logos\/(\d+)\.svg/.exec(img.src||''); if(m && !String(img.src).startsWith('data:')){ try{ const d = await fetchLogoDataUri(logoURL(m[1])); if(d) img.src = d; }catch(e){} } }
+  for(const img of el.querySelectorAll('img')){ const m = /team-logos\/(\d+)\.svg/.exec(img.src||''); if(m && !String(img.src).startsWith('data:')){ try{ const d = await fetchLogoDataUri(logoURL(m[1])); if(d) await setLogoSrc(img, d); }catch(e){} } }
   const w0 = el.style.width; el.style.width = '720px';
   try{ return await html2canvas(el, H2C); } finally { el.style.width = w0; }
 }
@@ -5915,7 +5917,7 @@ async function tradeImage(){
   const el = document.getElementById('shareCard'); if(!el || typeof html2canvas==='undefined') return;
   for(const img of el.querySelectorAll('img.sc-logo')){
     let dd = null; try{ dd = await fetchLogoDataUri(logoURL(img.dataset.tid)); }catch(e){}
-    if(dd){ img.src = dd; continue; }
+    if(dd){ await setLogoSrc(img, dd); continue; }
     // never leave a blank circle: if a logo can't be fetched, the team's letters stand in
     const t = TEAMS.find(x=>String(x.id)===String(img.dataset.tid)), sp = document.createElement('span');
     sp.className = img.className; sp.textContent = t ? t.abbr : ''; sp.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;color:#0c2340;width:'+img.offsetWidth+'px;height:'+img.offsetHeight+'px';
