@@ -2491,6 +2491,7 @@ async function loadState(){
 }
 
 async function saveState(){
+  try{ window.__clearPlanHash && window.__clearPlanHash(); }catch(e){}
   const map = {};
   players.forEach(p=>{ map[p.id] = {group:p.group, placed:p.placed, status:p.status||null, hurt:!!p.hurt, hurtManual: typeof p.hurtManual === 'boolean' ? p.hurtManual : null, role:p.role||null, order:p.order}; });
   // Custom (not-on-the-40-man) players carry no DEFAULTS/API record to be
@@ -3701,6 +3702,8 @@ document.addEventListener('click', e=>{
 const H2C = {backgroundColor:'#ffffff', scale:2, onclone:d=>{ ['gm-theme','gm-theme-light'].forEach(id=>{ const e = d.getElementById(id); if(e) e.remove(); }); d.documentElement.removeAttribute('data-theme'); d.documentElement.style.background = '#fff'; d.body.style.background = '#fff'; }};
 window.__bootPlan = /^#plan=/.test(location.hash) ? location.hash.slice(6) : null;
 // pasting a plan link into a tab that's already open only changes the #hash, so reload to load it as a fresh start
+window.__planSig = ()=>{ try{ return JSON.stringify([PayrollPlanner._debug().S, lineups, players.filter(p=>p.placed!=='pool').map(p=>[String(p.id),p.placed,p.group,p.role]).sort((x,y)=>x[0]<y[0]?-1:x[0]>y[0]?1:0)]); }catch(e){ return ''; } };
+window.__clearPlanHash = ()=>{ if(window.__hashLive && /^#plan=/.test(location.hash) && window.__planSig()!==window.__hashSig){ window.__hashLive = false; try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} } };
 window.addEventListener('hashchange',()=>{ if(/^#plan=/.test(location.hash)) location.reload(); });
 const PayrollPlanner = (function(){
 'use strict';
@@ -4014,7 +4017,7 @@ function loadState(){
     }
   }catch(e){}
 }
-function saveState(){ try{ localStorage.setItem(STORE_KEY(TEAM_ID), JSON.stringify(S)); }catch(e){} }
+function saveState(){ try{ window.__clearPlanHash && window.__clearPlanHash(); }catch(e){} try{ localStorage.setItem(STORE_KEY(TEAM_ID), JSON.stringify(S)); }catch(e){} }
 
 /* ---------- items & charges ---------- */
 function lvlOf(it, y){ return it.lvl ? (it.lvl[y]||null) : null; }
@@ -4959,6 +4962,16 @@ function faPool(){
     out.push({...p, id:d?d.i:null, c:d?d.c:''}); });
   LEAGUE_DB.filter(r=>r.k==='f').forEach(d=>{ if(used.has(norm(d.n))) return; used.add(norm(d.n));
     out.push({name:d.n, pos:'', pos2:'', type:'', age:d.g, w:null, l:'F', note:'', team:d.t, id:d.i, c:d.c}); });
+  // players the live transaction log shows hitting the market after the saved list was built (declined options, releases, elected free agency)
+  try{ const tx = window.__tx; if(tx && tx.rows){
+    const hits = {}; const isHit = r=>{ const d = r[5]||''; return (/option declined|elected free agency|^Released|cleared waivers; released/i.test(d)) && r[6]!=='ADD'; };
+    const later = {}; tx.rows.forEach(r=>{ if(/^Agreed to/.test(r[5]||'')) later[norm(r[2])] = r[0]; });
+    tx.rows.forEach(r=>{ const k = norm(r[2]); if(!isHit(r) || (later[k] && later[k]>=r[0])) return; const ex = out.find(o=>norm(o.name)===k); if(ex && ex.l!=='F'){ ex.l = 'F'; ex.note = (ex.note?ex.note+' · ':'')+'Hit the market (transaction log)'; } });
+    tx.rows.forEach(r=>{ const k = norm(r[2]); if(used.has(k)) return;
+      const hit = /option declined|elected free agency|^Released|cleared waivers; released/i.test(r[5]||'') && !/^Club option declined$/i.test(r[5]||'') || /^Club option declined$/i.test(r[5]||'');
+      if(!hit || r[6]==='ADD') return; if(later[k] && later[k]>=r[0]) return;
+      hits[k] = 1; used.add(k); const ps = String(r[7]||'').split('/')[0]; const ab = TX_ABBR[r[1]]||r[1]; const tm = TEAMS.find(x=>x.abbr===ab);
+      out.push({name:r[2], pos:ps, pos2:String(r[7]||''), type:(ps==='P'||ps==='SP'||ps==='RP')?'P':'H', age:null, w:null, l:'F', note:'Hit the market — from the transaction log', team:tm?tm.name:'', id:r[3]||null, c:''}); }); } }catch(e){}
   return POOL.fa = out;
 }
 function searchPool(list, nameOf, q){
@@ -6353,7 +6366,7 @@ function open(){
   S.added.forEach(a=>rosterAdd(a)); // keep the roster builder pool in step with saved signings
   fillMissingBats();
   if(!REAL && dedupePayrollTiles()){ window.saveState(); window.render(); }
-  if(window.__bootPlan){ const raw = window.__bootPlan; window.__bootPlan = null; try{ history.replaceState(null,'',location.pathname); }catch(e){} importPlan(raw); }
+  if(window.__bootPlan){ const raw = window.__bootPlan; window.__bootPlan = null; Promise.resolve(importPlan(raw)).then(()=>setTimeout(()=>{ window.__hashSig = window.__planSig(); window.__hashLive = true; },800)); } // the shared link stays in the address bar until you make a real change
   document.body.classList.add('view-payroll');
   $('payrollView').hidden = false;
   setHeader(true); syncTabs(true); renderAll();
@@ -6367,7 +6380,7 @@ function close(){
   setHeader(false); syncTabs(false);
 }
 function isOpen(){ return document.body.classList.contains('view-payroll'); }
-return {setTab:t=>{ UI.tab = t; UI.sel = null; if(isOpen()) renderAll(); }, applyFG, open, close, isOpen, useTeam, threshold:()=>DEFAULT_RULES.threshold[2027], act:a=>onClick({target:{closest:()=>({tagName:'BUTTON', dataset:{act:a}})}}), armed:()=>UI.armed, optBadge, optCycle, paintAlert, planActive:()=>!!REAL, refresh:()=>{ if(isOpen() && !M) renderAll(); }, _debug:()=>({S, calcAll, taxFor, SEED, FG:FG_TOTALS, TEAM_SIM})};
+return {_resetFaPool:()=>{ POOL.fa = null; }, setTab:t=>{ UI.tab = t; UI.sel = null; if(isOpen()) renderAll(); }, applyFG, open, close, isOpen, useTeam, threshold:()=>DEFAULT_RULES.threshold[2027], act:a=>onClick({target:{closest:()=>({tagName:'BUTTON', dataset:{act:a}})}}), armed:()=>UI.armed, optBadge, optCycle, paintAlert, planActive:()=>!!REAL, refresh:()=>{ if(isOpen() && !M) renderAll(); }, _debug:()=>({S, calcAll, taxFor, SEED, FG:FG_TOTALS, TEAM_SIM})};
 })();
 
 
@@ -6394,7 +6407,7 @@ function clearAllBuilds(){ buildKeys().forEach(k=>{ try{ localStorage.removeItem
 
 (function loadTx(){
   if(startMode()!=='today') return;
-  fetch('/tx.json', {cache:'no-cache'}).then(r=>r.ok?r.json():null).then(d=>{ if(d && Array.isArray(d.rows)){ window.__tx = d; try{ PayrollPlanner.refresh(); }catch(e){} } }).catch(()=>{});
+  fetch('/tx.json', {cache:'no-cache'}).then(r=>r.ok?r.json():null).then(d=>{ if(d && Array.isArray(d.rows)){ window.__tx = d; try{ PayrollPlanner._resetFaPool && PayrollPlanner._resetFaPool(); PayrollPlanner.refresh(); }catch(e){} } }).catch(()=>{});
 })();
 
 /* ---------- main navigation (header menus) ---------- */
