@@ -5913,7 +5913,14 @@ function openTradeShare(pkg){
 }
 async function tradeImage(){
   const el = document.getElementById('shareCard'); if(!el || typeof html2canvas==='undefined') return;
-  for(const img of el.querySelectorAll('img.sc-logo')){ try{ const dd = await fetchLogoDataUri(logoURL(img.dataset.tid)); if(dd) img.src = dd; else img.style.visibility='hidden'; }catch(e){} }
+  for(const img of el.querySelectorAll('img.sc-logo')){
+    let dd = null; try{ dd = await fetchLogoDataUri(logoURL(img.dataset.tid)); }catch(e){}
+    if(dd){ img.src = dd; continue; }
+    // never leave a blank circle: if a logo can't be fetched, the team's letters stand in
+    const t = TEAMS.find(x=>String(x.id)===String(img.dataset.tid)), sp = document.createElement('span');
+    sp.className = img.className; sp.textContent = t ? t.abbr : ''; sp.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;color:#0c2340;width:'+img.offsetWidth+'px;height:'+img.offsetHeight+'px';
+    img.replaceWith(sp);
+  }
   const w0 = el.style.width; el.style.width = '640px';
   let canvas; try{ canvas = await html2canvas(el, H2C); } finally { el.style.width = w0; }
   const a = document.createElement('a'); a.download = `${teamObj().slug}-trade.png`; a.href = canvas.toDataURL('image/png'); a.click();
