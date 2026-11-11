@@ -1334,7 +1334,7 @@
   .sc-m{ padding:14px 22px 6px; } .sc-mh{ font-family:var(--disp); font-size:20px; font-weight:700; margin-bottom:6px; }
   .sc-m ul{ list-style:none; margin:0; padding:0; } .sc-m li{ display:flex; justify-content:space-between; gap:16px; padding:7px 0; border-top:1px solid #eef0f2; font-size:14.5px; } .sc-m li b{ font-family:var(--disp); font-weight:600; font-size:17px; white-space:nowrap; }
   .sc-m li em{ display:block; font-style:normal; color:var(--grey); font-size:12.5px; } .sc-more{ color:var(--grey); }
-  .fx-moves{ list-style:none; margin:0 24px 40px; padding:6px 18px; columns:2; column-gap:30px; font-size:13px; line-height:1.4; color:#1c2733; background:#f4f6f9; border:1px solid #e1e6ec; border-radius:10px; } .fx-moves li{ break-inside:avoid; display:flex; gap:10px; align-items:flex-start; padding:9px 0; border-top:1px solid #dde2e8; } .fx-moves li:first-child{ border-top:0; } .fx-moves b{ flex:0 0 auto; } .fx-moves i{ flex:0 0 auto; font-style:normal; font-weight:800; color:#fff; background:#0c2340; border-radius:5px; padding:2px 7px; min-width:0; font-size:10.5px; letter-spacing:.03em; text-transform:uppercase; margin-top:2px; white-space:nowrap; } .fx-moves span{ flex:1 1 auto; font-weight:500; } .fx-moves b{ font-weight:800; font-size:14px; white-space:nowrap; } .fx-more{ color:#5b6573; } .fx-moves.fx-compact{ font-size:11px; line-height:1.3; padding:4px 16px; } .fx-compact li{ padding:5px 0; gap:8px; } .fx-compact i{ font-size:9px; padding:1px 6px; } .fx-compact b{ font-size:12px; }
+  .fx-moves{ list-style:none; margin:0 24px 40px; padding:6px 18px; columns:2; column-gap:30px; font-size:13px; line-height:1.4; color:#1c2733; background:#f4f6f9; border:1px solid #e1e6ec; border-radius:10px; } .fx-moves li{ break-inside:avoid; display:flex; gap:10px; align-items:flex-start; padding:9px 0; border-top:1px solid #dde2e8; } .fx-moves li:first-child{ border-top:0; } .fx-moves b{ flex:0 0 auto; } .fx-moves i{ flex:0 0 auto; font-style:normal; font-weight:800; color:#fff; background:#0c2340; border-radius:5px; padding:2px 7px; min-width:0; font-size:10.5px; letter-spacing:.03em; text-transform:uppercase; margin-top:2px; white-space:nowrap; } .fx-moves span{ flex:1 1 auto; font-weight:500; } .fx-moves b{ font-weight:800; font-size:14px; white-space:nowrap; } .fx-more{ color:#5b6573; } .fx-moves small{ display:block; font-size:12.5px; font-weight:700; color:#4a5666; margin-top:1px; } .fx-compact small{ font-size:10.5px; } .fx-moves.fx-compact{ font-size:11px; line-height:1.3; padding:4px 16px; } .fx-compact li{ padding:5px 0; gap:8px; } .fx-compact i{ font-size:9px; padding:1px 6px; } .fx-compact b{ font-size:12px; }
   .fx-pay{ margin-left:auto; text-align:right; color:#fff; } .fx-pay b{ display:block; font-family:var(--disp); font-size:34px; line-height:1; } .fx-pay span{ font-size:12px; opacity:.8; }
   .sc-bn{ padding:12px 22px 8px; border-top:1px solid #e3e6ea; } .sc-bl{ display:flex; flex-wrap:wrap; gap:6px 16px; font-size:14px; } .sc-bl s{ text-decoration:none; color:var(--grey); font-size:12px; }
   .sc-mv{ border-top:1px solid #e3e6ea; } .sc-mv li{ justify-content:flex-start; align-items:baseline; gap:10px; padding:5px 0; font-size:13px; } .sc-mv li i{ font-style:normal; font-family:var(--disp); font-weight:700; font-size:11px; letter-spacing:.02em; color:var(--grey); min-width:62px; } .sc-mv li span{ flex:1 1 auto; } .sc-mv li b{ font-size:14px; }
@@ -3152,7 +3152,7 @@ function buildFullExport(){
     ${diamondHtml}
     ${lineupsBlockHtml}
     ${(()=>{ const mv = (window.__planActive && typeof window.__planMoves==='function') ? window.__planMoves() : []; if(!mv.length) return ''; const e = x=>String(x).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); const CAP = 30;
-      return `<div class="fx-section-title">Moves made</div><ul class="fx-moves${mv.length>8?' fx-compact':''}">${mv.slice(0,CAP).map(m=>`<li><i>${e(m.tag)}</i><span>${e(m.text)}</span><b>${e(m.eff)}</b></li>`).join('')}${mv.length>CAP?`<li class="fx-more"><span>+ ${mv.length-CAP} more</span></li>`:''}</ul>`; })()}
+      return `<div class="fx-section-title">Moves made</div><ul class="fx-moves${mv.length>8?' fx-compact':''}">${mv.slice(0,CAP).map(m=>`<li><i>${e(m.tag)}</i><span>${e(m.text)}${m.terms?`<small>${e(m.terms)}</small>`:''}</span><b>${e(m.eff)}</b></li>`).join('')}${mv.length>CAP?`<li class="fx-more"><span>+ ${mv.length-CAP} more</span></li>`:''}</ul>`; })()}
     <div class="fx-watermark">Offseason Simulator · mlbrostertool.com · a Jomboy Media production</div>
   `;
 }
@@ -4405,9 +4405,10 @@ function fortyMan(calc){
   S.added.forEach(a=>{ if(!a.mil && !byName.has(norm(a.name))) n++; });
   return n;
 }
+function termsTxt(y,tot){ const m = Math.round(tot*100)/100; return `${y} yr${y===1?'':'s'}, $${String(m).replace(/(\.\d)0$/,'$1')}M`; }
 function moveTag(t){ return /^(Re-)?[Ss]igned/.test(t)?'Signing' : /^Traded/.test(t)?'Trade' : /^Extended/.test(t)?'Extension' : /^Designated/.test(t)?'DFA' : /^Non-tendered/.test(t)?'Non-tender' : /^Released/.test(t)?'Release' : /^Added/.test(t)?'40-man' : 'Move'; }
 function isDeal(e){ return /^(Re-)?[Ss]igned|^Traded|^Extended/.test(e.text); } // image summaries list trades and signings only
-function movesList(){ const calc = calcAll(); return logEntries(calc).filter(isDeal).sort((a,b)=>(a.at||0)-(b.at||0)).map(e=>({tag:moveTag(e.text), text:e.text+(e.group?': '+e.group.map(x=>x.who).join(', '):''), eff:e.eff?fmtEff(e.eff):''})); }
+function movesList(){ const calc = calcAll(); return logEntries(calc).filter(isDeal).sort((a,b)=>(a.at||0)-(b.at||0)).map(e=>({tag:moveTag(e.text), text:e.text+(e.group?': '+e.group.map(x=>x.who).join(', '):''), terms:e.terms||'', eff:e.eff?fmtEff(e.eff):''})); }
 window.__planMoves = function(){ try{ return movesList(); }catch(e){ return []; } };
 window.__planTitle = function(){ try{ return (S.title||'').trim(); }catch(e){ return ''; } };
 window.__planPayroll = function(){ try{ const c = calcAll(), y = c.years[S.season]; return {year:S.season, total:fmt(y.total), tax:fmt(y.tax,1)}; }catch(e){ return null; } };
@@ -4483,7 +4484,7 @@ function logEntries(calc){
   S.added.forEach(a=>{
     const it = byId[a.id]; const eff = it ? (rawCharge(it,y)||0) : 0;
     if(a.kind==='fa'){
-      L.push({kind:'add', acts:[['editAdded','Edit',{id:a.id}],['removeAdded','Undo',{id:a.id}]], at:a.at||0, eff, text: a.mil ? `Signed ${a.name} to a minor-league deal` : a.promo ? `Added ${a.name} to the 40-man${a.lvl?' (from '+a.lvl+')':''}` : a.qo ? `${isResign(a)?'Re-signed':'Signed'} ${a.name} to the qualifying offer` : `${isResign(a)?'Re-signed':'Signed'} ${a.name}`, sub:a.mil ? `No 40-man spot · not in the ${a.start} tax number unless added to the 40-man` : a.promo ? `${fmt(a.aav,2)} in ${a.start}${a.years>1?' · '+a.years+' yr':''}` : `${a.years} yr, ${fmt(nomAav(a)*a.years)} (${fmt(a.aav,2)} ${Math.abs(nomAav(a)-a.aav)>1e-9?'CBT ':''}AAV) from ${a.start}${structText(a)?' · '+structText(a):''}${!a.qo&&qoDecl(a.name)?' · declined the QO — draft pick compensation attached':''}`});
+      L.push({kind:'add', terms:(a.mil||a.promo||!(a.years>0))?'':termsTxt(a.years, nomAav(a)*a.years), acts:[['editAdded','Edit',{id:a.id}],['removeAdded','Undo',{id:a.id}]], at:a.at||0, eff, text: a.mil ? `Signed ${a.name} to a minor-league deal` : a.promo ? `Added ${a.name} to the 40-man${a.lvl?' (from '+a.lvl+')':''}` : a.qo ? `${isResign(a)?'Re-signed':'Signed'} ${a.name} to the qualifying offer` : `${isResign(a)?'Re-signed':'Signed'} ${a.name}`, sub:a.mil ? `No 40-man spot · not in the ${a.start} tax number unless added to the 40-man` : a.promo ? `${fmt(a.aav,2)} in ${a.start}${a.years>1?' · '+a.years+' yr':''}` : `${a.years} yr, ${fmt(nomAav(a)*a.years)} (${fmt(a.aav,2)} ${Math.abs(nomAav(a)-a.aav)>1e-9?'CBT ':''}AAV) from ${a.start}${structText(a)?' · '+structText(a):''}${!a.qo&&qoDecl(a.name)?' · declined the QO — draft pick compensation attached':''}`});
       if(a.promo && !a.mil){ const last = L[L.length-1]; last.grp = 'promo'; last.who = a.name + (a.lvl ? ' ('+a.lvl+')' : ''); }
     } else {
       const pkg = a.pkg||a.id; if(seenPkg.has(pkg)) return; seenPkg.add(pkg);
@@ -4518,7 +4519,7 @@ function logEntries(calc){
   Object.keys(S.ext||{}).forEach(k=>{
     const ex = S.ext[k], it = byId[k]; if(!it) return;
     const yrs = ex.through-ex.start+1, tot = ex.aav*yrs;
-    L.push({kind:'add', acts:[['extend','Edit',{id:k}],['undoExt','Undo',{id:k}]], at:ex.at||0, eff:extDelta(it,y), text:`Extended ${it.name}`, sub:`${fmt(ex.aav,2)} a year${ex.shape&&ex.shape!=='flat'?' AAV, '+(ex.shape==='custom'?'custom structure':ex.shape+'-loaded')+' ('+Object.keys(ex.sched||{}).map(y=>fmt(ex.sched[y],1)).join(' / ')+')':''}, ${ex.start===ex.through?ex.start:ex.start+'–'+ex.through} (${yrs} yr, ${fmt(tot,1)} total)`});
+    L.push({kind:'add', terms:termsTxt(yrs, tot), acts:[['extend','Edit',{id:k}],['undoExt','Undo',{id:k}]], at:ex.at||0, eff:extDelta(it,y), text:`Extended ${it.name}`, sub:`${fmt(ex.aav,2)} a year${ex.shape&&ex.shape!=='flat'?' AAV, '+(ex.shape==='custom'?'custom structure':ex.shape+'-loaded')+' ('+Object.keys(ex.sched||{}).map(y=>fmt(ex.sched[y],1)).join(' / ')+')':''}, ${ex.start===ex.through?ex.start:ex.start+'–'+ex.through} (${yrs} yr, ${fmt(tot,1)} total)`});
   });
   Object.keys(S.options).forEach(k=>{
     const v = S.options[k]; const it = byId[k]; if(!it || !it.option || v==='undecided' || realOpt(it)) return;
@@ -4591,7 +4592,7 @@ function logCard(calc){
 function logText(){
   const calc = calcAll(), L = logEntries(calc), y = S.season, yr = calc.years[y];
   return [`${teamNick()} offseason moves — ${y} CBT payroll ${fmt(baselineTotal(y))} → ${fmt(yr.total)} (${fmtEff(yr.total-baselineTotal(y))})`,
-    ...L.map((e,i)=>`${i+1}. ${e.text}${e.group?': '+e.group.map(x=>x.who).join(', '):''}${e.sub?' — '+e.sub:''} (${y}: ${fmtEff(e.eff)})`),
+    ...L.map((e,i)=>`${i+1}. ${e.text}${e.terms?' ('+e.terms+')':''}${e.group?': '+e.group.map(x=>x.who).join(', '):''}${e.sub?' — '+e.sub:''} (${y}: ${fmtEff(e.eff)})`),
     `Estimated tax: ${fmt(yr.tax,2)} · payroll + tax: ${fmt(yr.totalCost,2)}`].join('\n');
 }
 function breakdownCard(yr){
