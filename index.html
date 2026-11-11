@@ -5083,7 +5083,7 @@ function faHTML(){
   if(step==='find'){
     return shell('Sign a free agent', `${steps}
     <label class="pay-field">Player<input data-f="name" id="mName" value="${esc(f.name)}" placeholder="Search free agents by name…" autocomplete="off"></label>
-    <div class="pay-filters"><select class="pay-in" id="mFaLik"><option value="likely"${(f.falik||'likely')==='likely'?' selected':''}>Likely free agents</option><option value="shots"${f.falik==='shots'?' selected':''}>+ long shots</option><option value="all"${f.falik==='all'?' selected':''}>Everyone on the tracker</option></select>
+    <div class="pay-filters"><select class="pay-in" id="mFaLik"><option value="likely"${(f.falik||'all')==='likely'?' selected':''}>Likely free agents</option><option value="shots"${f.falik==='shots'?' selected':''}>+ long shots</option><option value="all"${(f.falik||'all')==='all'?' selected':''}>Everyone on the tracker</option></select>
       <select class="pay-in" id="mFaSort"><option value="aav"${(f.fasort||'aav')==='aav'?' selected':''}>Sort: suggested AAV</option><option value="war"${f.fasort==='war'?' selected':''}>Sort: 2026 WAR</option><option value="age"${f.fasort==='age'?' selected':''}>Sort: youngest</option><option value="name"${f.fasort==='name'?' selected':''}>Sort: name</option></select></div>
     <div class="pay-seg pay-posf pay-posrow" id="mFaPos">${segBtns(POS_ROW_FA,'faposf',f.faposf||'')}</div>
     <div class="pay-seg pay-posf pay-posrow" id="mFaHand">${handRow('fahand', f.faposf||'', f.fahand||'')}</div>
@@ -5275,7 +5275,7 @@ function faHandOpts(pf){
   return (pf==='SP'||pf==='RP'||pf==='P') ? P : (pf==='C'||pf==='IF'||pf==='OF'||pf==='H'||SPEC_POS.includes(pf)) ? H : P.concat(H);
 }
 function faRows(){
-  const pool = faPool(), f = M.f, lk = f.falik||'likely', pf = f.faposf||'';
+  const pool = faPool(), f = M.f, lk = f.falik||'all', pf = f.faposf||'';
   let hf = f.fahand||''; if(hf && !faHandOpts(pf).some(o=>o[0]===hf)) hf = '';
   const ok = lk==='all' ? null : lk==='shots' ? 'FPTn' : 'FP';
   const toks = norm((document.getElementById('mName')||{}).value||'').split(' ').filter(Boolean);
