@@ -3713,7 +3713,7 @@ let TEAM_ID = 147;
 const YEARS = [2027,2028,2029,2030,2031,2032];
 const SOURCE_DATE = 'Oct 14, 2026';
 let FG_ADJ = null;
-let FG_TOTALS = {2027:286.171701, 2028:185.916667, 2029:123.416667, 2030:123.916667, 2031:91.916667, 2032:52.416667}; // FanGraphs 'Estimated Luxury Tax Payroll', checked Oct 14, 2026
+let FG_TOTALS = {2027:287.621701, 2028:185.916667, 2029:123.416667, 2030:123.916667, 2031:91.916667, 2032:52.416667}; // FanGraphs 'Estimated Luxury Tax Payroll', checked Oct 14, 2026
 const STORE_KEY = teamId => `mlb_payroll_state_v1_${teamId}`;
 
 // Tax structure verified against Spotrac's 2026 table: $244M threshold, four $20M-wide
@@ -3751,6 +3751,9 @@ let SEED_GUARANTEED = [
    note:'2028 is a $25M club option with a $10M buyout. Choose what happens below; "undecided" counts neither.',
    base:{2027:25}, option:{year:2028, salary:25, buyout:10}},
   {id:'mcmahon', name:'Ryan McMahon', pos:'3B', type:'H', contract:'6 yr, $70M (2022–27)', base:{2027:15.405034}},
+  {id:'hill', name:'Tim Hill', pos:'RP', type:'P', contract:'1 yr, $2.25M (2027) · 2028 club option',
+   note:'Re-signed Nov 15. 2028 is a $2.5M club option; the buyout hasn\u2019t been reported, so none is counted. Choose what happens below; "undecided" counts neither.',
+   base:{2027:2.25}, option:{year:2028, salary:2.5, buyout:0}},
 ];
 
 // Arbitration + pre-arb: level by season. 2027 arbitration figures for the seven players FanGraphs
@@ -3784,7 +3787,6 @@ let PENDING_FA = [
   {name:'John Schreiber', pos:'RP', type:'P', s26:3.715, qoBlock:'changed teams midseason (Royals → Yankees)'},
   {name:'Trent Grisham', pos:'CF', type:'H', s26:22.025, qoBlock:'already received a qualifying offer in 2025', note:'2026 salary was a qualifying-offer-level one-year deal.'},
   {name:'Paul Goldschmidt', pos:'1B', type:'H', s26:4.0},
-  {name:'Tim Hill', pos:'RP', type:'P', s26:3.0},
   {name:'Ryan Yarbrough', pos:'RP', type:'P', s26:2.5},
   {name:'Amed Rosario', pos:'IF', type:'H', s26:2.5},
   {name:'Paul Blackburn', pos:'SP', type:'P', s26:2.0},
