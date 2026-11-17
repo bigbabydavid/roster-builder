@@ -4009,6 +4009,13 @@ function defaultState(){
           overrides:{}, options:{}, added:[], customOther:[], walked:{}, extraOrg:[],
           status:{}, optManual:{}, ext:{}};
 }
+// A signing entered by hand for a player the payroll data now lists as guaranteed (e.g. a re-signing logged before
+// FanGraphs caught up) would count him twice, so the old entry is dropped.
+function dropFgSignings(){
+  try{ const have = new Set((SEED_GUARANTEED||[]).map(g=>norm(g.name)));
+    const dup = (S.added||[]).filter(a=>a.kind==='fa' && !a.mil && have.has(norm(a.name)));
+    if(dup.length){ S.added = S.added.filter(a=>!dup.includes(a)); dup.forEach(a=>{ try{ rosterRemove(a.id); }catch(e){} }); S.dropped = dup.map(a=>a.name); } }catch(e){}
+}
 function loadState(){
   S = defaultState();
   try{
@@ -4019,6 +4026,7 @@ function loadState(){
       if(p.v!==2){ S.rules.minSalary = DEFAULT_RULES.minSalary; S.v = 2; } // FanGraphs now uses $0.8M for 2027
     }
   }catch(e){}
+  dropFgSignings();
 }
 function saveState(){ try{ window.__clearPlanHash && window.__clearPlanHash(); }catch(e){} try{ localStorage.setItem(STORE_KEY(TEAM_ID), JSON.stringify(S)); }catch(e){} }
 
@@ -5472,13 +5480,16 @@ async function importPlan(str){
     lineups = blankLineups();
     S = {...defaultState(), season:o.s||2027, target:(o.tg!=null?{on:true,value:o.tg}:{on:false,value:300}), rules:{...clone(DEFAULT_RULES), ...(o.r||{})},
       overrides:o.ov||{}, options:o.op||{}, added:o.a||[], customOther:o.c||[], walked:o.w||{}, extraOrg:o.x||[], status:o.st||{}, optManual:o.om||{}, ext:o.ex||{}};
-    saveState(); S.added.forEach(a=>rosterAdd(a)); applyDepth(o.dpl); if(o.dpl){ window.saveState(); window.__planActive = true; try{ window.saveState(); }finally{ window.__planActive = false; } } // saved for the board and for the depth chart, so both open with the shared lineups UI.shared = {had}; renderAll();
+    dropFgSignings(); saveState(); S.added.forEach(a=>rosterAdd(a)); applyDepth(o.dpl); if(o.dpl){ window.saveState(); window.__planActive = true; try{ window.saveState(); }finally{ window.__planActive = false; } } UI.shared = {had}; renderAll(); // saved for the board and depth chart so both open with the shared lineups
   }catch(e){ console.warn('Could not read the shared plan', e); UI.shared = {bad:true}; renderAll(); }
 }
 function sharedBanner(){
   const u = UI.shared; if(!u) return '';
   if(u.bad) return `<div class="pay-banner">That shared link couldn’t be opened — it may be for a different team or cut off when it was copied. <button class="pay-btn tiny" data-act="sharedKeep">Dismiss</button></div>`;
-  return `<div class="pay-banner"><b>You’re looking at a shared plan.</b> It’s now your working copy — edit it however you like. ${u.had?`Your previous plan is kept: <button class="pay-btn tiny" data-act="sharedRestore">Switch back to my plan</button> `:''}<button class="pay-btn tiny" data-act="sharedKeep">Got it</button></div>`;
+  const cnt = {}; (S.added||[]).filter(x=>x.kind==='trade'||x.kind==='fa').forEach(x=>{ const k = norm(x.name); cnt[k] = (cnt[k]||0)+1; });
+  const twice = [...new Set((S.added||[]).filter(x=>cnt[norm(x.name)]>1).map(x=>x.name))];
+  const warn = (twice.length?`<div style="margin:6px 0;color:#b42318"><b>Heads up:</b> ${twice.map(esc).join(', ')} ${twice.length>1?'show':'shows'} up more than once in this build, so ${twice.length>1?'their salaries are':'his salary is'} counted twice. Undo the extra move in the moves log.</div>`:'')+(S.dropped&&S.dropped.length?`<div style="margin:6px 0"><b>Note:</b> ${S.dropped.map(esc).join(', ')} ${S.dropped.length>1?'are':'is'} already under contract in the latest payroll data, so the old signing was removed.</div>`:'');
+  return `<div class="pay-banner"><b>You’re looking at a shared plan.</b> It’s now your working copy — edit it however you like. ${warn}${u.had?`Your previous plan is kept: <button class="pay-btn tiny" data-act="sharedRestore">Switch back to my plan</button> `:''}<button class="pay-btn tiny" data-act="sharedKeep">Got it</button></div>`;
 }
 function summaryCardHTML(){
   const calc = calcAll(), y = S.season, yr = calc.years[y], T = S.rules.threshold[y], over = yr.total - T, L = logEntries(calc);
@@ -5805,7 +5816,7 @@ function pkgHTML(){
       <div id="mGetRows">${f.get.map(getRowHTML).join('')}</div>
       <button class="pay-eat-link" data-m="addmanual">Add a player who isn’t in the list…</button></div>`;
   const lk = tradeLock();
-  const html = shell(M.editing?'Edit trade':'Make a trade', `<div class="tr-build">
+  const html = shell(M.editing?'Edit trade':'Make a trade', `${f.dupErr?`<div class="fa-warn red" id="mErr" style="display:block;margin-bottom:10px"><b>Can’t complete this trade.</b> ${f.dupErr}</div>`:''}<div class="tr-build">
       <div class="tr-bcol"><div class="tr-bh">${teamLogo(teamObj().name)}<b>${esc(teamNick())}</b><span>give up</span></div>${sendSec}</div>
       <div class="tr-bcol"><div class="tr-bh"><span id="mTheirLogo">${teamLogo(lk)}</span><b id="mTheirHdr">${esc(lk||'Other club')}</b><span>give up</span></div>${getSec}</div></div>
     <div class="pay-calc"><span>Net payroll change · ${S.season}</span><b id="mCalc">—</b></div>
@@ -5865,10 +5876,22 @@ function pkgNet(yy){
   items.forEach(it=>{ const raw = netRaw(it,y); const r = ret[it.id]; const kept = r.pay!=null ? Math.min(raw, r.pay) : raw*(r.frac||0); out += raw-kept; });
   return inc - out;
 }
+function dupAcquire(rows, pkg){
+  const mine = new Set(S.added.filter(a=>(a.pkg||a.id)===pkg).map(a=>a.id));
+  const seen = new Set(), out = [];
+  rows.forEach(g=>{ const k = norm(g.name); if(!k) return;
+    if(seen.has(k)){ out.push(`${g.name.trim()} is listed twice in this trade.`); return; } seen.add(k);
+    const sheet = S.added.find(a=>norm(a.name)===k && !mine.has(a.id));
+    if(sheet){ out.push(`${g.name.trim()} is already on your sheet${sheet.kind==='trade'?' from another trade':' as a signing'}. Undo or edit that move first.`); return; }
+    const own = calcAll().items.find(it=>norm(it.name)===k && isActive(it) && !mine.has(it.id) && !S.added.some(a=>a.id===it.id));
+    if(own) out.push(`${g.name.trim()} is already on your team, so you can’t trade for him.`); });
+  return out;
+}
 function applyPkg(dry, pkg){
   const f = M.f; pkg = pkg || M.editing || uid('pk');
   const rows = f.get.filter(g=>g.name.trim() && parseM(g.aav)!=null);
   if(!rows.length && !f.send.length) return false;
+  if(!dry){ const dups = dupAcquire(rows, pkg); if(dups.length){ f.dupErr = dups.join(' '); f.confirm = false; paint(); const el = modalRoot(); if(el) el.scrollTop = 0; return false; } f.dupErr = ''; }
   const items = ownItems(), byId = {}; items.forEach(it=>{ byId[it.id]=it; });
   f.send.forEach(id=>{ if(!byId[id] && f.meta && f.meta[id]){ S.extraOrg = S.extraOrg||[]; if(!S.extraOrg.some(e=>e.id===id)) S.extraOrg.push({id, name:f.meta[id].name, pos:f.meta[id].pos||''}); byId[id] = {id, name:f.meta[id].name, cat:'org', kind:'org', base:{}}; } });
   const sendItems = f.send.map(id=>byId[id]).filter(Boolean);
@@ -6169,7 +6192,7 @@ function onModalClick(e){
   if(m==='dealtype'){ readFields(); M.f.mil = !!v; paint(); return; }
   if(m==='promoposf'){ readFields(); M.f.posf = v; paint(); if(M.picked) setInfo(`<b>${esc(M.picked.name)}</b> · ${esc(M.picked.pos)}${M.picked.age?' · age '+M.picked.age:''} · ${esc(M.picked.lvl)}`); return; }
   if(m==='pkgback'){ M.f.confirm = false; paint(); return; }
-  if(m==='savePkg'){ if(!M.editing && !M.f.confirm){ const ok = M.f.get.some(g=>g.name.trim() && parseM(g.aav)!=null) || M.f.send.length; if(!ok) return; M.f.confirm = true; paint(); const el = modalRoot(); if(el) el.scrollTop = 0; return; } savePackage(); return; }
+  if(m==='savePkg'){ if(!M.editing && !M.f.confirm){ const ok = M.f.get.some(g=>g.name.trim() && parseM(g.aav)!=null) || M.f.send.length; if(!ok) return; const dups = dupAcquire(M.f.get.filter(g=>g.name.trim() && parseM(g.aav)!=null), M.editing||'new'); if(dups.length){ M.f.dupErr = dups.join(' '); paint(); const el0 = modalRoot(); if(el0) el0.scrollTop = 0; return; } M.f.dupErr = ''; M.f.confirm = true; paint(); const el = modalRoot(); if(el) el.scrollTop = 0; return; } savePackage(); return; }
   if(m==='sendmanual'){ const q=(document.getElementById('mSendQ')||{}).value||''; const nm=q.trim(); if(!nm){ const el=document.getElementById('mSendQ'); if(el){ el.focus(); el.placeholder='Type the player’s name first, then click this link'; } return; } const id='x:'+norm(nm); M.f.meta=M.f.meta||{}; M.f.meta[id]={name:nm,pos:'',org:true}; if(!M.f.send.includes(id)) M.f.send.push(id); paint(); return; }
   if(m==='send'){ const id = b.dataset.id; if(M.f.send.includes(id)) M.f.send = M.f.send.filter(x=>x!==id); else M.f.send.push(id); const q = (document.getElementById('mSendQ')||{}).value||''; paint(); setVal('mSendQ', q); updateSendSugg(); return; }
   if(m==='sposf'){ M.f.sposf = v; if(M.f.shandf && !faHandOpts(v).some(o=>o[0]===M.f.shandf)) M.f.shandf = ''; const q = (document.getElementById('mSendQ')||{}).value||''; paint(); setVal('mSendQ', q); updateSendSugg(); return; }
