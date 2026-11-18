@@ -3754,6 +3754,9 @@ let SEED_GUARANTEED = [
   {id:'hill', name:'Tim Hill', pos:'RP', type:'P', contract:'1 yr, $2.25M (2027) · 2028 club option',
    note:'Re-signed Nov 15. 2028 is a $2.5M club option; the buyout hasn\u2019t been reported, so none is counted. Choose what happens below; "undecided" counts neither.',
    base:{2027:2.25}, option:{year:2028, salary:2.5, buyout:0}},
+  {id:'bednar', name:'David Bednar', pos:'RP', type:'P', contract:'1 yr, $23.15M (2027)',
+   note:'Accepted the $23.15M qualifying offer Nov 17.',
+   base:{2027:23.15}},
 ];
 
 // Arbitration + pre-arb: level by season. 2027 arbitration figures for the seven players FanGraphs
@@ -3782,7 +3785,6 @@ let SEED_OTHER = [
 ];
 // Yankees whose contracts end after 2026 — not on the 2027 payroll unless re-signed.
 let PENDING_FA = [
-  {name:'David Bednar', pos:'RP', type:'P', s26:9.0},
   {name:'Jazz Chisholm Jr.', pos:'2B', type:'H', s26:10.2},
   {name:'John Schreiber', pos:'RP', type:'P', s26:3.715, qoBlock:'changed teams midseason (Royals → Yankees)'},
   {name:'Trent Grisham', pos:'CF', type:'H', s26:22.025, qoBlock:'already received a qualifying offer in 2025', note:'2026 salary was a qualifying-offer-level one-year deal.'},
