@@ -4406,6 +4406,8 @@ async function planEnter(){
   await window.loadState();     // restores your saved depth-chart placements (separate storage key)
   planSync(); mountPlan();
   window.render(); window.saveState(); setTimeout(fillMissingBats, 0);
+  if(!window.__planFilled) window.__planFilled = {};
+  if(!savedPlayerState && !window.__planFilled[currentTeamId] && !players.some(p=>p.placed==='roster')){ window.__planFilled[currentTeamId] = true; Promise.resolve(fillActiveRoster(true)).then(()=>{ try{ renderAll(); }catch(e){} }); }
 }
 function planExit(){
   if(!REAL) return;
@@ -4486,7 +4488,7 @@ function renderAll(){
     <div class="gm-rosterwrap"><div class="gm-rmain">${logCard(calc)}${viewBar()}${tablesHTML(calc, rmap)}</div>${railHTML()}</div>
     ${assumptionsHTML()}
     <div class="pay-two">${breakdownCard(yr)}${outlookCard(calc)}</div>
-    <div class="pay-plan-head"><h2>Depth chart &amp; lineups</h2><p>Your 2027 roster as you’ve built it — traded, released, non-tendered and unsigned free agents are gone; signings and trade pickups are in the pool. Drag players around exactly like the Roster Builder. This is its own copy: nothing here changes your Roster Builder board. <button class="pay-btn tiny${UI.armed==='plan'?' armed':''}" data-act="planReset">${UI.armed==='plan'?'Click again to confirm':'Reset to my Roster Builder board'}</button></p><div class="pay-key"><b>*</b> = still has a minor-league option, so he can start 2027 in the minors. No asterisk means out of options, can’t be optioned, or no data (FanGraphs, through 2026). Not included in the downloaded image.</div></div><div id="planSlot"></div>
+    <div class="pay-plan-head"><h2>Depth chart &amp; lineups</h2><p>Your 2027 roster as you’ve built it — traded, released, non-tendered and unsigned free agents are gone; signings and trade pickups are in the pool. Drag players around exactly like the Roster Builder. This is its own copy: nothing here changes your Roster Builder board. <button class="pay-btn tiny${UI.armed==='plan'?' armed':''}" data-act="planReset">${UI.armed==='plan'?'Click again to confirm':'Reset to my Roster Builder board'}</button> <button class="pay-btn tiny" data-act="planFill" title="Put everyone on the real active roster onto the depth chart, trimmed to 26. Players you signed or traded for stay in the pool.">Auto-fill active roster</button> <button class="pay-btn tiny${UI.armed==='planClear'?' armed':''}" data-act="planClear" title="Move everyone back to the pool and start from scratch">${UI.armed==='planClear'?'Click again to confirm':'Clear roster'}</button></p><div class="pay-key"><b>*</b> = still has a minor-league option, so he can start 2027 in the minors. No asterisk means out of options, can’t be optioned, or no data (FanGraphs, through 2026). Not included in the downloaded image.</div></div><div id="planSlot"></div>
     ${calendarCard()}
     <div class="pay-foot">Contract data: <a href="https://www.fangraphs.com/roster-resource/payroll/${teamObj().slug}" target="_blank" rel="noopener">FanGraphs RosterResource</a> (export dated ${SOURCE_DATE}). Tax bands/rates checked against <a href="https://www.spotrac.com/mlb/tax" target="_blank" rel="noopener">Spotrac&rsquo;s</a> 2026 table. Free-agent names: <a href="https://www.mlbtraderumors.com/2026-27-mlb-free-agents" target="_blank" rel="noopener">MLB Trade Rumors</a>. 2027 arbitration figures are <a href="https://www.mlbtraderumors.com/2026/10/projected-arbitration-salaries-for-2027.html" target="_blank" rel="noopener">MLB Trade Rumors&rsquo; projections</a> (Matt Swartz&rsquo;s model, Oct 2, 2026); later arbitration years are my own estimates, and CBT payroll counts average annual value plus benefits, not cash paid. Deferred money counts at present value, so enter the CBT AAV directly for heavily deferred deals.</div>
   </div>`;
@@ -6168,7 +6170,7 @@ function openSlotPick(i){
   const hint = cur ? 'Pick a replacement.' : 'Pick who goes here.';
   const more = R.slot==='hitter' ? '' : (cur ? ' The pitcher you replace moves to your pool.' : '');
   M = {type:'slot', i,
-    html:()=>shell(title, `<div class="pay-hint">${hint} Everyone listed is on your 40-man.${more}</div><div class="pay-browse" style="max-height:360px">${list.length?list.map(p=>`<button type="button" class="pay-sugg-item${p.id===cur?' added':''}" data-m="slotset" data-id="${esc(p.id)}">${p.id===cur?'<i class="chk">✓</i>':''}<b>${esc(p.name)}</b><span>${esc([p.group&&p.group!=='x'?p.group:'', p.hurt?'injured':'', slotWhere(p)].filter(Boolean).join(' · '))}</span></button>`).join(''):'<div class="pay-hint" style="padding:10px 12px">Nobody else on your 40-man fits. Promote someone from the minors below.</div>'}</div>`,
+    html:()=>shell(title, `<div class="pay-hint">${hint} Everyone listed is on your 40-man.${more}</div><div class="pay-browse" style="max-height:360px">${list.length?list.map(p=>`<button type="button" class="pay-sugg-item${p.id===cur?' added':''}" data-m="slotset" data-id="${esc(p.id)}">${p.id===cur?'<i class="chk">✓</i>':''}<b>${esc(p.name)}</b><span>${esc([salOf(p)>0?fmt(salOf(p),1)+' in '+S.season:'', p.group&&p.group!=='x'?p.group:'', p.hurt?'injured':'', slotWhere(p)].filter(Boolean).join(' · '))}</span></button>`).join(''):'<div class="pay-hint" style="padding:10px 12px">Nobody else on your 40-man fits. Promote someone from the minors below.</div>'}</div>`,
       `${cur&&R.slot==='hitter'?'<button class="pay-btn" data-m="slotset">Clear slot</button> ':''}<button class="pay-btn" data-m="slotpromo">Promote from the minors</button> <button class="pay-btn" data-m="close">Cancel</button>`)};
   paint();
 }
@@ -6378,7 +6380,7 @@ const root0 = () => document.getElementById('payrollView');
 function onClick(e){
   const b = e.target.closest('[data-act]'); if(!b || b.tagName==='INPUT' || b.tagName==='SELECT') return;
   const act = b.dataset.act, id = b.dataset.id;
-  if(UI.armed && !['resetAll','clearAdded','resetRules','planReset','clearLU'].includes(act)){ UI.armed=null; }
+  if(UI.armed && !['resetAll','clearAdded','resetRules','planReset','planClear','clearLU'].includes(act)){ UI.armed=null; }
   switch(act){
     case 'basis': S.rules.basis = b.dataset.v; saveState(); renderAll(); break;
     case 'season': S.season = +b.dataset.y; saveState(); renderAll(); break;
@@ -6396,6 +6398,8 @@ function onClick(e){
     case 'addExt': openExtPick(); break;
     case 'addTrade': openPackage(); break;
     case 'addPromo': openPromo(); break;
+    case 'planFill': Promise.resolve(fillActiveRoster(false)).then(()=>renderAll()); break;
+    case 'planClear': confirmTwice('planClear', ()=>{ players.forEach(p=>{ p.placed='pool'; p.status=null; }); lineups = blankLineups(); window.saveState(); window.render(); renderAll(); }); break;
     case 'planReset': confirmTwice('plan', async ()=>{ planExit(); await window.storageDelete('mlb_plan_depth_v1_'+currentTeamId); await planEnter(); renderAll(); }); break;
     case 'addOther': openOther(); break;
     case 'resign': openFA({name:b.dataset.name}); break;
