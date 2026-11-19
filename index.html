@@ -4268,6 +4268,32 @@ function rosterAdd(a){
     status:null, hurt:false, order:maxOrder+10, custom:true, via:'payroll', payId:a.id});
   saveRoster(); setTimeout(fillMissingBats, 0);
 }
+// Anyone under contract in the payroll data but missing from MLB's 40-man feed (a free agent who just signed, say) still belongs on the board.
+function rosterSyncContracts(){
+  try{ if(typeof players==='undefined' || currentTeamId!==TEAM_ID) return;
+    const gone = goneNames();
+    calcAll().items.forEach(it=>{
+      if(it.cat==='other' || it.cat==='pending' || it.kind==='custom' || !it.pos || gone.has(norm(it.name))) return;
+      rosterAdd({id:it.id, name:it.name, type: it.type || (/P$/i.test(it.pos)?'P':'H')}); });
+  }catch(e){}
+}
+// Free agents who really signed this offseason aren't on MLB's 40-man feed yet, so they'd be missing from the roster board and the depth chart. Add them to the pool.
+function rosterSyncContracts(){
+  try{
+    const tx = window.__tx; if(!tx || !tx.rows || typeof players==='undefined' || currentTeamId!==TEAM_ID) return;
+    const ab = teamObj().abbr, arr = realP(), have = new Set(arr.map(p=>norm(p.name)));
+    const signed = new Set(tx.rows.filter(r=>r[0]>='2026-10-28' && (TX_ABBR[r[1]]||r[1])===ab && r[4]==='FREE AGENT' && /^Agreed to/i.test(r[5]||'') && r[6]!=='SUB').map(r=>norm(r[2])));
+    if(!signed.size) return;
+    let n = 0, maxOrder = arr.reduce((m,p)=>Math.max(m,p.order||0), 0);
+    calcAll().items.forEach(it=>{
+      const k = norm(it.name); if(!it.pos || !signed.has(k) || have.has(k)) return;
+      have.add(k); maxOrder += 10; n++;
+      arr.push({id:'ct_'+k.replace(/\W+/g,'_'), pid:null, name:it.name, num:'', bt:'', type: it.type || (/P$/.test(String(it.pos).toUpperCase()) ? 'P' : 'H'), group:null, placed:'pool',
+        status:null, hurt:false, order:maxOrder, custom:true, via:'contract'});
+    });
+    if(n){ saveRoster(); setTimeout(fillMissingBats, 0); if(window.render) window.render(); }
+  }catch(e){}
+}
 const BATS_TRIED = new Set();
 function knownBT(name){ // handedness we already hold: MLB's 40-man feed, then the free-agent tracker
   const k = norm(name), h = HANDS[k]; if(h && h.b) return h.b+'/'+(h.t||'R');
@@ -4311,6 +4337,7 @@ function goneNames(){
 function blankLineups(){ return {RHP:Array.from({length:9},()=>({playerId:null,position:null})), LHP:Array.from({length:9},()=>({playerId:null,position:null}))}; }
 function planSync(){
   if(!REAL) return false; let changed = false;
+  rosterSyncContracts();
   const gone = goneNames();
   const realIds = new Set(REAL.players.map(p=>p.id));
   const keep = players.filter(p=>!gone.has(norm(p.name)) && !(p.via==='payroll' && !realIds.has(p.id)));
@@ -5543,7 +5570,7 @@ async function importPlan(str){
     lineups = blankLineups();
     S = {...defaultState(), season:o.s||2027, target:(o.tg!=null?{on:true,value:o.tg}:{on:false,value:300}), rules:{...clone(DEFAULT_RULES), ...(o.r||{})},
       overrides:o.ov||{}, options:o.op||{}, added:o.a||[], customOther:o.c||[], walked:o.w||{}, extraOrg:o.x||[], status:o.st||{}, optManual:o.om||{}, ext:o.ex||{}};
-    dropFgSignings(); saveState(); S.added.forEach(a=>rosterAdd(a)); applyDepth(o.dpl); if(o.dpl){ window.saveState(); window.__planActive = true; try{ window.saveState(); }finally{ window.__planActive = false; } } UI.shared = {had}; renderAll(); // saved for the board and depth chart so both open with the shared lineups
+    dropFgSignings(); saveState(); S.added.forEach(a=>rosterAdd(a)); rosterSyncContracts(); applyDepth(o.dpl); if(o.dpl){ window.saveState(); window.__planActive = true; try{ window.saveState(); }finally{ window.__planActive = false; } } UI.shared = {had}; renderAll(); // saved for the board and depth chart so both open with the shared lineups
   }catch(e){ console.warn('Could not read the shared plan', e); UI.shared = {bad:true}; renderAll(); }
 }
 function sharedBanner(){
@@ -6461,6 +6488,8 @@ function open(){
   useTeam(currentTeamId);
   loadState();
   S.added.forEach(a=>rosterAdd(a)); // keep the roster builder pool in step with saved signings
+  rosterSyncContracts();
+  rosterSyncContracts();
   fillMissingBats();
   if(!REAL && dedupePayrollTiles()){ window.saveState(); window.render(); }
   if(window.__bootPlan){ const raw = window.__bootPlan; window.__bootPlan = null; Promise.resolve(importPlan(raw)).then(()=>setTimeout(()=>{ window.__hashSig = window.__planSig(); window.__hashLive = true; },800)); } // the shared link stays in the address bar until you make a real change
@@ -6477,7 +6506,7 @@ function close(){
   setHeader(false); syncTabs(false);
 }
 function isOpen(){ return document.body.classList.contains('view-payroll'); }
-return {_pack:()=>packPlan(), _resetFaPool:()=>{ POOL.fa = null; }, setTab:t=>{ UI.tab = t; UI.sel = null; if(isOpen()) renderAll(); }, applyFG, open, close, isOpen, useTeam, threshold:()=>DEFAULT_RULES.threshold[2027], act:a=>onClick({target:{closest:()=>({tagName:'BUTTON', dataset:{act:a}})}}), armed:()=>UI.armed, optBadge, optCycle, paintAlert, planActive:()=>!!REAL, refresh:()=>{ if(isOpen() && !M) renderAll(); }, _debug:()=>({S, calcAll, taxFor, SEED, FG:FG_TOTALS, TEAM_SIM})};
+return {syncContracts:rosterSyncContracts, _pack:()=>packPlan(), _resetFaPool:()=>{ POOL.fa = null; }, setTab:t=>{ UI.tab = t; UI.sel = null; if(isOpen()) renderAll(); }, applyFG, open, close, isOpen, useTeam, threshold:()=>DEFAULT_RULES.threshold[2027], act:a=>onClick({target:{closest:()=>({tagName:'BUTTON', dataset:{act:a}})}}), armed:()=>UI.armed, optBadge, optCycle, paintAlert, planActive:()=>!!REAL, refresh:()=>{ if(isOpen() && !M) renderAll(); }, _debug:()=>({S, calcAll, taxFor, SEED, FG:FG_TOTALS, TEAM_SIM})};
 })();
 
 
@@ -6504,7 +6533,7 @@ function clearAllBuilds(){ buildKeys().forEach(k=>{ try{ localStorage.removeItem
 
 (function loadTx(){
   if(startMode()!=='today') return;
-  fetch('/tx.json', {cache:'no-cache'}).then(r=>r.ok?r.json():null).catch(()=>null).then(d=>d || fetch('https://mlbrostertool.com/tx.json', {cache:'no-cache'}).then(r=>r.ok?r.json():null)).then(d=>{ if(d && Array.isArray(d.rows)){ window.__tx = d; try{ PayrollPlanner._resetFaPool && PayrollPlanner._resetFaPool(); PayrollPlanner.refresh(); }catch(e){} } }).catch(()=>{});
+  fetch('/tx.json', {cache:'no-cache'}).then(r=>r.ok?r.json():null).catch(()=>null).then(d=>d || fetch('https://mlbrostertool.com/tx.json', {cache:'no-cache'}).then(r=>r.ok?r.json():null)).then(d=>{ if(d && Array.isArray(d.rows)){ window.__tx = d; try{ PayrollPlanner._resetFaPool && PayrollPlanner._resetFaPool(); PayrollPlanner.refresh(); PayrollPlanner.syncContracts(); }catch(e){} } }).catch(()=>{});
 })();
 
 /* ---------- main navigation (header menus) ---------- */
