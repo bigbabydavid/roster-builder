@@ -1696,6 +1696,8 @@ select,.lineup-player-select{ background:#0B1630 !important; color:var(--gm-fg) 
 /* rail slots */
 .gm-rlist li{ display:block; padding:0; background:none; border:0; }
 .gm-slot{ appearance:none; width:100%; text-align:left; font:inherit; color:var(--gm-fg); display:grid; grid-template-columns:26px 20px 1fr auto; align-items:center; gap:8px; background:rgba(255,255,255,.06); border:1px solid var(--gm-line); border-radius:10px; padding:8px 10px; min-height:42px; cursor:pointer; font-size:13.5px; }
+.gm-rlist li{ position:relative; }
+.gm-rpsel{ position:absolute; right:0; top:0; width:64px; height:100%; opacity:0; cursor:pointer; font-size:16px; }
 .gm-slot:hover{ background:rgba(255,255,255,.12); }
 .gm-slot.empty{ border-style:dashed; border-color:rgba(255,255,255,.28); background:rgba(255,255,255,.025); }
 .gm-slot.empty:hover{ border-color:var(--gm-accent); background:rgba(255,89,16,.10); }
@@ -4902,7 +4904,7 @@ function railHTML(){
     const tag = act ? 'button type="button"' : 'div', end = act ? 'button' : 'div';
     return r.empty
     ? `<li><${tag} class="gm-slot empty" ${act} aria-label="${verb}, slot ${r.n}"><span class="gm-rn off">${r.n}</span><span class="gm-rh"></span><span class="gm-rname">+ ${verb}</span><span class="gm-rp">${esc(r.r)}</span></${end}></li>`
-    : `<li><${tag} class="gm-slot" ${act}><span class="gm-rn">${r.n}</span><span class="gm-rh">${esc(r.h)}</span><span class="gm-rname">${esc(r.name)}</span><span class="gm-rp">${esc(r.r)}</span></${end}></li>`; };
+    : `<li><${tag} class="gm-slot" ${act}><span class="gm-rn">${r.n}</span><span class="gm-rh">${esc(r.h)}</span><span class="gm-rname">${esc(r.name)}</span><span class="gm-rp">${esc(r.r)}${hit?' ▾':''}</span></${end}>${hit?`<select class="gm-rpsel" data-act="slotPos" data-i="${r.i}" aria-label="Change position for ${esc(r.name)}">${LINEUP_POSITIONS.map(x=>`<option value="${x}"${x===r.r?' selected':''}>${x}</option>`).join('')}</select>`:''}</li>`; };
   return `<aside class="gm-rail" aria-label="Lineups and staff">
     <button type="button" class="gm-share" data-act="share">Share your club</button>
     <div class="gm-rtabs" role="tablist">${tabs.map(t=>`<button type="button" role="tab" class="${UI.rail===t[0]?'on':''}" aria-selected="${UI.rail===t[0]}" data-act="railTab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>
@@ -5043,6 +5045,7 @@ function onModalInput(e){
     else if(t.id==='mSendQ'){ updateSendSugg(); }
   }
   if(M.type==='extpick' && t.id==='mExtQ'){ extPickList(); return; }
+  if(M.type==='slot' && t.id==='mSlotQ'){ M.f.q = t.value; const bx = document.getElementById('mSlotList'); if(bx) bx.innerHTML = slotListHTML(); return; }
   if(M.type==='ext' && t.dataset && t.dataset.xy){ M.f.xs = M.f.xs||{}; document.querySelectorAll('#mXSched input[data-xy]').forEach(x=>{ M.f.xs[x.dataset.xy] = x.value; }); M.f.shape = 'custom'; M.xsig = `${M.f.start}|${Math.round(num('mYears')||0)}|custom|${M.f.aav}`; document.querySelectorAll('#mXShape button').forEach(x=>x.classList.toggle('active', x.dataset.v==='custom')); updateCalc(); return; }
   if(M.type==='ext' && t.dataset && t.dataset.f){ M.f[t.dataset.f] = t.value; updateCalc(); }
   if(M.type==='fa'){ M.ack = false; const er = document.getElementById('mErr'); if(er) er.style.display = 'none'; }
@@ -6167,15 +6170,34 @@ function salOf(p){ // this season's salary for a board player (0 when unknown), 
   }catch(e){ return 0; }
 }
 window.__salOf = salOf;
+function slotToks(p){ let t = String(p.pos||'').toUpperCase().split('/').map(x=>x.trim()).filter(Boolean); try{ t = t.concat(histOf(p.name)); }catch(e){} if(p.group && p.group!=='x') t.push(p.group); return t; }
+function slotHand(p, pit){ const b = String(p.bt||'').split('/'); return ((pit ? b[1] : b[0]) || '').toUpperCase(); }
+function slotRowHTML(p, cur){ return `<button type="button" class="pay-sugg-item sp-row${p.id===cur?' added':''}" data-m="slotset" data-id="${esc(p.id)}"><span class="sp-pos">${esc(String(p.pos||slotGroupOf(p)||'–').split('/')[0]||'–')}</span><span class="sp-mid"><b>${p.id===cur?'<i class="chk">✓</i> ':''}${esc(p.name)}</b><span>${esc([p.hurt?'injured':'', slotWhere(p)].filter(Boolean).join(' · '))}</span></span><span class="sp-sal">${salOf(p)>0?'$'+(Math.round(salOf(p)*100)/100)+'M':'—'}</span></button>`; }
+function slotListHTML(){
+  const f = M.f, pit = M.pit, toks = norm(f.q||'').split(' ').filter(Boolean);
+  const out = M.all.filter(p=>{
+    if(toks.length && !toks.every(t=>norm(p.name).includes(t))) return false;
+    if(f.pos){ const k = slotToks(p); if(!posHas(k, f.pos)) return false; }
+    if(f.hand){ if(pit){ if(slotHand(p,true)!==f.hand) return false; } else if(slotHand(p,false)!==f.hand) return false; }
+    return true; });
+  return out.length ? out.map(p=>slotRowHTML(p, M.cur)).join('') : `<div class="pay-hint" style="padding:10px 12px">${M.all.length ? 'Nobody matches those filters.' : 'Nobody else on your 40-man fits. Promote someone from the minors below.'}</div>`;
+}
 function openSlotPick(i){
   const R = railRows(); const row = R.rows.find(r=>r.i===i);
   const cur = row && !row.empty ? row.id : null;
   const list = slotCands(R, i).sort((a,b)=>((a.id===cur?-1:0)-(b.id===cur?-1:0))||(salOf(b)-salOf(a))||a.name.localeCompare(b.name)); // biggest salary first — the likeliest regulars
+  const pit = R.slot!=='hitter';
   const title = R.slot==='hitter' ? `Batting ${i+1} vs ${UI.side}` : R.slot==='starter' ? `Starter ${i+1}` : `Bullpen slot ${i+1}`;
   const hint = cur ? 'Pick a replacement.' : 'Pick who goes here.';
   const more = R.slot==='hitter' ? '' : (cur ? ' The pitcher you replace moves to your pool.' : '');
-  M = {type:'slot', i,
-    html:()=>shell(title, `<div class="pay-hint">${hint} Everyone listed is on your 40-man.${more}</div><div class="pay-browse" style="max-height:360px">${list.length?list.map(p=>`<button type="button" class="pay-sugg-item sp-row${p.id===cur?' added':''}" data-m="slotset" data-id="${esc(p.id)}"><span class="sp-pos">${esc(String(p.pos||slotGroupOf(p)||'–').split('/')[0]||'–')}</span><span class="sp-mid"><b>${p.id===cur?'<i class="chk">✓</i> ':''}${esc(p.name)}</b><span>${esc([p.hurt?'injured':'', slotWhere(p)].filter(Boolean).join(' · '))}</span></span><span class="sp-sal">${salOf(p)>0?'$'+(Math.round(salOf(p)*100)/100)+'M':'—'}</span></button>`).join(''):'<div class="pay-hint" style="padding:10px 12px">Nobody else on your 40-man fits. Promote someone from the minors below.</div>'}</div>`,
+  const posRow = pit ? [['','All'],['SP','SP'],['RP','RP']] : [['','All']].concat(LINEUP_POSITIONS.map(x=>[x,x]));
+  const handR = pit ? [['','Any hand'],['R','RHP'],['L','LHP']] : [['','Any hand'],['R','Bats R'],['L','Bats L'],['S','Switch']];
+  M = {type:'slot', i, pit, all:list, cur, f:{pos:'', hand:'', q:''},
+    html:()=>shell(title, `<div class="pay-hint">${hint} Everyone listed is on your 40-man, biggest salary first.${more}</div>
+      <input class="pay-in" id="mSlotQ" placeholder="Search by name…" autocomplete="off" value="${esc(M.f.q||'')}">
+      <div class="pay-seg pay-posf pay-posrow">${segBtns(posRow,'slotpos',M.f.pos||'')}</div>
+      <div class="pay-seg pay-posf pay-posrow">${segBtns(handR,'slothand',M.f.hand||'')}</div>
+      <div class="pay-browse" id="mSlotList" style="max-height:320px">${slotListHTML()}</div>`,
       `${cur&&R.slot==='hitter'?'<button class="pay-btn" data-m="slotset">Clear slot</button> ':''}<button class="pay-btn" data-m="slotpromo">Promote from the minors</button> <button class="pay-btn" data-m="close">Cancel</button>`)};
   paint();
 }
@@ -6344,6 +6366,8 @@ function onModalClick(e){
   if(m==='addmanual'){ const nm = (document.getElementById('mName')||{}).value||''; M.f.get.push({key:'g'+(++GK), id:null, name:nm.trim(), from:'', pos:'', ptype:'H', aav:'', start:String(S.season), through:String(S.season), eat:'', eatOpen:false, sched:null, info:'', pid:null, manual:true}); paint(); return; }
   if(m==='xshape'){ readFields(); if(v==='custom'){ const sc = extSchedule(); M.f.xs = {}; if(sc) sc.forEach(([y,x])=>{ M.f.xs[y] = String(Math.round(x*100)/100); }); } M.f.shape = v; document.querySelectorAll('#mXShape button').forEach(x=>x.classList.toggle('active', x.dataset.v===v)); updateExtSched(true); return; }
   if(m==='extpick'){ openExt(b.dataset.id); return; }
+  if(m==='slotpos'){ M.f.pos = v; paint(); return; }
+  if(m==='slothand'){ M.f.hand = v; paint(); return; }
   if(m==='slotset'){ slotSet(M.i, b.dataset.id||null); return; }
   if(m==='slotpromo'){ const q = {kind:UI.rail, i:M.i, side:UI.side, before:players.map(x=>x.id), at:Date.now()}; closeModal(); UI.pend = q; openPromo(); return; }
   if(m==='saveExt'){ readFields(); const f = M.f, a = parseM(f.aav), n = Math.round(parseM(f.years)||0), st = +f.start;
@@ -6486,6 +6510,8 @@ function onChange(e){
     S.overrides[id] = S.overrides[id] || {};
     if(v==null) delete S.overrides[id][y]; else S.overrides[id][y] = v;
     if(!Object.keys(S.overrides[id]).length) delete S.overrides[id];
+  } else if(act==='slotPos'){
+    const sl = (lineups[UI.side]||[])[+t.dataset.i]; if(sl && sl.playerId){ sl.position = t.value; window.saveState(); }
   } else if(act==='targetIn'){
     const v = parseM(t.value); if(v==null) S.target.on=false; else { S.target.on=true; S.target.value=v; }
   } else if(act==='option'){
