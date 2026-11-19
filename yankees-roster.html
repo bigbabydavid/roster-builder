@@ -2689,6 +2689,7 @@ function dedupePayrollTiles(){
   if(keep.length===players.length) return false;
   players = keep; return true;
 }
+window.__autoFilled = window.__autoFilled || {};
 async function syncRosterFromAPI(){
   if(window.__planActive) return; // the offseason simulator's depth chart is a separate copy; sync runs again when you leave it
   const syncNote = document.getElementById('syncNote');
@@ -2778,6 +2779,12 @@ async function syncRosterFromAPI(){
     saveState();
     render();
     lastSyncAt = new Date();
+    // First visit to a team (nothing saved yet): start with the real active roster on the board,
+    // so nobody faces an empty 26-man. "Clear" starts fresh; "Fill with Active Roster" brings it back.
+    if(!savedPlayerState && !window.__autoFilled[currentTeamId] && !players.some(p=>p.custom)){
+      window.__autoFilled[currentTeamId] = true;
+      fillActiveRoster(true);
+    }
   }catch(e){
     console.error('Roster sync failed', e);
   }finally{
@@ -3402,7 +3409,24 @@ document.getElementById('clearBtn').addEventListener('click', ()=>{
 // belong. Pulls MLB's own depth chart (which, unlike the 40-man list, tells
 // starters from relievers and ranks hitters at each position they can
 // play) rather than trying to reinvent that judgment call from scratch.
-async function fillActiveRoster(){
+// MLB's depth chart lists more than 26 in the offseason: keep 5 starters, 8 relievers and 13 hitters
+// (the best-paid at each position first), and send the rest back to the pool.
+function trimTo26(){
+  const sal = p=>{ try{ return window.__salOf ? window.__salOf(p) : 0; }catch(e){ return 0; } };
+  const roster = players.filter(p=>p.placed==='roster');
+  const byPay = a=>a.slice().sort((x,y)=>(sal(y)-sal(x))||((x.order||0)-(y.order||0)));
+  const drop = new Set();
+  const capGroup = (g, n)=>{ byPay(roster.filter(p=>p.group===g)).slice(n).forEach(p=>drop.add(p)); };
+  capGroup('SP', 5); capGroup('RP', 8);
+  const hit = roster.filter(p=>p.type==='H');
+  const keep = new Set();
+  const groups = [...new Set(hit.map(p=>p.group))];
+  groups.forEach(g=>{ const top = byPay(hit.filter(p=>p.group===g))[0]; if(top) keep.add(top); });
+  byPay(hit).forEach(p=>{ if(keep.size<13) keep.add(p); });
+  hit.forEach(p=>{ if(!keep.has(p)) drop.add(p); });
+  drop.forEach(p=>{ p.placed='pool'; });
+}
+async function fillActiveRoster(silent){
   const btn = document.getElementById('fillActiveBtn');
   const originalText = btn.innerHTML;
   btn.disabled = true;
@@ -3470,11 +3494,12 @@ async function fillActiveRoster(){
       });
     }
 
+    trimTo26();
     saveState();
     render();
   }catch(e){
     console.error('Fill Active Roster failed', e);
-    alert('Could not load the active roster right now — check your connection and try again.');
+    if(!silent) alert('Could not load the active roster right now — check your connection and try again.');
   }finally{
     btn.disabled = false;
     btn.innerHTML = originalText;
@@ -6127,10 +6152,18 @@ function slotCands(R, i){
   const taken = new Set(R.rows.filter(r=>!r.empty && r.i!==i).map(r=>r.id)); // already in this lineup / rotation / bullpen
   return players.filter(p=>(pit ? p.type==='P' : p.type==='H') && !taken.has(p.id));
 }
+function salOf(p){ // this season's salary for a board player (0 when unknown), so pickers start with the likeliest regulars
+  try{
+    const m = new Map();
+    calcAll().items.forEach(it=>{ const v = rawNoExt(it, S.season)||0, k = norm(it.name); m.set(k, Math.max(m.get(k)||0, v)); });
+    return m.get(norm(p.name))||0;
+  }catch(e){ return 0; }
+}
+window.__salOf = salOf;
 function openSlotPick(i){
   const R = railRows(); const row = R.rows.find(r=>r.i===i);
   const cur = row && !row.empty ? row.id : null;
-  const list = slotCands(R, i).sort((a,b)=>((a.id===cur?-1:0)-(b.id===cur?-1:0))||((a.placed==='roster'?0:1)-(b.placed==='roster'?0:1))||a.name.localeCompare(b.name));
+  const list = slotCands(R, i).sort((a,b)=>((a.id===cur?-1:0)-(b.id===cur?-1:0))||(salOf(b)-salOf(a))||a.name.localeCompare(b.name)); // biggest salary first — the likeliest regulars
   const title = R.slot==='hitter' ? `Batting ${i+1} vs ${UI.side}` : R.slot==='starter' ? `Starter ${i+1}` : `Bullpen slot ${i+1}`;
   const hint = cur ? 'Pick a replacement.' : 'Pick who goes here.';
   const more = R.slot==='hitter' ? '' : (cur ? ' The pitcher you replace moves to your pool.' : '');
