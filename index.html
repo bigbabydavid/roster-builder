@@ -1489,6 +1489,26 @@ header.topbar.mm-head .brand{ flex:0 1 auto; }
 .pay-cbabar *{ color:#FFE3A8; } .pay-cbabar a,.pay-cbabar button{ color:#fff !important; }
 
 .mm-home{ display:none !important; }
+.gm-foot{ text-align:center; padding:26px 16px 34px; font-size:13px; color:var(--gm-mut,#8a96ab); }
+.gm-foot .gm-bug{ appearance:none; border:0; background:transparent; color:inherit; font:inherit; cursor:pointer; text-decoration:underline; text-underline-offset:3px; padding:4px 6px; }
+.gm-foot .gm-bug:hover{ color:var(--gm-ink,#fff); }
+.bug-ov{ position:fixed; inset:0; z-index:100000; background:rgba(8,16,32,.62); display:flex; align-items:center; justify-content:center; padding:16px; }
+.bug-box{ width:min(460px,100%); background:#fff; color:#0b1d36; border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.35); font-family:inherit; overflow:hidden; }
+.bug-box h3{ margin:0; padding:14px 18px; font-size:17px; background:#eef1f6; display:flex; justify-content:space-between; align-items:center; }
+.bug-box h3 button{ border:0; background:transparent; font-size:22px; line-height:1; cursor:pointer; color:#51607a; }
+.bug-box .bb{ padding:14px 18px 6px; display:grid; gap:10px; }
+.bug-box label{ font-size:12.5px; font-weight:700; color:#33415c; display:grid; gap:5px; }
+.bug-box textarea,.bug-box input[type=email]{ font:inherit; font-weight:400; font-size:14px; padding:9px 10px; border:1px solid #c9d1de; border-radius:8px; width:100%; box-sizing:border-box; color:#0b1d36; background:#fff; }
+.bug-box textarea{ min-height:120px; resize:vertical; }
+.bug-box .hp{ position:absolute; left:-9999px; width:1px; height:1px; opacity:0; }
+.bug-box .note{ font-size:12px; color:#6a7690; margin:0; }
+.bug-box .bf{ padding:10px 18px 16px; display:flex; gap:10px; align-items:center; justify-content:flex-end; }
+.bug-box .bf .msg{ margin-right:auto; font-size:13px; font-weight:600; }
+.bug-box .bf .msg.err{ color:#b3261e; } .bug-box .bf .msg.ok{ color:#1b7a3d; }
+.bug-box .bf button{ font:inherit; font-weight:700; font-size:14px; padding:9px 16px; border-radius:9px; border:1px solid #c9d1de; background:#fff; color:#0b1d36; cursor:pointer; }
+.bug-box .bf button.go{ background:#0b1d36; color:#fff; border-color:#0b1d36; }
+.bug-box .bf button:disabled{ opacity:.55; cursor:default; }
+
 .gm-bar .gm-home{ margin-left:auto; appearance:none; border:0; background:transparent; color:var(--gm-mut); font:inherit; font-size:12.5px; font-weight:600; cursor:pointer; padding:6px 10px; border-radius:8px; }
 .gm-bar .gm-home:hover{ color:#fff; background:var(--gm-card); }
 header.topbar.mm-head .brand h1 .sub{ display:none; }
@@ -6442,7 +6462,7 @@ function close(){
   setHeader(false); syncTabs(false);
 }
 function isOpen(){ return document.body.classList.contains('view-payroll'); }
-return {_resetFaPool:()=>{ POOL.fa = null; }, setTab:t=>{ UI.tab = t; UI.sel = null; if(isOpen()) renderAll(); }, applyFG, open, close, isOpen, useTeam, threshold:()=>DEFAULT_RULES.threshold[2027], act:a=>onClick({target:{closest:()=>({tagName:'BUTTON', dataset:{act:a}})}}), armed:()=>UI.armed, optBadge, optCycle, paintAlert, planActive:()=>!!REAL, refresh:()=>{ if(isOpen() && !M) renderAll(); }, _debug:()=>({S, calcAll, taxFor, SEED, FG:FG_TOTALS, TEAM_SIM})};
+return {_pack:()=>packPlan(), _resetFaPool:()=>{ POOL.fa = null; }, setTab:t=>{ UI.tab = t; UI.sel = null; if(isOpen()) renderAll(); }, applyFG, open, close, isOpen, useTeam, threshold:()=>DEFAULT_RULES.threshold[2027], act:a=>onClick({target:{closest:()=>({tagName:'BUTTON', dataset:{act:a}})}}), armed:()=>UI.armed, optBadge, optCycle, paintAlert, planActive:()=>!!REAL, refresh:()=>{ if(isOpen() && !M) renderAll(); }, _debug:()=>({S, calcAll, taxFor, SEED, FG:FG_TOTALS, TEAM_SIM})};
 })();
 
 
@@ -6688,6 +6708,46 @@ document.addEventListener('click', e=>{ if(e.target.closest('.topbar .brand, [da
   updateStickyOffsets();
   syncRosterFromAPI();
   setInterval(syncRosterFromAPI, 60 * 60 * 1000); // every hour
+})();
+</script>
+
+<div class="gm-foot"><button type="button" class="gm-bug" hidden>Report a Bug</button></div>
+<script>
+// "Report a bug": posts to Web3Forms, which emails the report to the site owner. The button stays hidden until a key is set.
+(function(){
+  var BUG_KEY = 'f944b777-fa19-4413-9ce0-9961924e245a';
+  var btn = document.querySelector('.gm-bug'); if(!btn || !BUG_KEY || BUG_KEY.indexOf('__')===0) return; btn.hidden = false;
+  var esc = function(t){ return String(t).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+  function close(){ var o = document.querySelector('.bug-ov'); if(o) o.remove(); document.removeEventListener('keydown', onKey); }
+  function onKey(e){ if(e.key==='Escape') close(); }
+  btn.addEventListener('click', function(){
+    close();
+    var ov = document.createElement('div'); ov.className = 'bug-ov';
+    ov.innerHTML = '<div class="bug-box" role="dialog" aria-modal="true" aria-label="Report a bug"><h3>Report a Bug<button type="button" aria-label="Close" data-x>×</button></h3>'
+      + '<div class="bb"><p class="note" style="font-size:13.5px;color:#33415c">Found something broken? Tell us what happened and we’ll look into it.</p><label>Subject<input type="text" id="bugSubj" maxlength="100" placeholder="e.g. Trade window won’t close" style="font:inherit;font-weight:400;font-size:14px;padding:9px 10px;border:1px solid #c9d1de;border-radius:8px;width:100%;box-sizing:border-box"></label><label>Details<textarea id="bugMsg" maxlength="3000" placeholder="What you did, what you expected, and what happened instead"></textarea></label>'
+      + '<label>Your email <span style="font-weight:400;color:#6a7690">(optional, only if you want a reply)</span><input type="email" id="bugEmail" maxlength="120" autocomplete="email"></label>'
+      + '<input class="hp" type="text" id="bugHp" tabindex="-1" autocomplete="off" aria-hidden="true">'
+      + '<p class="note">Your current build, team and browser details are sent along so the problem can be reproduced.</p></div>'
+      + '<div class="bf"><span class="msg" id="bugStatus" role="status"></span><button type="button" data-x>Cancel</button><button type="button" class="go" id="bugSend">Send Report</button></div></div>';
+    document.body.appendChild(ov); document.addEventListener('keydown', onKey);
+    ov.addEventListener('click', function(e){ if(e.target===ov || e.target.hasAttribute('data-x')) close(); });
+    var msg = ov.querySelector('#bugMsg'), st = ov.querySelector('#bugStatus'), go = ov.querySelector('#bugSend'); msg.focus();
+    go.addEventListener('click', async function(){
+      var text = msg.value.trim(); st.className = 'msg';
+      if(text.length < 5){ st.textContent = 'Add a few details about what happened.'; st.className = 'msg err'; msg.focus(); return; }
+      if(ov.querySelector('#bugHp').value) { close(); return; }
+      go.disabled = true; st.textContent = 'Sending…';
+      var plan = ''; try{ if(window.PayrollPlanner && PayrollPlanner._pack){ var p = await PayrollPlanner._pack(); plan = location.origin.indexOf('http')===0 ? location.origin : 'https://mlbrostertool.com'; plan += location.pathname.replace(/\/$/,'') + '#plan=' + p; } }catch(e){}
+      var info = ['Page: ' + location.href.split('#')[0], 'Build link: ' + (plan || '(none)'), 'Screen: ' + innerWidth + 'x' + innerHeight + ' @' + (devicePixelRatio||1) + 'x', 'Browser: ' + navigator.userAgent, 'Sent: ' + new Date().toString()].join('\n');
+      var email = ov.querySelector('#bugEmail').value.trim();
+      try{
+        var r = await fetch('https://api.web3forms.com/submit', {method:'POST', headers:{'Content-Type':'application/json', 'Accept':'application/json'}, body: JSON.stringify({access_key: BUG_KEY, subject: 'Roster tool bug: ' + (ov.querySelector('#bugSubj').value.trim() || 'no subject'), from_name: 'Roster tool', message: text + '\n\n— — —\n' + info, email: email || undefined, replyto: email || undefined})});
+        var j = await r.json().catch(function(){ return {}; });
+        if(r.ok && j.success !== false){ st.textContent = 'Sent. Thank you!'; st.className = 'msg ok'; msg.disabled = true; go.textContent = 'Done'; go.disabled = false; go.onclick = close; setTimeout(close, 2200); return; }
+        throw new Error(j.message || 'failed');
+      }catch(e){ st.textContent = 'Couldn’t send. Please try again in a bit.'; st.className = 'msg err'; go.disabled = false; }
+    });
+  });
 })();
 </script>
 </body>
