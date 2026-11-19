@@ -1260,6 +1260,11 @@
   .pay-addnew:hover{ background:#dcefe3; }
   .pro-b{ font-style:normal; font-size:10.5px; font-weight:600; border:1px solid #c9d3de; color:#3a4a5c; padding:0 5px; margin-left:6px; border-radius:3px; white-space:nowrap; vertical-align:1px; }
   .pro-b.t100{ background:#12263f; border-color:#12263f; color:#fff; }
+  .sp-row{ display:grid !important; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:12px; padding:9px 12px; }
+  .sp-pos{ display:grid !important; place-items:center; margin:0 !important; color:var(--navy) !important; font-size:14px !important; min-width:36px; height:36px; padding:0 6px; border-radius:9px; display:grid; place-items:center; background:#e6e9ee; color:var(--navy); font-weight:800; font-size:14px; }
+  .sp-mid{ display:flex !important; flex-direction:column; min-width:0; margin:0 !important; }
+  .sp-mid b{ font-size:14px; } .sp-mid span{ font-size:12px; color:var(--grey); }
+  .sp-sal{ display:block !important; margin:0 !important; font-weight:800; font-size:19px !important; color:var(--navy) !important; font-variant-numeric:tabular-nums; }
   .pay-sugg-item:hover{ background:#eef3f9; }
   .pay-sugg-item b{ font-size:13px; }
   .pay-sugg-item span{ display:block; font-size:11.5px; color:var(--grey); margin-top:1px; }
@@ -6170,7 +6175,7 @@ function openSlotPick(i){
   const hint = cur ? 'Pick a replacement.' : 'Pick who goes here.';
   const more = R.slot==='hitter' ? '' : (cur ? ' The pitcher you replace moves to your pool.' : '');
   M = {type:'slot', i,
-    html:()=>shell(title, `<div class="pay-hint">${hint} Everyone listed is on your 40-man.${more}</div><div class="pay-browse" style="max-height:360px">${list.length?list.map(p=>`<button type="button" class="pay-sugg-item${p.id===cur?' added':''}" data-m="slotset" data-id="${esc(p.id)}">${p.id===cur?'<i class="chk">✓</i>':''}<b>${esc(p.name)}</b><span>${esc([salOf(p)>0?fmt(salOf(p),1)+' in '+S.season:'', p.group&&p.group!=='x'?p.group:'', p.hurt?'injured':'', slotWhere(p)].filter(Boolean).join(' · '))}</span></button>`).join(''):'<div class="pay-hint" style="padding:10px 12px">Nobody else on your 40-man fits. Promote someone from the minors below.</div>'}</div>`,
+    html:()=>shell(title, `<div class="pay-hint">${hint} Everyone listed is on your 40-man.${more}</div><div class="pay-browse" style="max-height:360px">${list.length?list.map(p=>`<button type="button" class="pay-sugg-item sp-row${p.id===cur?' added':''}" data-m="slotset" data-id="${esc(p.id)}"><span class="sp-pos">${esc(String(p.pos||slotGroupOf(p)||'–').split('/')[0]||'–')}</span><span class="sp-mid"><b>${p.id===cur?'<i class="chk">✓</i> ':''}${esc(p.name)}</b><span>${esc([p.hurt?'injured':'', slotWhere(p)].filter(Boolean).join(' · '))}</span></span><span class="sp-sal">${salOf(p)>0?'$'+(Math.round(salOf(p)*100)/100)+'M':'—'}</span></button>`).join(''):'<div class="pay-hint" style="padding:10px 12px">Nobody else on your 40-man fits. Promote someone from the minors below.</div>'}</div>`,
       `${cur&&R.slot==='hitter'?'<button class="pay-btn" data-m="slotset">Clear slot</button> ':''}<button class="pay-btn" data-m="slotpromo">Promote from the minors</button> <button class="pay-btn" data-m="close">Cancel</button>`)};
   paint();
 }
