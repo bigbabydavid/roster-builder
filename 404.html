@@ -695,6 +695,7 @@
   /* ---- "Fill this spot" button (mobile) ---- sits at the end of each
      roster lane; hidden on desktop, where drag-and-drop already does this. */
   .role-chip{ position:static; width:auto; height:auto; display:inline-block; margin-top:3px; padding:1px 7px; border-radius:9px; font-size:10px; font-weight:700; line-height:1.5; border:1px dashed var(--line,#c6ccd3); color:var(--grey); background:transparent; cursor:pointer; }
+  select.role-chip{ appearance:auto; -webkit-appearance:menulist; cursor:pointer; font-family:inherit; background:transparent; max-width:100%; } select.role-chip option{ color:#111; background:#fff; font-weight:600; }
   .role-chip.set{ border-style:solid; border-color:var(--navy); background:var(--navy); color:#fff; }
   body.plan-active #addPlayerBtn, body.plan-active #addPlayerForm{ display:none !important; }
   .minors-sec{ margin:18px 0 0; border:1px solid var(--line,#d9dde3); border-radius:4px; background:#fff; }
@@ -2624,6 +2625,11 @@ function openFillSpotPopup(groupKey){
 
 const RP_ROLES = {closer:{label:'Closer', abbr:'CL'}, setup:{label:'Setup', abbr:'SU'}, middle:{label:'Middle', abbr:'MR'}, long:{label:'Long man', abbr:'LR'}};
 const RP_ROLE_ORDER = [null,'closer','setup','middle','long'];
+function setRole(id, role){
+  const p = players.find(pl=>pl.id===id); if(!p) return;
+  p.role = (role && RP_ROLES[role]) ? role : null;
+  saveState(); render();
+}
 function cycleRole(id){
   const p = players.find(pl=>pl.id===id); if(!p) return;
   p.role = RP_ROLE_ORDER[(RP_ROLE_ORDER.indexOf(p.role||null)+1) % RP_ROLE_ORDER.length];
@@ -2651,7 +2657,7 @@ function tileHTML(p){
   const toPoolToggle = p.placed === 'roster'
     ? `<div class="mini-toggle to-pool" data-toggle="to-pool" data-id="${p.id}" title="Send back to the pool">⤓</div>`
     : '';
-  const roleChip = (p.placed==='roster' && p.group==='RP') ? `<div class="mini-toggle role-chip ${p.role?'set':''}" data-toggle="role" data-id="${p.id}" title="Bullpen role — click to change">${p.role?RP_ROLES[p.role].label:'+ role'}</div>` : '';
+  const roleChip = (p.placed==='roster' && p.group==='RP') ? `<select class="mini-toggle role-chip ${p.role?'set':''}" data-toggle="role" data-id="${p.id}" title="Bullpen role" aria-label="Bullpen role"><option value=""${p.role?'':' selected'}>+ role</option>${RP_ROLE_ORDER.filter(Boolean).map(r=>`<option value="${r}"${p.role===r?' selected':''}>${RP_ROLES[r].label}</option>`).join('')}</select>` : '';
   return `<div class="tile ${visual}" data-id="${p.id}">
     <div class="info">
       <div class="name"><span class="name-text" title="${p.name}">${p.name}</span>${nameBadges}${orgBadge}</div>
@@ -3231,12 +3237,13 @@ function attachTileEvents(tile){
   tile.addEventListener('pointerdown', onPointerDown);
   tile.querySelectorAll('.mini-toggle').forEach(btn=>{
     btn.addEventListener('pointerdown', e=>{ e.stopPropagation(); });
+    if(btn.dataset.toggle === 'role') btn.addEventListener('change', e=>{ e.stopPropagation(); setRole(btn.dataset.id, btn.value || null); });
     btn.addEventListener('click', e=>{
       e.stopPropagation();
       const id = btn.dataset.id;
       if(btn.dataset.toggle === 'status') cycleStatus(id);
       else if(btn.dataset.toggle === 'hurt') toggleHurt(id);
-      else if(btn.dataset.toggle === 'role') cycleRole(id);
+      else if(btn.dataset.toggle === 'role') { /* handled by the dropdown's change event */ }
       else if(btn.dataset.toggle === 'to-pool') sendToPool(id);
       else if(btn.dataset.toggle === 'remove') removePlayer(id);
     });
@@ -5711,7 +5718,15 @@ function ensurePositions(){
   }).catch(()=>{}))).then(()=>{ POSSTATE = Object.keys(POSMAP).length ? 2 : 3; if(M && M.type==='fa') updateFaBrowse(); if(M && M.type==='pkg'){ updateBrowse(); (M.f.get||[]).forEach(g=>{ const pi=POSMAP[norm(g.name)]; if(pi && !g.pos){ g.pos=pi.abbr; g.ptype=pi.type==='Pitcher'?'P':'H'; } }); renderGetRows(); } });
 }
 function posGroup(p){
-  const pi = posOf(p); if(!pi) return null;
+  const pi = posOf(p);
+  if(!pi){ // minor leaguers aren't on any 40-man roster, so go by the position listed in the prospect data
+    const a = String(p.pos||'').split('/')[0].trim().toUpperCase(); if(!a) return null;
+    if(a==='SP'||a==='RP'||a==='P'||a==='RHP'||a==='LHP') return 'P';
+    if(a==='C') return 'C';
+    if(['1B','2B','3B','SS','INF','IF'].includes(a)) return 'IF';
+    if(['LF','CF','RF','OF'].includes(a)) return 'OF';
+    return 'H';
+  }
   const a = pi.abbr;
   if(pi.type==='Pitcher') return 'P';
   if(a==='C') return 'C';
