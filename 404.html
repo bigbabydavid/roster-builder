@@ -1497,6 +1497,8 @@ header.topbar.mm-head .brand{ flex:0 1 auto; }
 .mm-home{ display:none !important; }
 .gm-foot{ text-align:center; padding:26px 16px 34px; font-size:13px; color:var(--gm-mut,#8a96ab); }
 .gm-foot .gm-bug{ appearance:none; border:0; background:transparent; color:inherit; font:inherit; cursor:pointer; text-decoration:underline; text-underline-offset:3px; padding:4px 6px; }
+.gm-foot .gm-credit{ padding:4px 6px; }
+.gm-foot .gm-credit::after{ content:'·'; margin-left:10px; opacity:.6; }
 .gm-foot .gm-bug:hover{ color:var(--gm-ink,#fff); }
 .bug-ov{ position:fixed; inset:0; z-index:100000; background:rgba(8,16,32,.62); display:flex; align-items:center; justify-content:center; padding:16px; }
 .bug-box{ width:min(460px,100%); background:#fff; color:#0b1d36; border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.35); font-family:inherit; overflow:hidden; }
@@ -6823,7 +6825,7 @@ document.addEventListener('click', e=>{ if(e.target.closest('.topbar .brand, [da
 })();
 </script>
 
-<div class="gm-foot"><button type="button" class="gm-bug" hidden>Report a Bug</button></div>
+<div class="gm-foot"><span class="gm-credit">Concept &amp; Design by David Mendelsohn · Launched September 2026</span><button type="button" class="gm-bug" hidden>Report a Bug</button></div>
 <script>
 // "Report a bug": posts to Web3Forms, which emails the report to the site owner. The button stays hidden until a key is set.
 (function(){
