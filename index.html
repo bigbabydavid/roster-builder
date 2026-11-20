@@ -3885,6 +3885,8 @@ const qoTag = name => qoDecl(name) ? `<span class="pay-tag qo" title="${esc(QO_N
 // a qualifying offer can only go to your own club's pending free agents — never another team's player
 const ownPending = name => PENDING_FA.some(x=>norm(x.name)===norm(name));
 // Qualifying offers had to be made by Nov 9 and accepted or declined by Nov 17, so starting from today they're closed for everyone.
+const NT_DEADLINE = Date.parse('2026-11-20T17:00:00-05:00');   // MLB non-tender deadline, 5 pm ET
+const ntClosed = () => startMode()==='today' && Date.now() >= NT_DEADLINE;
 const QO_CLOSED = 'the qualifying-offer window closed Nov 17';
 const qoBlk = p => (p && p.qoBlock) || (startMode()==='today' ? QO_CLOSED : '');
 const qoBlockOf = name => { const p = PENDING_FA.find(x=>norm(x.name)===norm(name)); return p ? qoBlk(p) : ''; };
@@ -4684,7 +4686,7 @@ const OFFSEASON_CAL = [ // league-wide dates for 2026-27 (times ET). end = when 
   {d:'Nov 10–12', end:'2026-11-12T23:59:00-05:00', t:'GM Meetings', n:'A growing source of early trades and waiver claims as clubs clean up their 40-man rosters.'},
   {d:'Nov 17 · 4pm', end:'2026-11-17T16:00:00-05:00', t:'Qualifying offer decisions', n:'Players accept or decline. Signing a declined-QO free agent costs draft-pick and international bonus pool compensation.'},
   {d:'Nov 17 · 6pm', end:'2026-11-17T18:00:00-05:00', t:'Rule 5 protection deadline', n:'Clubs add prospects to the 40-man roster or risk losing them in the Rule 5 Draft.'},
-  {d:'Nov 20', end:'2026-11-20T20:00:00-05:00', t:'Non-tender deadline', n:'Clubs must offer 2027 contracts to pre-arb and arbitration-eligible players, or release them. Time not yet announced.'},
+  {d:'Nov 20', end:'2026-11-20T17:00:00-05:00', t:'Non-tender deadline', n:'Clubs must offer 2027 contracts to pre-arb and arbitration-eligible players, or release them. 5 pm ET.'},
   {d:'Dec 1 · 11:59pm', end:'2026-12-01T23:59:00-05:00', t:'CBA expires', n:'A lockout begins unless a new deal is reached first.'},
   {d:'Dec 6', end:'2026-12-06T23:59:00-05:00', t:'Hall of Fame: Contemporary Era vote', n:'The Contemporary Baseball Era Committee (managers, executives and umpires, mostly since 1980) announces its results, lockout or not. The ballot: Sandy Alderson, Dusty Baker, Bruce Bochy, Joe Maddon, Lou Piniella, Brian Sabean, Ted Turner and Bill White. It takes 12 of 16 votes to get in.'},
 ];
@@ -4837,7 +4839,7 @@ function rowParts(it, rmap){
       : it.cat==='other' ? ''
       : (st
           ? `<button class="pay-btn tiny" data-act="undoStatus" data-id="${esc(it.id)}">Undo</button>`
-          : `<button class="pay-btn tiny" data-act="tradeAway" data-id="${esc(it.id)}">Trade</button> ${it.cat==='guaranteed'?`<button class="pay-btn tiny ghost" data-act="release" data-id="${esc(it.id)}" title="Released players' salaries still count toward the tax">Release</button>`:`<button class="pay-btn tiny ghost" data-act="nontender" data-id="${esc(it.id)}" title="Let him go before the tender deadline — his salary comes off the books">Non-tender</button>`} <button class="pay-btn tiny ghost" data-act="dfa" data-id="${esc(it.id)}" title="Designate for assignment — clears a 40-man spot">DFA</button>${extBtn}`)
+          : `<button class="pay-btn tiny" data-act="tradeAway" data-id="${esc(it.id)}">Trade</button> ${it.cat==='guaranteed'?`<button class="pay-btn tiny ghost" data-act="release" data-id="${esc(it.id)}" title="Released players' salaries still count toward the tax">Release</button>`:`${ntClosed()?`<button class="pay-btn tiny ghost" disabled style="opacity:.45;cursor:not-allowed" title="Non-tender unavailable — the non-tender deadline passed Nov 20 at 5 pm ET">Non-tender</button>`:`<button class="pay-btn tiny ghost" data-act="nontender" data-id="${esc(it.id)}" title="Let him go before the tender deadline — his salary comes off the books">Non-tender</button>`}`} <button class="pay-btn tiny ghost" data-act="dfa" data-id="${esc(it.id)}" title="Designate for assignment — clears a 40-man spot">DFA</button>${extBtn}`)
         + (hasOverride(it) ? ` <button class="pay-btn tiny ghost" data-act="resetRow" data-id="${esc(it.id)}" title="Undo your edits to this player">↺</button>` : '');
   const tr = `<tr class="${cls}"><td class="pname-cell"><div class="pname">${it.added&&it.added.from?teamLogo(it.added.from):''}${esc(it.name)}${it.pos?` <span style="color:var(--grey);font-weight:600;font-size:11px">${esc(it.pos)}</span>`:''}${(()=>{ const v = optOf(it).v; return (typeof v==='number' && v>0 && !it.added) ? ` <span class="opt-ast" title="${v} minor-league option${v>1?'s':''} left — can start 2027 in the minors">*</span>` : ''; })()}${tags.join('')}</div>${info?`<div class="pinfo">${esc(info)}</div>`:''}${opt}${pyrs}</td>
     ${YEARS.map(y=>cellHTML(it,y)).join('')}<td class="acts">${acts}</td></tr>`;
@@ -5106,11 +5108,11 @@ function faPool(){
     out.push({name:d.n, pos:'', pos2:'', type:'', age:d.g, w:null, l:'F', note:'', team:d.t, id:d.i, c:d.c}); });
   // players the live transaction log shows hitting the market after the saved list was built (declined options, releases, elected free agency)
   try{ const tx = window.__tx; if(tx && tx.rows){
-    const hits = {}; const isHit = r=>{ const d = r[5]||''; return (/option declined|elected free agency|^Released|cleared waivers; released/i.test(d)) && r[6]!=='ADD'; };
+    const hits = {}; const isHit = r=>{ const d = r[5]||''; return (/option declined|elected free agency|^Released|cleared waivers; released|non-?tender/i.test(d)) && r[6]!=='ADD'; };
     const later = {}; tx.rows.forEach(r=>{ if(/^Agreed to/.test(r[5]||'')) later[norm(r[2])] = r[0]; });
     tx.rows.forEach(r=>{ const k = norm(r[2]); if(!isHit(r) || (later[k] && later[k]>=r[0])) return; const ex = out.find(o=>norm(o.name)===k); if(ex && ex.l!=='F'){ ex.l = 'F'; ex.note = (ex.note?ex.note+' · ':'')+'Hit the market (transaction log)'; } });
     tx.rows.forEach(r=>{ const k = norm(r[2]); if(used.has(k)) return;
-      const hit = /option declined|elected free agency|^Released|cleared waivers; released/i.test(r[5]||'') && !/^Club option declined$/i.test(r[5]||'') || /^Club option declined$/i.test(r[5]||'');
+      const hit = /option declined|elected free agency|^Released|cleared waivers; released|non-?tender/i.test(r[5]||'') && !/^Club option declined$/i.test(r[5]||'') || /^Club option declined$/i.test(r[5]||'');
       if(!hit || r[6]==='ADD') return; if(later[k] && later[k]>=r[0]) return;
       hits[k] = 1; used.add(k); const ps = String(r[7]||'').split('/')[0]; const ab = TX_ABBR[r[1]]||r[1]; const tm = TEAMS.find(x=>x.abbr===ab);
       out.push({name:r[2], pos:ps, pos2:String(r[7]||''), type:(ps==='P'||ps==='SP'||ps==='RP')?'P':'H', age:null, w:null, l:'F', note:'Hit the market — from the transaction log', team:tm?tm.name:'', id:r[3]||null, c:''}); }); } }catch(e){}
@@ -6457,7 +6459,7 @@ function onClick(e){
     case 'shareTrade': openTradeShare(b.dataset.id); break;
     case 'removePkg': { const pk = b.dataset.id; S.added.filter(a=>a.kind==='trade' && (a.pkg||a.id)===pk).forEach(a=>rosterRemove(a.id)); S.added = S.added.filter(a=>!(a.kind==='trade' && (a.pkg||a.id)===pk)); Object.keys(S.status).forEach(k=>{ if(S.status[k].tradeId===pk) delete S.status[k]; }); saveState(); renderAll(); break; }
     case 'optReset': S.options[id] = 'undecided'; saveState(); renderAll(); break;
-    case 'nontender': S.status[id] = {mode:'nontender', at:Date.now()}; saveState(); renderAll(); break;
+    case 'nontender': if(ntClosed()) break; S.status[id] = {mode:'nontender', at:Date.now()}; saveState(); renderAll(); break;
     case 'share': openShare(); break;
     case 'openAssume': { const d = root0().querySelector('details.pay-assume'); if(d){ d.open = true; UI.assumeOpen = true; d.scrollIntoView({behavior:'smooth', block:'start'}); } break; }
     case 'flashOk': UI.flash = null; renderAll(); break;

@@ -36,6 +36,10 @@ for date,team,name,mlbam,cat,detail,change,pos in tx['rows']:
                     if norm(e['n'])==norm(name) and e['t']==old['nick']: e['t'] = new['nick']
                 moved += 1; print('moved', name, old['nick'], '->', new['nick'])
                 break
+    if re.search(r'non-?tender', detail, re.I) and new:      # non-tendered players come off the club's payroll lines
+        for k in ('ap',):
+            i = find(new,k,name)
+            if i >= 0: new[k].pop(i); moved += 1; print('non-tendered', name, 'off', new['nick'])
     if cat=='FREE AGENT' and detail.startswith('Agreed to') and change!='SUB' and new:
         for t in T.values():
             if t is new: continue
