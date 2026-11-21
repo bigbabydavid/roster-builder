@@ -4318,7 +4318,20 @@ function rosterSyncContracts(){
   }catch(e){}
 }
 // Free agents who really signed this offseason aren't on MLB's 40-man feed yet, so they'd be missing from the roster board and the depth chart. Add them to the pool.
+// Real non-tenders (MLB's 5 pm ET deadline, Nov 20): in 'start today' mode those players are already off the club's books, so pre-mark them as non-tendered.
+function applyTxNonTenders(){
+  try{ const tx = window.__tx; if(!tx || !tx.rows || startMode()!=='today' || currentTeamId!==TEAM_ID) return;
+    const ab = teamObj().abbr;
+    const names = new Set(tx.rows.filter(r=>r[0]>='2026-11-20' && (TX_ABBR[r[1]]||r[1])===ab && /^Non-tendered/i.test(r[5]||'')).map(r=>norm(r[2])));
+    if(!names.size) return;
+    S.ntApplied = S.ntApplied || {}; let ch = false;
+    calcAll().items.forEach(it=>{ const k = norm(it.name);
+      if(it.cat==='guaranteed' || it.cat==='pending' || it.cat==='other' || !names.has(k) || S.ntApplied[k] || S.status[it.id]) return;
+      S.ntApplied[k] = 1; S.status[it.id] = {mode:'nontender', assumed:true, at:0}; ch = true; });
+    if(ch){ saveState(); if(isOpen()) renderAll(); } }catch(e){}
+}
 function rosterSyncContracts(){
+  applyTxNonTenders();
   try{
     const tx = window.__tx; if(!tx || !tx.rows || typeof players==='undefined' || currentTeamId!==TEAM_ID) return;
     const ab = teamObj().abbr, arr = realP(), have = new Set(arr.map(p=>norm(p.name)));

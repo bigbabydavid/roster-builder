@@ -40,6 +40,9 @@ for date,team,name,mlbam,cat,detail,change,pos in tx['rows']:
         for k in ('ap',):
             i = find(new,k,name)
             if i >= 0: new[k].pop(i); moved += 1; print('non-tendered', name, 'off', new['nick'])
+        for e in fg['leagueDb']:            # ...and into the free-agent pool
+            if norm(e['n'])==norm(name) and e.get('k')!='f' and e['t']==new['nick']:
+                e['k'] = 'f'; moved += 1; print('now a free agent', name)
     if cat=='FREE AGENT' and detail.startswith('Agreed to') and change!='SUB' and new:
         for t in T.values():
             if t is new: continue
