@@ -4882,7 +4882,7 @@ function tableCard(title, sub, items, rmap, extraHead){
     ${items.length ? `<div class="pay-scroll"><table class="pay-tbl"><thead><tr><th class="left">Player</th>${seasonHeads()}<th></th></tr></thead><tbody>${body}${tot}</tbody></table></div>` : `<div class="pay-empty">${esc(title)}: nothing here yet.</div>`}</div>`;
 }
 function aavOf(it){ let t = 0, n = 0; try{ (YEARS||[]).forEach(y=>{ const c = Number(charge(it,y))||0; if(c>0){ t += c; n++; } }); }catch(e){} return n ? t/n : 0; } // average of the years he's paid — a front-loaded bonus year doesn't jump him up the list
-function aavSort(a,b){ return (aavOf(b)-aavOf(a)) || String(a.name||'').localeCompare(String(b.name||'')); } // guaranteed contracts: highest AAV first, in both the table and tile views
+function aavSort(a,b){ const y = Number(S.season)||2027; return ((Number(charge(b,y))||0)-(Number(charge(a,y))||0)) || (aavOf(b)-aavOf(a)) || String(a.name||'').localeCompare(String(b.name||'')); } // guaranteed contracts: biggest luxury-tax hit in the selected season first (ties: longer-run average); same order in the table and tile views
 function tableCat(it){ // which table a row lives in: signings and trades sit with everyone else of the same kind
   if(!it.added) return it.cat;
   const a = it.added;
