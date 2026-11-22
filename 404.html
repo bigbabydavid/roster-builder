@@ -4881,6 +4881,8 @@ function tableCard(title, sub, items, rmap, extraHead){
   return `<div class="pay-card"><div class="pay-card-h"><h3>${title}</h3><span class="sub">${sub}</span>${extraHead||''}</div>
     ${items.length ? `<div class="pay-scroll"><table class="pay-tbl"><thead><tr><th class="left">Player</th>${seasonHeads()}<th></th></tr></thead><tbody>${body}${tot}</tbody></table></div>` : `<div class="pay-empty">${esc(title)}: nothing here yet.</div>`}</div>`;
 }
+function aavOf(it){ let t = 0, n = 0; try{ (YEARS||[]).forEach(y=>{ const c = Number(charge(it,y))||0; if(c>0){ t += c; n++; } }); }catch(e){} return n ? t/n : 0; } // average of the years he's paid — a front-loaded bonus year doesn't jump him up the list
+function aavSort(a,b){ return (aavOf(b)-aavOf(a)) || String(a.name||'').localeCompare(String(b.name||'')); } // guaranteed contracts: highest AAV first, in both the table and tile views
 function tableCat(it){ // which table a row lives in: signings and trades sit with everyone else of the same kind
   if(!it.added) return it.cat;
   const a = it.added;
@@ -4971,7 +4973,7 @@ function tablesHTML(calc, rmap){
       <td class="acts" colspan="2">${done?'':gone?`<button class="pay-btn tiny" data-act="unwalk" data-name="${esc(p.name)}">Undo</button>`:`<button class="pay-btn tiny ghost" data-act="walk" data-name="${esc(p.name)}" title="Let him go — no offer, no payroll hit">Let walk</button> ${qoBlk(p) ? `<span class="pay-qo-off" title="Qualifying offer unavailable — ${esc(qoBlk(p))}"><button class="pay-btn tiny" disabled aria-disabled="true">Extend qualifying offer</button></span>` : `<button class="pay-btn tiny" data-act="qo" data-name="${esc(p.name)}" title="One year at ${fmt(S.rules.qo,2)}">Extend qualifying offer</button>`} <button class="pay-btn tiny" data-act="resign" data-name="${esc(p.name)}">Re-sign…</button>`}</td></tr>`;
   }).join('');
   const SECS = [
-    tableCard('Guaranteed contracts', `${S.season}: ${fmt(by('guaranteed').reduce((a,it)=>a+charge(it,S.season),0))}`, by('guaranteed'), rmap,
+    tableCard('Guaranteed contracts', `${S.season}: ${fmt(by('guaranteed').reduce((a,it)=>a+charge(it,S.season),0))}`, by('guaranteed').slice().sort(aavSort), rmap,
       added.length ? `<button class="pay-btn tiny danger${UI.armed==='added'?' armed':''}" data-act="clearAdded" title="Remove every signing and trade acquisition you've added">${UI.armed==='added'?'Click again to confirm':'Clear all added'}</button>` : ''),
     `<div class="pay-card${UI.list?' gm-list':''}"><div class="pay-card-h"><h3>Your pending free agents</h3><span class="sub">contracts end after 2026 · not on the ${S.season} payroll unless re-signed</span></div>
       ${UI.list?`<div class="gm-grid">${pend}</div>`:`<div class="pay-scroll"><table class="pay-tbl" style="min-width:420px"><tbody>${pend}</tbody></table></div>`}</div>`,
