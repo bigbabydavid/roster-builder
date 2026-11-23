@@ -4957,6 +4957,11 @@ function sideHTML(calc, rmap){
     <div class="gm-acts">${P.acts}</div>
   </aside>`;
 }
+function pendSignedWith(name){ // a pending free agent of this club who has since agreed to terms with a different club
+  try{ const tx = window.__tx; if(!tx || !tx.rows) return ''; const me = teamObj().abbr, k = norm(name); let who = '';
+    tx.rows.forEach(r=>{ if(r[0]>='2026-10-28' && r[4]==='FREE AGENT' && /^Agreed to/i.test(r[5]||'') && norm(r[2])===k){ const ab = TX_ABBR[r[1]]||r[1]; who = (ab===me) ? '' : ab; } });
+    if(!who) return ''; const t = (typeof TEAMS!=='undefined') && TEAMS.find(x=>x.abbr===who); return t ? t.name : who; }catch(e){ return ''; }
+}
 function tablesHTML(calc, rmap){
   const by = c => calc.items.filter(it=>it.cat!=='other' && tableCat(it)===c);
   const added = calc.items.filter(it=>it.added);
@@ -4964,13 +4969,15 @@ function tablesHTML(calc, rmap){
   const reSigned = new Set(S.added.map(a=>norm(a.name)));
   const pend = PENDING_FA.map(p=>{
     const done = reSigned.has(norm(p.name));
-    const gone = !done && S.walked && S.walked[p.name];
+    const els = !done ? pendSignedWith(p.name) : '';
+    const gone = !done && (els || (S.walked && S.walked[p.name]));
+    const elsTag = els ? `<span class="pay-tag warn">Signed with ${esc(els)}</span>` : '';
     if(UI.list){
-      const btns = done?'':gone?`<button class="pay-btn tiny" data-act="unwalk" data-name="${esc(p.name)}">Undo</button>`:`<button class="pay-btn tiny" data-act="resign" data-name="${esc(p.name)}">Re-sign</button> <button class="pay-btn tiny ghost" data-act="walk" data-name="${esc(p.name)}" title="Let him go — no offer, no payroll hit">Let walk</button>${qoBlk(p)?` <span class="pay-qo-off" tabindex="0" title="Qualifying offer unavailable — ${esc(qoBlk(p))}"><button class="pay-btn tiny ghost" disabled aria-disabled="true">QO</button></span>`:` <button class="pay-btn tiny ghost" data-act="qo" data-name="${esc(p.name)}" title="One year at ${fmt(S.rules.qo,2)}">QO</button>`}`;
-      return `<div class="gm-pr gm-pend${gone?' off':''}"><span class="gm-pos">${esc((p.pos||'').split('/')[0]||'–')}</span><span class="gm-pt"><span class="gm-pn">${esc(p.name)}${qoTag(p.name)}${done?'<span class="pay-tag roster">Re-signed</span>':''}${gone?'<span class="pay-tag warn">Walked</span>':''}</span><span class="gm-pm">2026 salary ${fmt(p.s26, p.s26<1?2:1)}${p.note?' — '+esc(p.note):''}</span></span><span class="gm-pa">${btns}</span></div>`;
+      const btns = done||els?'':gone?`<button class="pay-btn tiny" data-act="unwalk" data-name="${esc(p.name)}">Undo</button>`:`<button class="pay-btn tiny" data-act="resign" data-name="${esc(p.name)}">Re-sign</button> <button class="pay-btn tiny ghost" data-act="walk" data-name="${esc(p.name)}" title="Let him go — no offer, no payroll hit">Let walk</button>${qoBlk(p)?` <span class="pay-qo-off" tabindex="0" title="Qualifying offer unavailable — ${esc(qoBlk(p))}"><button class="pay-btn tiny ghost" disabled aria-disabled="true">QO</button></span>`:` <button class="pay-btn tiny ghost" data-act="qo" data-name="${esc(p.name)}" title="One year at ${fmt(S.rules.qo,2)}">QO</button>`}`;
+      return `<div class="gm-pr gm-pend${gone?' off':''}"><span class="gm-pos">${esc((p.pos||'').split('/')[0]||'–')}</span><span class="gm-pt"><span class="gm-pn">${esc(p.name)}${qoTag(p.name)}${done?'<span class="pay-tag roster">Re-signed</span>':''}${els?elsTag:gone?'<span class="pay-tag warn">Walked</span>':''}</span><span class="gm-pm">2026 salary ${fmt(p.s26, p.s26<1?2:1)}${p.note?' — '+esc(p.note):''}</span></span><span class="gm-pa">${btns}</span></div>`;
     }
-    return `<tr${gone?' class="gone"':''}><td class="pname-cell"><div class="pname">${esc(p.name)} <span style="color:var(--grey);font-weight:600;font-size:11px">${esc(p.pos)}</span>${qoTag(p.name)}${done?'<span class="pay-tag roster">Re-signed</span>':''}${gone?'<span class="pay-tag warn">Walked</span>':''}</div><div class="pinfo">2026 salary ${fmt(p.s26, p.s26<1?2:1)}${p.note?' — '+esc(p.note):''}</div></td>
-      <td class="acts" colspan="2">${done?'':gone?`<button class="pay-btn tiny" data-act="unwalk" data-name="${esc(p.name)}">Undo</button>`:`<button class="pay-btn tiny ghost" data-act="walk" data-name="${esc(p.name)}" title="Let him go — no offer, no payroll hit">Let walk</button> ${qoBlk(p) ? `<span class="pay-qo-off" title="Qualifying offer unavailable — ${esc(qoBlk(p))}"><button class="pay-btn tiny" disabled aria-disabled="true">Extend qualifying offer</button></span>` : `<button class="pay-btn tiny" data-act="qo" data-name="${esc(p.name)}" title="One year at ${fmt(S.rules.qo,2)}">Extend qualifying offer</button>`} <button class="pay-btn tiny" data-act="resign" data-name="${esc(p.name)}">Re-sign…</button>`}</td></tr>`;
+    return `<tr${gone?' class="gone"':''}><td class="pname-cell"><div class="pname">${esc(p.name)} <span style="color:var(--grey);font-weight:600;font-size:11px">${esc(p.pos)}</span>${qoTag(p.name)}${done?'<span class="pay-tag roster">Re-signed</span>':''}${els?elsTag:gone?'<span class="pay-tag warn">Walked</span>':''}</div><div class="pinfo">2026 salary ${fmt(p.s26, p.s26<1?2:1)}${p.note?' — '+esc(p.note):''}</div></td>
+      <td class="acts" colspan="2">${done||els?'':gone?`<button class="pay-btn tiny" data-act="unwalk" data-name="${esc(p.name)}">Undo</button>`:`<button class="pay-btn tiny ghost" data-act="walk" data-name="${esc(p.name)}" title="Let him go — no offer, no payroll hit">Let walk</button> ${qoBlk(p) ? `<span class="pay-qo-off" title="Qualifying offer unavailable — ${esc(qoBlk(p))}"><button class="pay-btn tiny" disabled aria-disabled="true">Extend qualifying offer</button></span>` : `<button class="pay-btn tiny" data-act="qo" data-name="${esc(p.name)}" title="One year at ${fmt(S.rules.qo,2)}">Extend qualifying offer</button>`} <button class="pay-btn tiny" data-act="resign" data-name="${esc(p.name)}">Re-sign…</button>`}</td></tr>`;
   }).join('');
   const SECS = [
     tableCard('Guaranteed contracts', `${S.season}: ${fmt(by('guaranteed').reduce((a,it)=>a+charge(it,S.season),0))}`, by('guaranteed').slice().sort(aavSort), rmap,
