@@ -4,6 +4,7 @@ on:
     - cron: '17 9 * * *'   # once a day, ~5:17am Eastern
     - cron: '30 22 20 11 *'  # one-off: Nov 20, 5:30 pm Eastern, right after the 5 pm non-tender deadline
     - cron: '0 0 21 11 *'   # one-off: Nov 20, 7:00 pm Eastern, to catch the stragglers
+
   workflow_dispatch:
 permissions:
   contents: write
@@ -16,6 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Fetch FanGraphs payroll pages
+        continue-on-error: true
         run: |
           python3 - <<'PY'
           import json, os, re, time, urllib.request
@@ -47,6 +49,7 @@ jobs:
           if ok < 56: raise SystemExit('too many pages failed - keeping yesterday\'s data')  # a page or two that fails keeps its previous copy
           PY
       - name: Build fg.json
+        continue-on-error: true
         run: python3 -I build_fg.py
       - name: Fetch transaction log
         continue-on-error: true
