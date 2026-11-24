@@ -385,7 +385,8 @@
   .mini-toggle.remove:hover{ background:var(--il); border-color:var(--il); color:white; }
   .mini-toggle.to-pool{ color:var(--grey); font-size:10px; }
   .mini-toggle.to-pool:hover{ background:var(--navy); border-color:var(--navy); color:white; }
-  .pay-opt-final b{ color:#0c2340; } .pay-opt-final span{ color:#2f7d4f; font-size:12px; margin-left:4px; }
+  .pay-opt-hint{color:#667;font-size:.92em}
+.pay-opt-final b{ color:#0c2340; } .pay-opt-final span{ color:#2f7d4f; font-size:12px; margin-left:4px; }
   .il-block{ margin-top:14px; } .il-block h3{ margin:0 0 6px; font-size:13px; letter-spacing:.04em; text-transform:uppercase; color:#5b6573; } .il-block h3 .n{ font-weight:700; color:#0c2340; margin-left:4px; }
   .pool-collapsed-hide{}
   .pool-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
@@ -3827,7 +3828,7 @@ let SEED_GUARANTEED = [
    base:{2027:9, 2028:9}},
   {id:'suter', name:'Brent Suter', pos:'RP', type:'P', contract:'1 yr, $4M (2027) · 2028 club option',
    note:'Signed Nov 23: $3.75M salary plus a $250K buyout of the 2028 club option, which FanGraphs counts in the $4M. 2028 is a $3.5M club option. Choose what happens below; "undecided" counts neither.',
-   base:{2027:4}, option:{year:2028, salary:3.5, buyout:0}},
+   base:{2027:4}, option:{year:2028, salary:3.5, buyout:0.25}},
 ];
 
 // Arbitration + pre-arb: level by season. 2027 arbitration figures for the seven players FanGraphs
@@ -4179,6 +4180,20 @@ function allItems(){
 }
 // Charge before trade/release status (what the player's own cells show).
 const optYear = (it, y) => it.option && (it.option.years ? it.option.years.includes(y) : y===it.option.year);
+// Luxury-tax math for contract options (seed contracts). The yearly CBT hit is the guaranteed money (buyout included) divided by the guaranteed years.
+//  Decline: the buyout is already inside that average, so nothing changes and the option year costs nothing.
+//  Exercise: the buyout is never paid, so the deal re-averages over every year with the option salary in: (guaranteed - buyout + option salary) / (years + option years), in every year.
+// Needs a flat average and a "N yr" contract term; anything else falls back to the old per-year handling.
+function optAvg(it){
+  if(!it.option || it.added) return null;
+  if(it._oa !== undefined && it._oaKey === it.contract) return it._oa;
+  let r = null;
+  try{ const m = /(\d+)\s*yr/.exec(it.contract||''), N = m ? +m[1] : 0, vals = Object.keys(it.base||{}).map(k=>it.base[k]).filter(v=>typeof v==='number' && v>0);
+    if(N>0 && vals.length && Math.max(...vals)-Math.min(...vals) < 0.011){
+      const A = vals[0], o = it.option, k = (o.years && o.years.length) ? o.years.length : 1, bo = o.buyout||0, ps = (o.kind||'club')==='player' ? 0 : bo;
+      r = {A, N, k, ex: (A*N - ps + o.salary*k)/(N+k)}; } }catch(e){}
+  it._oa = r; it._oaKey = it.contract; return r;
+}
 function rawCharge(it, y){
   const ex = S.ext && S.ext[it.id]; if(ex && y>=ex.start && y<=ex.through) return ex.aav; // the luxury tax counts the average every year; ex.sched is the cash-by-year structure
   if(it.added){
@@ -4193,9 +4208,11 @@ function rawCharge(it, y){
   const ov = S.overrides[it.id];
   if(ov && ov[y]!=null) return ov[y];
   if(it.option && optYear(it, y)){
-    const st = optState(it);
+    const st = optState(it), oa = optAvg(it);
+    if(oa) return st==='exercise' ? oa.ex : null;
     return st==='exercise' ? it.option.salary : st==='decline' ? (y===it.option.year && it.option.buyout ? it.option.buyout : null) : null;
   }
+  if(it.option){ const oa = optAvg(it); if(oa && optState(it)==='exercise'){ const b = baseFor(it, y); if(b!=null) return oa.ex; } }
   return baseFor(it, y);
 }
 // Money another club pays toward a player's contract shows up as a negative "owed from / cash from" line on the sheet (Arenado: -$9M from the Cardinals).
@@ -4797,6 +4814,12 @@ function optLabels(it){
   if(k==='mutual') return {head:`${yl} mutual option (${fmt(o.salary)}${bo})`, yes:'Exercise', no:o.buyout?'Decline (pay buyout)':'Decline', verbYes:'Exercised', verbNo:'Declined'};
   return {head:`${yl} club option (${fmt(o.salary)}${bo})`, yes:'Exercise', no:o.buyout?'Decline (pay buyout)':'Decline', verbYes:'Exercised', verbNo:'Declined'};
 }
+function optHint(it, v){
+  const oa = optAvg(it); if(!oa || v==='undecided') return '';
+  const yrs = Object.keys(it.base||{}).map(Number).concat(optYear(it,2027)?[]:[...(it.option.years&&it.option.years.length?it.option.years:[it.option.year])]).sort();
+  if(v==='exercise') return `<span class="pay-opt-hint"> · the deal re-averages to ${fmt(oa.ex,2)} a year (was ${fmt(oa.A,2)}) in every year, ${yrs[0]}–${String(yrs[yrs.length-1]).slice(2)}</span>`;
+  return `<span class="pay-opt-hint"> · stays ${fmt(oa.A,2)} a year; the buyout is already in that average</span>`;
+}
 function seasonHeads(){
   return YEARS.map(y=>`<th class="${y===S.season?'col-sel':''}">${y}</th>`).join('');
 }
@@ -4834,7 +4857,7 @@ function rowParts(it, rmap){
     if(ro){ const dt = new Date(ro.d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
       opt = `<div class="pay-opt pay-opt-final">${ol.head}: <b>${ro.v==='exercise'?ol.verbYes:ol.verbNo}</b> <span>${esc(dt)} · decided in real life, so it's final</span></div>`; } else
     opt = `<div class="pay-opt">${ol.head}:
-      <select data-act="option" data-id="${esc(it.id)}"><option value="undecided"${v==='undecided'?' selected':''}>Undecided (not counted)</option><option value="exercise"${v==='exercise'?' selected':''}>${ol.yes}</option><option value="decline"${v==='decline'?' selected':''}>${ol.no}</option></select></div>`;
+      <select data-act="option" data-id="${esc(it.id)}"><option value="undecided"${v==='undecided'?' selected':''}>Undecided (not counted)</option><option value="exercise"${v==='exercise'?' selected':''}>${ol.yes}</option><option value="decline"${v==='decline'?' selected':''}>${ol.no}</option></select>${optHint(it, v)}</div>`;
   }
   if(it.added && it.added.kind==='fa'){
     const a = it.added;
@@ -6608,7 +6631,7 @@ function close(){
   setHeader(false); syncTabs(false);
 }
 function isOpen(){ return document.body.classList.contains('view-payroll'); }
-return {syncContracts:rosterSyncContracts, _pack:()=>packPlan(), _resetFaPool:()=>{ POOL.fa = null; }, setTab:t=>{ UI.tab = t; UI.sel = null; if(isOpen()) renderAll(); }, applyFG, open, close, isOpen, useTeam, threshold:()=>DEFAULT_RULES.threshold[2027], act:a=>onClick({target:{closest:()=>({tagName:'BUTTON', dataset:{act:a}})}}), armed:()=>UI.armed, optBadge, optCycle, paintAlert, planActive:()=>!!REAL, refresh:()=>{ if(isOpen() && !M) renderAll(); }, _debug:()=>({S, calcAll, taxFor, SEED, FG:FG_TOTALS, TEAM_SIM})};
+return {syncContracts:rosterSyncContracts, _pack:()=>packPlan(), _resetFaPool:()=>{ POOL.fa = null; }, setTab:t=>{ UI.tab = t; UI.sel = null; if(isOpen()) renderAll(); }, applyFG, open, close, isOpen, useTeam, threshold:()=>DEFAULT_RULES.threshold[2027], act:a=>onClick({target:{closest:()=>({tagName:'BUTTON', dataset:{act:a}})}}), armed:()=>UI.armed, optBadge, optCycle, paintAlert, planActive:()=>!!REAL, refresh:()=>{ if(isOpen() && !M) renderAll(); }, _debug:()=>({S, calcAll, charge, taxFor, SEED, FG:FG_TOTALS, TEAM_SIM})};
 })();
 
 
