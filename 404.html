@@ -1677,7 +1677,6 @@ select,.lineup-player-select{ background:#0B1630 !important; color:var(--gm-fg) 
 .pay-wrap[data-tab="roster"] .pay-plan-head, .pay-wrap[data-tab="roster"] #planSlot{ display:none !important; }
 .pay-wrap:not([data-tab="roster"]) .gm-rosterwrap, .pay-wrap:not([data-tab="roster"]) details.pay-assume, .pay-wrap:not([data-tab="roster"]) .pay-two,
 .pay-wrap:not([data-tab="roster"]) .cal-foot, .pay-wrap:not([data-tab="roster"]) .pay-cbabar{ display:none !important; }
-.pay-wrap[data-tab="depth"] .lineup-section{ display:none !important; }
 .pay-wrap[data-tab="lineups"] #statsBar, .pay-wrap[data-tab="lineups"] #boardMain, .pay-wrap[data-tab="lineups"] .pool-section, .pay-wrap[data-tab="lineups"] #minorsSec, .pay-wrap[data-tab="lineups"] .pay-plan-head{ display:none !important; }
 .pay-wrap[data-tab="lineups"] #boardSplit{ grid-template-columns:1fr !important; }
 .pay-wrap[data-tab="rotation"] .lineup-section, .pay-wrap[data-tab="rotation"] .pay-plan-head{ display:none !important; }
@@ -6484,7 +6483,7 @@ function onClick(e){
     case 'basis': S.rules.basis = b.dataset.v; saveState(); renderAll(); break;
     case 'season': S.season = +b.dataset.y; saveState(); renderAll(); break;
     case 'target': if(b.dataset.v==='none') S.target.on=false; else { S.target.on=true; S.target.value=+b.dataset.v; } saveState(); renderAll(); break;
-    case 'tab': UI.tab = b.dataset.v; UI.sel = null; renderAll(); { const tb = document.querySelector('.gm-tabbar'); if(tb){ const h = (document.querySelector('header.topbar')||{}).offsetHeight||90; window.scrollTo({top: Math.max(0, tb.getBoundingClientRect().top + window.scrollY - h - 8), behavior:'auto'}); } } break;
+    case 'tab': { const toLu = b.dataset.v==='lineups'; UI.tab = toLu ? 'depth' : b.dataset.v; UI.sel = null; renderAll(); if(toLu){ const ls = document.querySelector('.lineup-section'); if(ls){ const h = (document.querySelector('header.topbar')||{}).offsetHeight||90; window.scrollTo({top: Math.max(0, ls.getBoundingClientRect().top + window.scrollY - h - 8), behavior:'auto'}); break; } } } { const tb = document.querySelector('.gm-tabbar'); if(tb){ const h = (document.querySelector('header.topbar')||{}).offsetHeight||90; window.scrollTo({top: Math.max(0, tb.getBoundingClientRect().top + window.scrollY - h - 8), behavior:'auto'}); } } break;
     case 'railTab': UI.rail = b.dataset.v; renderAll(); break;
     case 'slotPick': openSlotPick(+b.dataset.i); break;
     case 'clearLU': confirmTwice('clearlu', ()=>{ (lineups[UI.side]||[]).forEach(sl=>{ sl.playerId = null; sl.position = null; }); try{ window.saveState(); }catch(e){} renderAll(); }); break;
@@ -6644,7 +6643,7 @@ function close(){
   setHeader(false); syncTabs(false);
 }
 function isOpen(){ return document.body.classList.contains('view-payroll'); }
-return {syncContracts:rosterSyncContracts, _pack:()=>packPlan(), _resetFaPool:()=>{ POOL.fa = null; }, setTab:t=>{ UI.tab = t; UI.sel = null; if(isOpen()) renderAll(); }, applyFG, open, close, isOpen, useTeam, threshold:()=>DEFAULT_RULES.threshold[2027], act:a=>onClick({target:{closest:()=>({tagName:'BUTTON', dataset:{act:a}})}}), armed:()=>UI.armed, optBadge, optCycle, paintAlert, planActive:()=>!!REAL, refresh:()=>{ if(isOpen() && !M) renderAll(); }, _debug:()=>({S, calcAll, charge, taxFor, SEED, FG:FG_TOTALS, TEAM_SIM})};
+return {syncContracts:rosterSyncContracts, _pack:()=>packPlan(), _resetFaPool:()=>{ POOL.fa = null; }, setTab:t=>{ UI.tab = (t==='lineups') ? 'depth' : t; UI.sel = null; if(isOpen()) renderAll(); }, applyFG, open, close, isOpen, useTeam, threshold:()=>DEFAULT_RULES.threshold[2027], act:a=>onClick({target:{closest:()=>({tagName:'BUTTON', dataset:{act:a}})}}), armed:()=>UI.armed, optBadge, optCycle, paintAlert, planActive:()=>!!REAL, refresh:()=>{ if(isOpen() && !M) renderAll(); }, _debug:()=>({S, calcAll, charge, taxFor, SEED, FG:FG_TOTALS, TEAM_SIM})};
 })();
 
 
