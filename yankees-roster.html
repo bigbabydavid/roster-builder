@@ -1689,7 +1689,7 @@ select,.lineup-player-select{ background:#0B1630 !important; color:var(--gm-fg) 
   .gm-bar{ flex:none !important; width:calc(100% + 28px) !important; max-width:none !important; margin:0 -14px !important; box-sizing:border-box; padding:0 14px 0 14px !important; padding-right:112px !important; }
   .mm-right{ top:4px !important; }
   .gm-seg button,.gm-tab{ min-height:44px; }
-  .gm-tabs{ width:100%; display:grid; grid-template-columns:repeat(3,1fr); flex-wrap:nowrap; }
+  .gm-tabs{ width:100%; display:grid; grid-template-columns:repeat(2,1fr); flex-wrap:nowrap; }
   .gm-tab{ padding:0 4px; font-size:13.5px; }
   .mm-nav{ flex-wrap:wrap !important; overflow:visible !important; margin:0 !important; max-width:100% !important; }
   .mm-btn{ height:40px !important; font-size:14px !important; padding:0 9px !important; }
@@ -2659,7 +2659,10 @@ function tileHTML(p){
   // see) still gets the "+" badge above but no fabricated duration.
   const ilBadge = (p.hurt && p.ilLabel) ? `<div class="il-badge">${p.ilLabel}</div>` : '';
   const numPart = p.num ? `#${p.num} · ` : '';
-  const orgBadge = p.custom ? (p.via==='payroll' ? `<span class="org-badge" title="Added in the Offseason Simulator">Offseason add</span>` : `<span class="org-badge" title="Not currently on the 40-man roster">Not 40-man</span>`) : '';
+  const signedTag = (p.custom && p.via==='contract') ? (()=>{ const tx = window.__tx, k = String(p.name||'').normalize('NFKD').replace(/[^\w ]/g,'').toLowerCase().trim();
+      const r = tx && tx.rows && tx.rows.slice().reverse().find(x=>x[4]==='FREE AGENT' && /^Agreed to/i.test(x[5]||'') && String(x[2]||'').normalize('NFKD').replace(/[^\w ]/g,'').toLowerCase().trim()===k);
+      return (r && /minor league/i.test(r[5])) ? ['Minor-league deal','Signed a minor-league contract'] : ['Signed','Signed this offseason — not on the 40-man feed yet']; })() : null;
+  const orgBadge = signedTag ? `<span class="org-badge" title="${signedTag[1]}">${signedTag[0]}</span>` : p.custom ? (p.via==='payroll' ? `<span class="org-badge" title="Added in the Offseason Simulator">Offseason add</span>` : `<span class="org-badge" title="Not currently on the 40-man roster">Not 40-man</span>`) : '';
   const removeToggle = p.custom
     ? `<div class="mini-toggle remove" data-toggle="remove" data-id="${p.id}" title="Remove this player">×</div>`
     : '';
@@ -4930,8 +4933,9 @@ function tableCat(it){ // which table a row lives in: signings and trades sit wi
   return 'guaranteed';
 }
 function tabBar(){
-  const T = [['roster','Roster view'],['lineups','Lineup editor'],['depth','Depth chart']];
-  return `<div class="gm-tabbar"><nav class="gm-tabs" aria-label="Views">${T.map(t=>`<button type="button" class="gm-tab${UI.tab===t[0]?' on':''}" data-act="tab" data-v="${t[0]}" aria-current="${UI.tab===t[0]}">${t[1]}</button>`).join('')}</nav></div>`;
+  const T = [['roster','Roster Moves'],['depth','Depth Chart']];   // the lineup editor opens from the depth chart's side rail, so it stays under this tab
+  const cur = UI.tab==='lineups' ? 'depth' : UI.tab;
+  return `<div class="gm-tabbar"><nav class="gm-tabs" aria-label="Views">${T.map(t=>`<button type="button" class="gm-tab${cur===t[0]?' on':''}" data-act="tab" data-v="${t[0]}" aria-current="${cur===t[0]}">${t[1]}</button>`).join('')}</nav></div>`;
 }
 function railRows(){
   let P = []; try{ P = players; }catch(e){}
