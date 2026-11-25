@@ -2673,7 +2673,7 @@ function tileHTML(p){
   return `<div class="tile ${visual}" data-id="${p.id}">
     <div class="info">
       <div class="name"><span class="name-text" title="${p.name}">${p.name}</span>${nameBadges}${orgBadge}</div>
-      <div class="meta">${numPart}${p.bt}</div>
+      <div class="meta">${numPart}${(window.__planActive && p.type==='P' && /\/[LR]$/.test(p.bt||'')) ? ((p.bt.split('/')[1]==='L')?'LHP':'RHP') : p.bt}</div>
       ${roleChip}
       ${window.__planActive && typeof PayrollPlanner!=='undefined' ? PayrollPlanner.optBadge(p) : ''}
       ${ilBadge}
@@ -4427,6 +4427,15 @@ function planSync(){
     if(typeof p.hurtManual!=='boolean' && p.hurt!==rp.hurt){ p.hurt = rp.hurt; changed = true; }
     if(p.ilLabel!==rp.ilLabel){ p.ilLabel = rp.ilLabel; changed = true; } });
   players.forEach(p=>{ if(!p.bt){ const rp = realById.get(p.id); const bt = (rp && rp.bt) || (p.custom ? knownBT(p.name) : null); if(bt){ p.bt = bt; changed = true; } } });
+  { // one entry per player: a re-signed guy can end up with both his base entry and a 'not 40-man' contract copy
+    const seen = new Map();
+    players.slice().forEach(p=>{ const k = norm(p.name); if(!k) return; const o = seen.get(k);
+      if(!o){ seen.set(k,p); return; }
+      const keepNew = !p.custom && o.custom, win = keepNew ? p : o, lose = keepNew ? o : p;
+      if(win.placed==='pool' && lose.placed!=='pool'){ win.placed = lose.placed; win.group = lose.group; win.role = lose.role; win.order = lose.order; }
+      players = players.filter(x=>x!==lose); seen.set(k,win); changed = true;
+      ['RHP','LHP'].forEach(l=>lineups[l].forEach(sl=>{ if(sl.playerId===lose.id) sl.playerId = win.id; })); });
+  }
   const ids = new Set(players.map(p=>p.id));
   ['RHP','LHP'].forEach(k=>lineups[k].forEach(sl=>{ if(sl.playerId && !ids.has(sl.playerId)){ sl.playerId = null; sl.position = null; changed = true; } }));
   return changed;
